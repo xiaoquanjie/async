@@ -28,6 +28,8 @@ void parallel(done_cb done, const std::initializer_list<fn_cb>& fns);
 
 void series(done_cb done, const std::initializer_list<fn_cb>& fns);
 
+void split(const std::string source, const std::string &separator, std::vector<std::string> &array);
+
 /*
 *example
 

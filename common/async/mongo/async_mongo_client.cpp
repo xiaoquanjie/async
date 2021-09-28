@@ -26,27 +26,11 @@
 #endif
 
 namespace async {
+
+// 声明
+void split(const std::string source, const std::string &separator, std::vector<std::string> &array);
+
 namespace mongo {
-
-// 字符串分割函数
-static void Split(const std::string source, 
-    const std::string &separator, 
-    std::vector<std::string> &array) {
-    array.clear();
-    std::string::size_type start = 0;
-    while (true) {
-        std::string::size_type pos = source.find_first_of(separator, start);
-        if (pos == std::string::npos) {
-            std::string sub = source.substr(start, source.size());
-            array.push_back(sub);
-            break;
-        }
-
-        std::string sub = source.substr(start, pos - start);
-        start = pos + separator.size();
-        array.push_back(sub);
-    }
-}
 
 // mongo地址结构
 struct mongo_addr {
@@ -61,7 +45,7 @@ struct mongo_addr {
         // 解析uri
         this->uri = uri;
         std::vector<std::string> values;
-        Split(uri, "|", values);
+        async::split(uri, "|", values);
         if (values.size() == 5) {
             this->addr = values[0];
             this->db = values[1];

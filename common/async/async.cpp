@@ -106,4 +106,26 @@ void series(done_cb done, const std::initializer_list<fn_cb>& fns) {
     result->fns[result->idx](next);
 }
 
+///////////////////////////////////////////////////////////////////
+
+// 字符串分割函数
+void split(const std::string source, 
+    const std::string &separator, 
+    std::vector<std::string> &array) {
+    array.clear();
+    std::string::size_type start = 0;
+    while (true) {
+        std::string::size_type pos = source.find_first_of(separator, start);
+        if (pos == std::string::npos) {
+            std::string sub = source.substr(start, source.size());
+            array.push_back(sub);
+            break;
+        }
+
+        std::string sub = source.substr(start, pos - start);
+        start = pos + separator.size();
+        array.push_back(sub);
+    }
+}
+
 }

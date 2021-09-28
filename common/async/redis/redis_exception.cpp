@@ -8,7 +8,6 @@
 #include "common/async/redis/redis_exception.h"
 
 namespace async {
-
 namespace redis {
 
 RedisException::RedisException() {

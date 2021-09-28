@@ -5,6 +5,8 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
+#ifdef USE_ASYNC_REDIS
+
 #include "common/co_async/co_redis.h"
 #include "common/coroutine/coroutine.hpp"
 #include "common/async/redis/redis_exception.h"
@@ -214,3 +216,5 @@ int execute(const std::string& uri,
 
 }
 }
+
+#endif

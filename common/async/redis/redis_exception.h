@@ -58,7 +58,6 @@
 #define M_ERR_REDIS_SCAN            ("scan error")
 
 namespace async {
-
 namespace redis {
 
 // redis“Ï≥£

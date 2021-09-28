@@ -5,10 +5,12 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
+#ifdef USE_ASYNC_MONGO
+
 #include "common/async/mongo/async_mongo_client.h"
 #include "common/async/mongo/tls.hpp"
-#include <mongoc.h>
 #include <queue>
+#include <mongoc.h>
 #include <list>
 #include <mutex>
 #include <assert.h>
@@ -498,3 +500,5 @@ void set_thread_func(std::function<void(std::function<void()>)> f) {
 
 } // mongo
 } // async
+
+#endif

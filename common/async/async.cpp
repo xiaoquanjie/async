@@ -12,15 +12,25 @@ namespace async {
 
 bool loop() {
     bool is_busy = false;
+
+#ifdef USE_ASYNC_REDIS
     if (async::redis::loop()) {
         is_busy = true;
     }
+#endif
+    
+#ifdef USE_ASYNC_MONGO
     if (async::mongo::loop()) {
         is_busy = true;
     }
+#endif
+
+#ifdef USE_ASYNC_CURL
     if (async::curl::loop()) {
         is_busy = true;
     }
+#endif
+
     if (async::cpu::loop()) {
         is_busy = true;
     }

@@ -5,6 +5,8 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
+#ifdef USE_ASYNC_CURL
+
 #include "common/co_async/co_curl.h"
 #include "common/coroutine/coroutine.hpp"
 
@@ -51,7 +53,6 @@ int get(const std::string &url, const std::map<std::string, std::string>& header
         Coroutine::resume(co_id);
     });
 
-    
     async::curl::get(url, headers, [result, timer_id, co_id, unique_id](int curl_code, int rsp_code, std::string& body) {
         if (!co_async::rm_unique_id(unique_id)) {
             return;
@@ -125,3 +126,5 @@ int post(const std::string& url, const std::string& content, const std::map<std:
 
 }
 }
+
+#endif

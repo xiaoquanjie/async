@@ -5,12 +5,13 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
+#ifdef USE_ASYNC_MONGO
+
 #include "common/async/mongo/mongo_struct.h"
 #include <mongoc.h>
 #include <bson.h>
 
 namespace async {
-
 namespace mongo {
 
 void destory_bson(void* p) {
@@ -448,3 +449,5 @@ MongoKeyValueCmp::MongoKeyValueCmp(const std::string &key, double val, const cha
 
 }
 }
+
+#endif

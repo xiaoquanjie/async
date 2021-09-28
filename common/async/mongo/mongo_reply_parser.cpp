@@ -5,12 +5,13 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
+#ifdef USE_ASYNC_MONGO
+
 #include "common/async/mongo/mongo_reply_parser.h"
-#include <bson.h>
 #include <vector>
+#include <bson.h>
 
 namespace async {
-
 namespace mongo {
 
 MongoReplyParser::MongoReplyParser() {
@@ -77,3 +78,5 @@ void MongoReplyParser::FreeJson(void* json) {
 
 } // mongo
 } // async
+
+#endif

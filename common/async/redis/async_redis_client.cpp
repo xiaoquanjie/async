@@ -5,15 +5,17 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
+#ifdef USE_ASYNC_REDIS
+
 #include "common/async/redis/async_redis_client.h"
 #include "common/async/redis/redis_exception.h"
-#include <hiredis-vip/adapters/libevent.h>
-#include <hiredis-vip/hiredis.h>
-#include <hiredis-vip/hircluster.h>
 #include <vector>
 #include <queue>
 #include <list>
 #include <string.h>
+#include <hiredis-vip/adapters/libevent.h>
+#include <hiredis-vip/hiredis.h>
+#include <hiredis-vip/hircluster.h>
 
 // 定义该宏会打开调试日志
 //#define M_ASYNC_REDIS_CLIENT_LOG (1)
@@ -26,7 +28,6 @@
 #endif
 
 namespace async {
-
 namespace redis {
 
 // 字符串分割函数
@@ -534,6 +535,7 @@ bool loop() {
     return has_task;
 }
 
-
 } // redis
 } // async
+
+#endif

@@ -5,12 +5,13 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
+#ifdef USE_ASYNC_MONGO
+
 #include "common/async/mongo/mongo_cmd.h"
 #include <mongoc.h>
 #include <bson.h>
 
 namespace async {
-
 namespace mongo {
 
 BaseMongoCmd::BaseMongoCmd() {
@@ -256,3 +257,5 @@ CreateExpireIndexMongoCmd::CreateExpireIndexMongoCmd() {
 
 } // mongo
 } // async
+
+#endif

@@ -5,6 +5,8 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
+#ifdef USE_ASYNC_MONGO
+
 #include "common/co_async/co_mongo.h"
 #include "common/coroutine/coroutine.hpp"
 
@@ -121,3 +123,5 @@ int execute(const std::string& uri, const async::mongo::BaseMongoCmd& cmd, std::
 
 }
 }
+
+#endif

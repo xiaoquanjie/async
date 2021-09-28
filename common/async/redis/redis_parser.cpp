@@ -5,6 +5,8 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
+#ifdef USE_ASYNC_REDIS
+
 #include "common/async/redis/redis_parser.h"
 #include "common/async/redis/redis_exception.h"
 #include <string.h>
@@ -24,7 +26,6 @@ struct redisReply {
 #endif
 
 namespace async {
-
 namespace redis {
 
 RedisReplyParser::RedisReplyParser() {
@@ -414,3 +415,5 @@ void RedisReplyParser::GetScan(long long& cursor, T& values) {
 
 } // redis
 } // async
+
+#endif

@@ -5,10 +5,12 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
+#ifdef USE_ASYNC_CURL
+
 #include "common/async/curl/async_curl_client.h"
-#include <curl/curl.h>
 #include <queue>
 #include <string.h>
+#include <curl/curl.h>
 
 // 定义该宏会打开调试日志
 //#define M_ASYNC_CURL_CLIENT_LOG (1)
@@ -21,7 +23,6 @@
 #endif
 
 namespace async {
-
 namespace curl {
 
 enum HTTP_METHOD { 
@@ -346,3 +347,4 @@ bool loop() {
 }
 }
 
+#endif

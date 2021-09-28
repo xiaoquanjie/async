@@ -1,0 +1,56 @@
+/*----------------------------------------------------------------
+// Copyright 2021
+// All rights reserved.
+//
+// author: 404558965@qq.com (xiaoquanjie)
+//----------------------------------------------------------------*/
+
+#pragma once
+
+#include <stdint.h>
+#include <functional>
+
+namespace co_async {
+
+// 协程io返回码
+enum Co_Wait_Return {
+    E_CO_RETURN_OK = 0,
+    E_CO_RETURN_TIMEOUT = 1,
+    E_CO_RETURN_ERROR = 2,
+};
+
+// 等待时间
+enum Wait_Time {
+    E_WAIT_THREE_SECOND = 3 * 1000,
+    E_WAIT_FIVE_SECOND = 5 * 1000,
+    E_WAIT_TEN_SECOND = 10 * 1000,
+	E_WAIT_THIRTY_SECOND = 30 * 1000,
+    E_WAIT_SIXTY_SECOND = 60 * 1000,
+    E_WAIT_TWO_MINUTE = 2 * 60 * 1000,
+};
+
+// 生成唯一id
+int64_t gen_unique_id();
+
+void add_unique_id(int64_t id);
+
+bool rm_unique_id(int64_t id);
+
+int64_t add_timer(int interval, std::function<void()> func);
+
+void rm_timer(int64_t timer_id);
+
+bool loop();
+
+//////////////////////////////////////////////////////////////////////////
+
+typedef std::function<void()> next_cb;
+typedef std::function<void(next_cb)> fn_cb;
+
+int parallel(const std::initializer_list<fn_cb>& fns);
+
+int series(const std::initializer_list<fn_cb>& fns);
+
+
+}
+

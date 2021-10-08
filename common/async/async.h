@@ -13,6 +13,7 @@
 #include "common/async/mongo/async_mongo.h"
 #include "common/async/curl/async_curl.h"
 #include "common/async/cpu/async_cpu.h"
+#include "common/async/mysql/async_mysql.h"
 
 namespace async {
 

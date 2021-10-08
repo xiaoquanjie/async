@@ -14,6 +14,7 @@
 #include "common/async/mongo/async_mongo.h"
 #include "common/async/curl/async_curl.h"
 #include "common/async/cpu/async_cpu.h"
+#include "common/async/mysql/async_mysql.h"
 
 namespace co_async { 
 
@@ -65,6 +66,12 @@ bool loop() {
 
 #ifdef USE_ASYNC_CURL
     if (async::curl::loop()) {
+        is_busy = true;
+    }
+#endif
+
+#ifdef USE_ASYNC_MYSQL
+    if (async::mysql::loop()) {
         is_busy = true;
     }
 #endif

@@ -31,6 +31,12 @@ bool loop() {
     }
 #endif
 
+#ifdef USE_ASYNC_MYSQL
+    if (async::mysql::loop()) {
+        is_busy = true;
+    }
+#endif
+
     if (async::cpu::loop()) {
         is_busy = true;
     }

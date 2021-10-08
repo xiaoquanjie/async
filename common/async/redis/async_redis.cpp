@@ -399,7 +399,7 @@ void thread_redis_process() {
         redis_custom_data* data = *iter;
         redis_core_ptr core = thread_create_core(data->addr, false);
         if (!core) {
-            if (now - data->req_time > 10) {
+            if (now - data->req_time > 30) {
                 // 10秒连接不上就超时
                 on_thread_redis_timeout(data);
                 iter = g_redis_global_data.prepare_queue.erase(iter);

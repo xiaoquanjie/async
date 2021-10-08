@@ -354,7 +354,7 @@ void thread_mysql_wait(std::list<mysql_custom_data *> &request_queue,
     }
 }
 
-void thread_mysql_process(std::list<mysql_custom_data*>* request_queue, mysql_global_data* global_data) {
+void thread_mysql_process(std::list<mysql_custom_data*> *request_queue, mysql_global_data* global_data) {
     std::list<mysql_respond_data> respond_queue;
 
     fd_set fd_r;
@@ -375,11 +375,13 @@ void thread_mysql_process(std::list<mysql_custom_data*>* request_queue, mysql_gl
         global_data->respond_queue.insert(global_data->respond_queue.begin(), respond_queue.begin(), respond_queue.end());
         global_data->respond_mutext.unlock();
     }
+
+    delete request_queue;
 }
 
 inline std::function<void()> get_thread_func() {
     // 取64个队列为一组
-    std::list<mysql_custom_data*> request_queue;
+    std::list<mysql_custom_data*>* request_queue = new std::list<mysql_custom_data*>;
 
     {
         g_mysql_global_data.request_mutext.lock();
@@ -402,13 +404,13 @@ inline std::function<void()> get_thread_func() {
             count--;
         }
 
-        request_queue.insert(request_queue.end(), b_iter, e_iter);
+        request_queue->insert(request_queue->end(), b_iter, e_iter);
         g_mysql_global_data.request_queue.erase(b_iter, e_iter);
         g_mysql_global_data.request_mutext.unlock();
     }
 
-    assert(request_queue.size() != 0);
-    auto f = std::bind(thread_mysql_process, &request_queue, &g_mysql_global_data);
+    assert(request_queue->size() != 0);
+    auto f = std::bind(thread_mysql_process, request_queue, &g_mysql_global_data);
     return f;
 }
 
@@ -467,7 +469,7 @@ bool loop() {
 
     if (g_mysql_global_data.req_task_cnt != g_mysql_global_data.rsp_task_cnt) {
         has_task = true;
-        if (g_mysql_global_data.request_queue.empty()) {
+        if (!g_mysql_global_data.request_queue.empty()) {
             if (g_mysql_global_data.thr_func) {
                 g_mysql_global_data.thr_func(get_thread_func());
             }
@@ -509,12 +511,12 @@ bool loop() {
             if (item.data->q_cb) {
                 if (affected_rows == 0) {
                     // 没有结果
-                    item.data->q_cb(err, 0, -1, fields_cnt, affected_rows);
+                    item.data->q_cb(err, 0, 0, fields_cnt, affected_rows);
                 }
                 else {
                     // 有结果
                     MYSQL_ROW row = 0;
-                    int idx = 0;
+                    int idx = 1;
                     while (0 != (row = mysql_fetch_row(item.res))) {
                         item.data->q_cb(err, (void*)row, idx, fields_cnt, affected_rows);
                         ++idx;

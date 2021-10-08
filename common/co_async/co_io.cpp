@@ -10,9 +10,9 @@
 #include <assert.h>
 #include "common/co_async/time_pool.h"
 #include "common/coroutine/coroutine.hpp"
-#include "common/async/redis/async_redis_client.h"
-#include "common/async/mongo/async_mongo_client.h"
-#include "common/async/curl/async_curl_client.h"
+#include "common/async/redis/async_redis.h"
+#include "common/async/mongo/async_mongo.h"
+#include "common/async/curl/async_curl.h"
 #include "common/async/cpu/async_cpu.h"
 
 namespace co_async { 

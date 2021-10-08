@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "common/async/redis/async_redis_client.h"
+#include "common/async/redis/async_redis.h"
 #include "common/co_async/co_io.h"
 #include <map>
 

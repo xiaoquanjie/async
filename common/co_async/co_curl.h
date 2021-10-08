@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "common/async/curl/async_curl_client.h"
+#include "common/async/curl/async_curl.h"
 #include "common/co_async/co_io.h"
 
 namespace co_async {

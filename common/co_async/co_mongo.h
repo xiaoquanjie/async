@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "common/async/mongo/async_mongo_client.h"
+#include "common/async/mongo/async_mongo.h"
 #include "common/co_async/co_io.h"
 
 namespace co_async {

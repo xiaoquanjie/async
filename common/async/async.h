@@ -9,9 +9,9 @@
 
 #include <functional>
 #include <initializer_list>
-#include "common/async/redis/async_redis_client.h"
-#include "common/async/mongo/async_mongo_client.h"
-#include "common/async/curl/async_curl_client.h"
+#include "common/async/redis/async_redis.h"
+#include "common/async/mongo/async_mongo.h"
+#include "common/async/curl/async_curl.h"
 #include "common/async/cpu/async_cpu.h"
 
 namespace async {

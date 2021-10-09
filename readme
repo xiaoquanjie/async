@@ -1,1 +1,22 @@
 c++异步io库
+
+编译：
+1、 如需使用redis模块，则cmake时需定义宏USE_ASYNC_REDIS。如：cmake .. -DUSE_ASYNC_REDIS=1
+    redis模块依赖：libevent、hiredis_vip、hiredis库
+
+2、 如需使用mongo模块，则cmake时需定义宏USE_ASYNC_MONGO。如：cmake .. -DUSE_ASYNC_MONGO=1
+    monogo模块依赖: bson-1.0、mongoc-1.0库
+
+3、 如需使用libcurl模块，则cmake时需定义宏USE_ASYNC_CURL。如：cmake .. -DUSE_ASYNC_CURL=1
+    libcurl模块依赖: libcurl库
+
+4、 如需使用mysql模块，则cmake时需定义宏USE_ASYNC_MYSQL。如：cmake .. -DUSE_ASYNC_MYSQL=1
+    mysql模块依赖：mariadb库
+
+5、cmake例子：
+    1）根目录下执行：mkdir -p build
+    2）cd build
+    3）cmake .. -DUSE_ASYNC_CURL=1 -DUSE_ASYNC_REDIS=1 -DUSE_ASYNC_MONGO=1 -DUSE_ASYNC_MYSQL=1  -DCMAKE_BUILD_TYPE=Debug
+
+依赖库安装：
+    如果库安装路径、链接版本、头文件等出现报错，可以根据编译环境调整 common/CMakeLists.txt文件

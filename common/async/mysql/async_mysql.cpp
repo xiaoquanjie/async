@@ -18,6 +18,16 @@
 #include <map>
 #include <memory>
 
+// 定义该宏会打开调试日志
+#define M_ASYNC_MYSQL_LOG (1)
+
+#ifdef M_ASYNC_MYSQL_LOG
+#include <stdio.h>
+    #define ASYNC_MYSQL_LOG printf
+#else
+    #define ASYNC_MYSQL_LOG(...) 
+#endif
+
 namespace async {
 
 // 声明
@@ -117,7 +127,7 @@ struct mysql_global_data {
     std::mutex request_mutext;
     std::mutex respond_mutext;
     std::map<std::string, uri_data> uri_map;
-    std::map<std::string, time_t> uri_ct_map;
+    time_t last_check_time = 0;
     uint64_t req_task_cnt = 0;
     uint64_t rsp_task_cnt = 0;
 };
@@ -415,6 +425,18 @@ inline std::function<void()> get_thread_func() {
     return f;
 }
 
+void local_tick_check(time_t now) {
+    if (now - g_mysql_global_data.last_check_time > 60 * 5) {
+        g_mysql_global_data.last_check_time = now;
+        for (auto iter = g_mysql_global_data.uri_map.begin(); iter != g_mysql_global_data.uri_map.end(); ++iter) {
+            ASYNC_MYSQL_LOG("uri:%s, conns:%ld\n", iter->first.c_str(), iter->second.core_list.size());
+            while (iter->second.core_list.size() > g_mysql_global_data.keep_connections) {
+                iter->second.core_list.pop_back();
+            }
+        }
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 void execute(const std::string& uri, const std::string& sql, async_mysql_query_cb cb) {
@@ -440,10 +462,12 @@ void set_keep_connection(unsigned int cnt) {
 bool loop() {
     bool has_task = false;
     
-    // 创建
-    std::list<mysql_custom_data*> request_queue;
     time_t now = 0;
     time(&now);
+    local_tick_check(now);
+
+    // 创建
+    std::list<mysql_custom_data*> request_queue;
     for (auto iter = g_mysql_global_data.prepare_queue.begin(); iter != g_mysql_global_data.prepare_queue.end();) {
         mysql_custom_data* data = *iter;
         uri_data& uri_map = g_mysql_global_data.uri_map[data->addr.uri];

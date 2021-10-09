@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <iostream>
 
+// 计时器
 struct TimeElapsed {
     void begin() {
         gettimeofday(&tv, NULL);
@@ -22,13 +23,18 @@ struct TimeElapsed {
 
 ////////////////////
 bool print_log = false;
+
+// redis测试
 void redis_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
+    // 使用协程
     if (use_co) {
+        // 启动一个协程任务
         CoroutineTask::doTask([&count, &te, url](void*) {
             static int fail_count = 0;
             static int timeout_count = 0;
             static int success_count = 0;
 
+            // 执行redis访问并等待协程返回
             std::string value;
             int ret = co_async::redis::execute(url, async::redis::GetRedisCmd("mytest"), value);
             if (ret == co_async::E_CO_RETURN_TIMEOUT) {
@@ -53,7 +59,9 @@ void redis_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
             }
         }, 0);
     }
+    // 不使用协程
     else {
+        // 发起一个redis异步访问并期待回调被调用
         async::redis::execute(url, async::redis::GetRedisCmd("mytest"), [&count, &te](async::redis::RedisReplyParserPtr ptr) {
             count--;
             std::string value;
@@ -69,13 +77,17 @@ void redis_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
     }
 }
 
+// mongo测试
 void mongo_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
+    // 使用协程
     if (use_co) {
+        // 启动一个协程任务
         CoroutineTask::doTask([&count, &te, url](void*) {
             static int fail_count = 0;
             static int timeout_count = 0;
             static int success_count = 0;
 
+            // 执行mongo访问并等待协程返回
             std::string value;
             int ret = co_async::mongo::execute(url, async::mongo::FindMongoCmd({}), value);
             if (ret == co_async::E_CO_RETURN_TIMEOUT) {
@@ -100,7 +112,9 @@ void mongo_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
             }
         }, 0);
     }
+    // 不使用协程
     else {
+        // 发起一个mongo异步访问并期待回调被调用
         async::mongo::execute(url, async::mongo::FindMongoCmd({}), [&count, &te](async::mongo::MongoReplyParserPtr ptr) {
             count--;
             while (true) {
@@ -120,13 +134,17 @@ void mongo_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
     }
 }
 
+// http测试
 void curl_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
+    // 使用协程
     if (use_co) {
+        // 启动一个协程任务
         CoroutineTask::doTask([&count, &te, url](void*) {
             static int fail_count = 0;
             static int timeout_count = 0;
             static int success_count = 0;
 
+            // 执行http访问并等待协程返回
             std::string body;
             int ret = co_async::curl::get(url, [&count, &te, &body](int, int, std::string& b) {
                 body.swap(b);
@@ -153,7 +171,9 @@ void curl_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
             }
         }, 0);
     }
+    // 不使用协程
     else {
+        // 发起一个http异步访问并期待回调被调用
         async::curl::get(url, [&count, &te](int, int, const std::string& body) {
             count--;
             if (print_log) {
@@ -166,13 +186,17 @@ void curl_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
     }
 }
 
+
 void cpu_test(bool use_co, int& count, TimeElapsed& te) {
+    // 使用协程
     if (use_co) {
+        // 启动一个协程任务
         CoroutineTask::doTask([&count, &te](void*) {
             static int fail_count = 0;
             static int timeout_count = 0;
             static int success_count = 0;
 
+            // 执行cpu访问并等待协程返回
             // cpu计算
             int64_t result = 0;
             int ret = co_async::cpu::execute([](void*) {
@@ -207,7 +231,9 @@ void cpu_test(bool use_co, int& count, TimeElapsed& te) {
             }
         }, 0);
     }
+    // 不使用协程
     else {
+        // 发起一个cpu异步运算并期待回调被调用
         int64_t result = 0;
         async::cpu::execute([](void*) {
             int count = 100000000;
@@ -233,6 +259,7 @@ int main3() {
     int use = 0;
     std::cin >> use;
     ThreadPool tp;
+    // 使用线程池
     if (use)
     {
         async::curl::set_thread_func([&tp](std::function<void()> f) { 
@@ -338,6 +365,7 @@ int main3() {
 }
 
 int main4() {
+    // 异步io并行访问，并期待结束时回调被调用
     async::parallel([](int err) {
         std::cout << "parallel done:" << err << std::endl;
     },
@@ -356,6 +384,7 @@ int main4() {
         }
     });
 
+    // 异步io串行访问，并期待结束时回调被调用
     async::series([](int err) {
         std::cout << "series done:" << err << std::endl;
     },
@@ -382,7 +411,9 @@ int main4() {
 }
 
 int main5() {
+    // 启动一个协程任务
     CoroutineTask::doTask([](void*) {
+        // 异步io并行访问，等待访问结束时协程被唤醒
         int ret = co_async::parallel(
         {
             [](co_async::next_cb next) {

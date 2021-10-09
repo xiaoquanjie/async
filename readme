@@ -64,3 +64,51 @@ async_redis  async_mongo async_curl async_cpu async_mysql
 
 线程池是选用模块，建议使用，能使异步io运行速度变快。
 如果不使用，则由调用线程来驱动异步io的运行
+
+example:
+int main() {
+    // 定义一个线程池对象
+    ThreadPool tp;
+    // 设置mysql的异步驱动由线程池来执行
+    async::mysql::set_thread_func([&tp](std::function<void()> f) {
+            tp.enqueue(f);
+    });
+    sleep(2);
+    std::cout << "begin..." << std::endl;
+
+    int count = 0;
+    for (int i = 0; i < 100; ++i) {
+        // 启动一个协程任务
+        CoroutineTask::doTask([i, &count](void*) {
+            // 发起mysql访问，并挂起协程，mysql访问结束时，协程被唤醒
+            int ret = co_async::mysql::execute("192.168.0.81|3306|test|game|game", "select * from mytest", [i, &count](int err, void* row, int row_idx, int, int affected_row) {
+                // 操作结果
+                if (err != 0) {
+                    std::cout << "error:" << err << std::endl;
+                }
+                if (row_idx == 1) {
+                    std::cout << ".........." << i << "........." << std::endl;
+                }
+                if (row_idx != 0) {
+                    std::cout << ((char**)row)[0] << ", " << ((char**)row)[1] << std::endl;
+                }
+                if (row_idx == affected_row) {
+                    count++;
+                    if (count == 100) {
+                        std::cout << "finish" << std::endl;
+                    }
+                }
+            });
+            // 检查访问状态，成功还是失败或超时
+            if (ret != co_async::E_CO_RETURN_OK) {
+                std::cout << "failed to mysql::execute|" << ret << std::endl;
+            }
+        }, 0);
+    }
+    
+    while (true) {
+        co_async::loop();
+        usleep(10);
+    }
+    return 0;
+}

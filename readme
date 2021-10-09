@@ -42,4 +42,25 @@ common                  ----> 库目录
         redis           ----> 异步redis实现
 
     co_async            ----> 协程与异步io的结合
-        
+
+
+层次结构：co表示coroutine协程
+
+                     co_async
+            ________________________________
+            |      |        |        |     |
+        ____|      |        |        |     |___
+       |           |        |        |         |
+     co_redis   co_mongo   co_curl  co_cpu   co_mysql
+       |           |        |        |         |
+       |           |        |        |         |
+async_redis  async_mongo async_curl async_cpu async_mysql
+       |           |        |        |         |
+       |           |        |        |         |
+       -----------------------------------------
+                            |
+                            |
+                       thread_pool(*可选用)      
+
+线程池是选用模块，建议使用，能使异步io运行速度变快。
+如果不使用，则由调用线程来驱动异步io的运行

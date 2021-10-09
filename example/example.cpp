@@ -381,7 +381,7 @@ int main4() {
     return 0;
 }
 
-int main() {
+int main5() {
     CoroutineTask::doTask([](void*) {
         int ret = co_async::parallel(
         {
@@ -423,6 +423,49 @@ int main() {
     while (true) {
         co_async::loop();
         sleep(1);
+    }
+    return 0;
+}
+
+int main() {
+    async::mysql::execute("192.168.0.81|3306|test|game|game", "select * from mytest2", [](int err, void* row, int row_idx, int, int affected_row) {
+        if (err != 0) {
+            std::cout << "error:" << err << std::endl;
+            //return;
+        }
+        if (row_idx == 0) {
+            std::cout << "no row" << std::endl;
+            //return;
+        }
+        if (row_idx == affected_row) {
+            std::cout << "finish" << std::endl;
+            return;
+        }
+
+        std::cout << ((char**)row)[0] << ", " << ((char**)row)[1] << std::endl;
+    });
+
+    async::mysql::execute("192.168.0.81|3306|test|game|game", "select * from mytest", [](int err, void* row, int row_idx, int, int affected_row) {
+        if (err != 0) {
+            std::cout << "error:" << err << std::endl;
+            //return;
+        }
+        if (row_idx == 0) {
+            std::cout << "no row" << std::endl;
+            //return;
+        }
+        if (row_idx != 0) {
+            std::cout << ((char**)row)[0] << ", " << ((char**)row)[1] << std::endl;
+        }
+        if (row_idx == affected_row) {
+            std::cout << "finish" << std::endl;
+            return;
+        }
+    });
+
+    while (true) {
+        async::loop();
+        usleep(1);
     }
     return 0;
 }

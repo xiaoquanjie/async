@@ -68,6 +68,7 @@ enum {
     enum_storing_state,
     enum_stored_state,
     enum_error_state,
+    enum_disconnected_state,
 };
 
 // mysql连接核心
@@ -491,6 +492,10 @@ bool loop() {
             uri_data& uri_map = g_mysql_global_data.uri_map[item.data->addr.uri];
             
             int err = mysql_errno(&item.data->core->mysql);
+            if (err != 0) {
+                printf("failed to call mysql:%s|%s\n", mysql_error(&item.data->core->mysql), item.data->sql.c_str());
+            }
+
             int affected_rows = 0;
             int fields_cnt = 0;
 
@@ -524,9 +529,6 @@ bool loop() {
                 }
             }
 
-            if (err != 0) {
-                printf("failed to call mysql:%s|%s\n", mysql_error(&item.data->core->mysql), item.data->sql.c_str());
-            }
             // 归还连接
             if (err == CR_SERVER_GONE_ERROR 
                 || CR_SERVER_LOST == err 
@@ -536,6 +538,7 @@ bool loop() {
                 uri_map.conns--;
             }
             else {
+                item.data->core->state = enum_connected_state;
                 uri_map.core_list.push_back(item.data->core);
             }
 

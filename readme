@@ -77,6 +77,7 @@ int main() {
     std::cout << "begin..." << std::endl;
 
     int count = 0;
+    // 开启100个协程
     for (int i = 0; i < 100; ++i) {
         // 启动一个协程任务
         CoroutineTask::doTask([i, &count](void*) {

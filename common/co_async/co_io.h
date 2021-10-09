@@ -14,9 +14,9 @@ namespace co_async {
 
 // 协程io返回码
 enum Co_Wait_Return {
-    E_CO_RETURN_OK = 0,
-    E_CO_RETURN_TIMEOUT = 1,
-    E_CO_RETURN_ERROR = 2,
+    E_CO_RETURN_OK = 0,         // 访问成功
+    E_CO_RETURN_TIMEOUT = 1,    // 访问超时
+    E_CO_RETURN_ERROR = 2,      // 访问失败，几乎不存在这种错误，只有在非协程状态下调用协程接口才会导致该错误
 };
 
 // 等待时间

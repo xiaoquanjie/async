@@ -505,7 +505,9 @@ int main6() {
 }
 
 int main() {
+    // 定义一个线程池对象
     ThreadPool tp;
+    // 设置mysql的异步驱动由线程池来执行
     async::mysql::set_thread_func([&tp](std::function<void()> f) {
             tp.enqueue(f);
     });
@@ -514,8 +516,11 @@ int main() {
 
     int count = 0;
     for (int i = 0; i < 100; ++i) {
+        // 启动一个协程任务
         CoroutineTask::doTask([i, &count](void*) {
+            // 发起mysql访问，并挂起协程，mysql访问结束时，协程被唤醒
             int ret = co_async::mysql::execute("192.168.0.81|3306|test|game|game", "select * from mytest", [i, &count](int err, void* row, int row_idx, int, int affected_row) {
+                // 操作结果
                 if (err != 0) {
                     std::cout << "error:" << err << std::endl;
                 }
@@ -532,6 +537,7 @@ int main() {
                     }
                 }
             });
+            // 检查访问状态，成功还是失败或超时
             if (ret != co_async::E_CO_RETURN_OK) {
                 std::cout << "failed to mysql::execute|" << ret << std::endl;
             }

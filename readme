@@ -20,3 +20,26 @@ c++异步io库
 
 依赖库安装：
     如果库安装路径、链接版本、头文件等出现报错，可以根据编译环境调整 common/CMakeLists.txt文件
+
+目录结构：
+example
+    example.cpp         ----> 测试用例
+    CMakeLists.txt      ----> 编译文件
+
+common                  ----> 库目录
+    threads             ----> 线程池目录
+        thread_pool.h   ----> 线程池类
+    
+    coroutine           ----> 协程目录
+        coroutine_task.h/cpp ----> 协程池类文件
+        coroutine.h/cpp ----> 协程
+    
+    async               ----> 异步库目录
+        cpu             ----> 异步cpu运算实现
+        curl            ----> 异步http实现
+        mongo           ----> 异步mongo实现
+        mysql           ----> 异步mysql实现
+        redis           ----> 异步redis实现
+
+    co_async            ----> 协程与异步io的结合
+        

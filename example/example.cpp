@@ -427,7 +427,10 @@ int main5() {
     return 0;
 }
 
-int main() {
+int main6() {
+    async::mysql::set_keep_connection(1);
+    async::mysql::set_max_connection(1);
+
     async::mysql::execute("192.168.0.81|3306|test|game|game", "select * from mytest2", [](int err, void* row, int row_idx, int, int affected_row) {
         if (err != 0) {
             std::cout << "error:" << err << std::endl;
@@ -466,6 +469,47 @@ int main() {
     while (true) {
         async::loop();
         usleep(1);
+    }
+    return 0;
+}
+
+int main() {
+    ThreadPool tp;
+    async::mysql::set_thread_func([&tp](std::function<void()> f) {
+            tp.enqueue(f);
+    });
+    sleep(2);
+    std::cout << "begin..." << std::endl;
+
+    int count = 0;
+    for (int i = 0; i < 100; ++i) {
+        CoroutineTask::doTask([i, &count](void*) {
+            int ret = co_async::mysql::execute("192.168.0.81|3306|test|game|game", "select * from mytest", [i, &count](int err, void* row, int row_idx, int, int affected_row) {
+                if (err != 0) {
+                    std::cout << "error:" << err << std::endl;
+                }
+                if (row_idx == 1) {
+                    std::cout << ".........." << i << "........." << std::endl;
+                }
+                if (row_idx != 0) {
+                    std::cout << ((char**)row)[0] << ", " << ((char**)row)[1] << std::endl;
+                }
+                if (row_idx == affected_row) {
+                    count++;
+                    if (count == 100) {
+                        std::cout << "finish" << std::endl;
+                    }
+                }
+            });
+            if (ret != co_async::E_CO_RETURN_OK) {
+                std::cout << "failed to mysql::execute|" << ret << std::endl;
+            }
+        }, 0);
+    }
+    
+    while (true) {
+        co_async::loop();
+        usleep(10);
     }
     return 0;
 }

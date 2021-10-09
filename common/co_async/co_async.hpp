@@ -11,3 +11,4 @@
 #include "common/co_async/co_curl.h"
 #include "common/co_async/co_mongo.h"
 #include "common/co_async/co_redis.h"
+#include "common/co_async/co_mysql.h"

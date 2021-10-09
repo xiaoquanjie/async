@@ -100,6 +100,7 @@ typedef std::shared_ptr<mysql_core> mysql_core_ptr;
 struct mysql_custom_data {
     mysql_core_ptr core;
     async_mysql_query_cb q_cb;
+    async_mysql_query_cb2 q_cb2;
     async_mysql_exec_cb e_cb;
     mysql_addr addr;
     std::string sql;
@@ -167,12 +168,14 @@ mysql_core_ptr local_create_core(const mysql_addr& addr, uri_data& uri_map) {
 mysql_custom_data *local_create_mysql_custom_data(const std::string &uri,
                                                   const std::string &sql,
                                                   async_mysql_query_cb q_cb,
+                                                  async_mysql_query_cb2 q_cb2,
                                                   async_mysql_exec_cb e_cb)
 {
     mysql_custom_data* data = new mysql_custom_data;
     data->addr.Parse(uri);
     data->sql = sql;
     data->q_cb = q_cb;
+    data->q_cb2 = q_cb2;
     data->e_cb = e_cb;
     
     g_mysql_global_data.prepare_queue.push_back(data);
@@ -440,11 +443,15 @@ void local_tick_check(time_t now) {
 ///////////////////////////////////////////////////////////////////////////////
 
 void execute(const std::string& uri, const std::string& sql, async_mysql_query_cb cb) {
-    local_create_mysql_custom_data(uri, sql, cb, nullptr);
+    local_create_mysql_custom_data(uri, sql, cb, nullptr, nullptr);
+}
+
+void execute(const std::string& uri, const std::string& sql, async_mysql_query_cb2 cb) {
+    local_create_mysql_custom_data(uri, sql, nullptr, cb, nullptr);
 }
 
 void execute(const std::string& uri, const std::string& sql, async_mysql_exec_cb cb) {
-    local_create_mysql_custom_data(uri, sql, nullptr, cb);
+    local_create_mysql_custom_data(uri, sql, nullptr, nullptr, cb);
 }
 
 void set_max_connection(unsigned int cnt) {
@@ -552,6 +559,9 @@ bool loop() {
                     }
                 }
             }
+            if (item.data->q_cb2) {
+                item.data->q_cb2(err, item.res);
+            }
 
             // 归还连接
             if (err == CR_SERVER_GONE_ERROR 
@@ -566,7 +576,7 @@ bool loop() {
                 uri_map.core_list.push_back(item.data->core);
             }
 
-            if (item.res) {
+            if (item.res && item.data->q_cb) {
                 // 释放资源
                 mysql_free_result(item.res);
             }
@@ -577,6 +587,9 @@ bool loop() {
     return has_task;
 }
 
+void set_thread_func(std::function<void(std::function<void()>)> f) {
+    g_mysql_global_data.thr_func = f;
+}
 
 }    
 }

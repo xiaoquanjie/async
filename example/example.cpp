@@ -285,12 +285,12 @@ int main3() {
     std::cout << "use right uri:" << std::endl;
     std::cin >> use;
     if (use) {
-        url = "192.168.0.88:6379::0:0";
+        url = "192.168.0.88|6379||0|0";
         mongo_url = "mongodb://192.168.0.31:27017|test|cash_coupon_whitelist||";
         http_url = "http://www.baidu.com";
     }
     else {
-        url = "192.168.0.88:6389::0:0";
+        url = "192.168.0.88|6389||0|0";
         mongo_url = "mongodb://192.168.0.30:27018|test|cash_coupon_whitelist||";
         http_url = "http://www.baidu.com2";
     }

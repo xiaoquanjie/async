@@ -60,7 +60,7 @@ struct redis_addr
         // 解析uri
         this->uri = uri;
         std::vector<std::string> values;
-        async::split(uri, ":", values);
+        async::split(uri, "|", values);
         if (values.size() >= 5) {
             this->host = values[0];
             this->port = atoi(values[1].c_str());

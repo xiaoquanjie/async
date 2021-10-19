@@ -44,8 +44,8 @@ if(USE_ASYNC_MONGO)
 endif(USE_ASYNC_MONGO)
 
 if(USE_ASYNC_MYSQL)
-    add_definitions(-USE_ASYNC_MYSQL)
+    add_definitions(-DUSE_ASYNC_MYSQL)
     set(LINK_LIBRARYS ${LINK_LIBRARYS} mariadb)
 endif(USE_ASYNC_MYSQL)
 
-target_link_libraries(${TARGET_NAME} ${LINK_LIBRARYS})
+target_link_libraries(${TARGET_NAME} PRIVATE ${LINK_LIBRARYS})

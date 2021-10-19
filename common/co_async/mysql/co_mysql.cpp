@@ -8,7 +8,7 @@
 //#define USE_ASYNC_MYSQL
 #ifdef USE_ASYNC_MYSQL
 
-#include "common/co_async/co_mysql.h"
+#include "common/co_async/mysql/co_mysql.h"
 #include "common/coroutine/coroutine.hpp"
 #include <mariadb/mysql.h>
 

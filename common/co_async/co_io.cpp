@@ -10,11 +10,7 @@
 #include <assert.h>
 #include "common/co_async/time_pool.h"
 #include "common/coroutine/coroutine.hpp"
-#include "common/async/redis/async_redis.h"
-#include "common/async/mongo/async_mongo.h"
-#include "common/async/curl/async_curl.h"
-#include "common/async/cpu/async_cpu.h"
-#include "common/async/mysql/async_mysql.h"
+#include "common/async/async.h"
 
 namespace co_async { 
 
@@ -50,37 +46,7 @@ void rm_timer(int64_t timer_id) {
 
 bool loop() {
     time_pool.Update();
-    bool is_busy = false;
-
-#ifdef USE_ASYNC_REDIS
-    if (async::redis::loop()) {
-        is_busy = true;
-    }
-#endif
-
-#ifdef USE_ASYNC_MONGO
-    if (async::mongo::loop()) {
-        is_busy = true;
-    }
-#endif
-
-#ifdef USE_ASYNC_CURL
-    if (async::curl::loop()) {
-        is_busy = true;
-    }
-#endif
-
-#ifdef USE_ASYNC_MYSQL
-    if (async::mysql::loop()) {
-        is_busy = true;
-    }
-#endif
-
-    if (async::cpu::loop()) {
-        is_busy = true;
-    }
-
-    return is_busy;
+    return async::loop();
 }
 
 //////////////////////////////////////////////////////////////////////////

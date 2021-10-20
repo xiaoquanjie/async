@@ -269,6 +269,7 @@ void RedisReplyParser::GetArray(T &values) {
 		for (size_t idx = 0; idx < ((redisReply*)_reply)->elements; ++idx) {
 			redisReply *ele = ((redisReply*)_reply)->element[idx];
 			typename T::value_type v;
+			DataConstruct(v);
 			if (ele->type == REDIS_REPLY_STRING) {
 				GetValue(ele, v);
 			}
@@ -308,6 +309,7 @@ void RedisReplyParser::GetArray(std::set<T>& values) {
 		for (size_t idx = 0; idx < ((redisReply*)_reply)->elements; ++idx) {
 			redisReply *ele = ((redisReply*)_reply)->element[idx];
 			T v;
+			DataConstruct(v);
 			if (ele->type == REDIS_REPLY_STRING) {
 				GetValue(ele, v);
 			}
@@ -400,6 +402,7 @@ void RedisReplyParser::GetScan(long long& cursor, T& values) {
         for (size_t idx = 0; idx < sub_reply->elements; ++idx) {
             redisReply *ele = sub_reply->element[idx];
 			typename T::value_type v;
+			DataConstruct(v);
 			if (ele->type == REDIS_REPLY_STRING) {
 				GetValue(ele, v);
 			}

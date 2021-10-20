@@ -14,8 +14,14 @@
 #include "common/async/redis/redis_exception.h"
 
 namespace async {
-
 namespace redis {
+
+template<typename T>
+void DataConstruct(T& v) {
+	if (typeid(v) != typeid(std::string)) {
+		memset(&v, 0, sizeof(0));
+	}
+}
 
 // redis½á¹û½âÎö¸¨Öú
 struct RedisReplyParser {

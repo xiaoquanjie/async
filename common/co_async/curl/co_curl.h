@@ -13,9 +13,9 @@
 namespace co_async {
 namespace curl {
 
-int get_wait_time();
+int getWaitTime();
 
-void set_wait_time(int wait_time);
+void setWaitTime(int wait_time);
 
 int get(const std::string& url, async::curl::async_curl_cb cb);
 

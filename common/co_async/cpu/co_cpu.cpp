@@ -13,11 +13,11 @@ namespace cpu {
 
 int g_wait_time = E_WAIT_TWO_MINUTE;
 
-int get_wait_time() {
+int getWaitTime() {
     return g_wait_time;
 }
 
-void set_wait_time(int wait_time) {
+void setWaitTime(int wait_time) {
     g_wait_time = wait_time;
 }
 

@@ -13,9 +13,9 @@
 namespace co_async {
 namespace mysql {
 
-int get_wait_time();
+int getWaitTime();
 
-void set_wait_time(int wait_time);
+void setWaitTime(int wait_time);
 
 // 不支持查询多结果集，如果执行了返回多结果集的sql语句，行为是未可知的
 int execute(const std::string& uri, const std::string& sql, async::mysql::async_mysql_query_cb cb);

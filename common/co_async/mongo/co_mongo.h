@@ -13,9 +13,9 @@
 namespace co_async {
 namespace mongo {
 
-int get_wait_time();
+int getWaitTime();
 
-void set_wait_time(int wait_time);
+void setWaitTime(int wait_time);
 
 int execute(const std::string& uri, const async::mongo::BaseMongoCmd& cmd, async::mongo::async_mongo_cb cb);
 

@@ -69,7 +69,7 @@ void execute(async_cpu_op op, void* user_data, async_cpu_cb cb) {
     g_cpu_global_data.req_task_cnt++;
 }
 
-void set_thread_func(std::function<void(std::function<void()>)> f) {
+void setThreadFunc(std::function<void(std::function<void()>)> f) {
     g_cpu_global_data.thr_func = f;
 }
 

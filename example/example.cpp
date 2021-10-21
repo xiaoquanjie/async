@@ -262,22 +262,22 @@ int main3() {
     // 使用线程池
     if (use)
     {
-        async::curl::set_thread_func([&tp](std::function<void()> f) { 
+        async::curl::setThreadFunc([&tp](std::function<void()> f) { 
             tp.enqueue(f); 
         });
-        async::redis::set_thread_func([&tp](std::function<void()> f) { 
+        async::redis::setThreadFunc([&tp](std::function<void()> f) { 
             tp.enqueue(f); 
         });
-        async::mongo::set_thread_func([&tp](std::function<void()> f) {
+        async::mongo::setThreadFunc([&tp](std::function<void()> f) {
             tp.enqueue(f); 
         });
-        async::cpu::set_thread_func([&tp](std::function<void()> f) {
+        async::cpu::setThreadFunc([&tp](std::function<void()> f) {
             tp.enqueue(f);
         });
         sleep(2);
     }
 
-    co_async::redis::set_wait_time(20 * 1000);
+    co_async::redis::setWaitTime(20 * 1000);
 
     const char* url = 0;
     const char* mongo_url = 0;
@@ -459,8 +459,8 @@ int main5() {
 }
 
 int main6() {
-    async::mysql::set_keep_connection(1);
-    async::mysql::set_max_connection(1);
+    async::mysql::setKeepConnection(1);
+    async::mysql::setMaxConnection(1);
 
     async::mysql::execute("192.168.0.81|3306|test|game|game", "select * from mytest2", [](int err, void* row, int row_idx, int, int affected_row) {
         if (err != 0) {
@@ -508,7 +508,7 @@ int main() {
     // 定义一个线程池对象
     ThreadPool tp;
     // 设置mysql的异步驱动由线程池来执行
-    async::mysql::set_thread_func([&tp](std::function<void()> f) {
+    async::mysql::setThreadFunc([&tp](std::function<void()> f) {
             tp.enqueue(f);
     });
     sleep(2);

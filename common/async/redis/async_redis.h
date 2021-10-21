@@ -27,7 +27,7 @@ bool sync_execute(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb
 
 bool loop();
 
-void set_thread_func(std::function<void(std::function<void()>)>);
+void setThreadFunc(std::function<void(std::function<void()>)>);
 
 } // redis
 } // async

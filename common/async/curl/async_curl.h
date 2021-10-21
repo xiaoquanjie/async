@@ -27,7 +27,7 @@ void post(const std::string& url, const std::string& content, const std::map<std
 
 bool loop();
 
-void set_thread_func(std::function<void(std::function<void()>)>);
+void setThreadFunc(std::function<void(std::function<void()>)>);
 
 }// curl
 }// async

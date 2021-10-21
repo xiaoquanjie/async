@@ -28,13 +28,13 @@ void execute(const std::string& uri, const std::string& sql, async_mysql_query_c
 
 void execute(const std::string& uri, const std::string& sql, async_mysql_exec_cb cb);
 
-void set_max_connection(unsigned int cnt);
+void setMaxConnection(unsigned int cnt);
 
-void set_keep_connection(unsigned int cnt);
+void setKeepConnection(unsigned int cnt);
 
 bool loop();
 
-void set_thread_func(std::function<void(std::function<void()>)>);
+void setThreadFunc(std::function<void(std::function<void()>)>);
 
 }    
 }

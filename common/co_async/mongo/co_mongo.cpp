@@ -15,11 +15,11 @@ namespace mongo {
 
 int g_wait_time = 5 * 1000;
 
-int get_wait_time() {
+int getWaitTime() {
     return g_wait_time;
 }
 
-void set_wait_time(int wait_time) {
+void setWaitTime(int wait_time) {
     g_wait_time = wait_time;
 }
 

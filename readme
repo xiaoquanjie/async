@@ -70,7 +70,7 @@ int main() {
     // 定义一个线程池对象
     ThreadPool tp;
     // 设置mysql的异步驱动由线程池来执行
-    async::mysql::set_thread_func([&tp](std::function<void()> f) {
+    async::mysql::setThreadFunc([&tp](std::function<void()> f) {
             tp.enqueue(f);
     });
     sleep(2);

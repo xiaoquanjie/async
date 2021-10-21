@@ -14,9 +14,9 @@
 namespace co_async {
 namespace redis {
 
-int get_wait_time();
+int getWaitTime();
 
-void set_wait_time(int wait_time);
+void setWaitTime(int wait_time);
 
 int execute(const std::string& uri, 
     const async::redis::BaseRedisCmd& cmd, 

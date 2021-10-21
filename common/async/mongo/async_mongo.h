@@ -21,7 +21,7 @@ void execute(std::string uri, const BaseMongoCmd& cmd, async_mongo_cb cb);
 
 bool loop();
 
-void set_thread_func(std::function<void(std::function<void()>)>);
+void setThreadFunc(std::function<void(std::function<void()>)>);
 
 }
 }

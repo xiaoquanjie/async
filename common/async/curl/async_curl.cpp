@@ -247,7 +247,7 @@ void thread_curl_process_cb(void* c, void* q, bool* flag) {
     thread_curl_process(curlm, *queue, flag);
 }
 
-void set_thread_func(std::function<void(std::function<void()>)> f) {
+void setThreadFunc(std::function<void(std::function<void()>)> f) {
     g_curl_global_data.thr_func = f;
 }
 

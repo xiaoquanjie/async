@@ -454,13 +454,13 @@ void execute(const std::string& uri, const std::string& sql, async_mysql_exec_cb
     local_create_mysql_custom_data(uri, sql, nullptr, nullptr, cb);
 }
 
-void set_max_connection(unsigned int cnt) {
+void setMaxConnection(unsigned int cnt) {
     if (cnt != 0) {
         g_mysql_global_data.max_connections = cnt;
     }
 }
 
-void set_keep_connection(unsigned int cnt) {
+void setKeepConnection(unsigned int cnt) {
     if (cnt != 0) { 
         g_mysql_global_data.keep_connections = cnt;
     }
@@ -587,7 +587,7 @@ bool loop() {
     return has_task;
 }
 
-void set_thread_func(std::function<void(std::function<void()>)> f) {
+void setThreadFunc(std::function<void(std::function<void()>)> f) {
     g_mysql_global_data.thr_func = f;
 }
 

@@ -478,7 +478,7 @@ bool loop() {
     return has_task;
 }
 
-void set_thread_func(std::function<void(std::function<void()>)> f) {
+void setThreadFunc(std::function<void(std::function<void()>)> f) {
     g_mongo_global_data.thr_func = f;
 }
 

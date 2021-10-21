@@ -19,7 +19,7 @@ void execute(async_cpu_op op, void* user_data, async_cpu_cb cb);
 
 bool loop();
 
-void set_thread_func(std::function<void(std::function<void()>)>);
+void setThreadFunc(std::function<void(std::function<void()>)>);
 
 }
 }

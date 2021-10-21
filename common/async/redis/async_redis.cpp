@@ -418,7 +418,7 @@ void thread_redis_process() {
     g_redis_global_data.flag = false;
 }
 
-void set_thread_func(std::function<void(std::function<void()>)> f) {
+void setThreadFunc(std::function<void(std::function<void()>)> f) {
     g_redis_global_data.thr_func = f;
 }
 

@@ -13,9 +13,9 @@
 namespace co_async {
 namespace cpu {
 
-int get_wait_time();
+int getWaitTime();
 
-void set_wait_time(int wait_time);
+void setWaitTime(int wait_time);
 
 int execute(async::cpu::async_cpu_op op, void* user_data, async::cpu::async_cpu_cb cb);
 

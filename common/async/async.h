@@ -19,6 +19,9 @@ namespace async {
 
 bool loop();
 
+// 添加入主循环中
+void addToLoop(std::function<bool()> f);
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 typedef std::function<void(int err)> done_cb;

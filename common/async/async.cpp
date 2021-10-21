@@ -10,37 +10,40 @@
 
 namespace async {
 
-bool loop() {
-    bool is_busy = false;
-
+// 内置的循环
+std::vector<std::function<bool()>> g_loop_array = {
 #ifdef USE_ASYNC_REDIS
-    if (async::redis::loop()) {
-        is_busy = true;
-    }
+    std::bind(async::redis::loop),
 #endif
-    
+
 #ifdef USE_ASYNC_MONGO
-    if (async::mongo::loop()) {
-        is_busy = true;
-    }
+    std::bind(async::mongo::loop),
 #endif
 
 #ifdef USE_ASYNC_CURL
-    if (async::curl::loop()) {
-        is_busy = true;
-    }
+    std::bind(async::curl::loop),
 #endif
 
 #ifdef USE_ASYNC_MYSQL
-    if (async::mysql::loop()) {
-        is_busy = true;
-    }
+    std::bind(async::mysql::loop),
 #endif
 
-    if (async::cpu::loop()) {
-        is_busy = true;
+    std::bind(async::cpu::loop)
+};
+
+bool loop() {
+    bool is_busy = false;
+    for (auto& f : g_loop_array) {
+        if (f()) {
+            is_busy = true;
+        }
     }
+
     return is_busy;
+}
+
+void addToLoop(std::function<bool()> f) {
+    g_loop_array.push_back(f);
 }
 
 /////////////////////////////////////////////////

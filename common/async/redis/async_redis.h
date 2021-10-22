@@ -23,7 +23,7 @@ typedef std::function<void(RedisReplyParserPtr)> async_redis_cb;
 void execute(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb cb);
 
 // 同步redis接口, 无连接池
-bool sync_execute(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb cb);
+bool executeSync(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb cb);
 
 bool loop();
 

@@ -7,11 +7,12 @@
 
 #include "common/co_async/cpu/co_cpu.h"
 #include "common/coroutine/coroutine.hpp"
+#include "common/co_bridge/co_bridge.h"
 
 namespace co_async {
 namespace cpu {
 
-int g_wait_time = E_WAIT_TWO_MINUTE;
+int g_wait_time = co_bridge::E_WAIT_TWO_MINUTE;
 
 int getWaitTime() {
     return g_wait_time;
@@ -32,33 +33,33 @@ int execute(async::cpu::async_cpu_op op, void* user_data, async::cpu::async_cpu_
     unsigned int co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
         assert(false);
-        return E_CO_RETURN_ERROR;
+        return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    int64_t unique_id = co_async::gen_unique_id();
+    int64_t unique_id = co_bridge::gen_unique_id();
     co_cpu_result* result = new co_cpu_result;
 
-    int64_t timer_id = co_async::add_timer(g_wait_time, [result, co_id, unique_id]() {
+    int64_t timer_id = co_bridge::add_timer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
-        co_async::rm_unique_id(unique_id);
+        co_bridge::rm_unique_id(unique_id);
         Coroutine::resume(co_id);
     });
 
     async::cpu::execute(op, user_data, [result, co_id, timer_id, unique_id](int64_t res, void*) {
-        if (!co_async::rm_unique_id(unique_id)) {
+        if (!co_bridge::rm_unique_id(unique_id)) {
             return;
         }
-        co_async::rm_timer(timer_id);
+        co_bridge::rm_timer(timer_id);
         result->result = res;
         Coroutine::resume(co_id);
     });
 
-    co_async::add_unique_id(unique_id);
+    co_bridge::add_unique_id(unique_id);
     Coroutine::yield();
 
-    int ret = E_CO_RETURN_OK;
+    int ret = co_bridge::E_CO_RETURN_OK;
     if (result->timeout_flag) {
-        ret = E_CO_RETURN_TIMEOUT;
+        ret = co_bridge::E_CO_RETURN_TIMEOUT;
     }
     else {
         cb(result->result, user_data);

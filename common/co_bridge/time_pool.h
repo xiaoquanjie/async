@@ -10,7 +10,7 @@
 #include <time.h>
 #include <functional>
 
-namespace co_async {
+namespace co_bridge {
 
 class TimerPool {
 public:

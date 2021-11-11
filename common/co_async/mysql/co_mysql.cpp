@@ -11,11 +11,12 @@
 #include "common/co_async/mysql/co_mysql.h"
 #include "common/coroutine/coroutine.hpp"
 #include <mariadb/mysql.h>
+#include "common/co_bridge/co_bridge.h"
 
 namespace co_async {
 namespace mysql {
 
-int g_wait_time = 5 * 1000;
+int g_wait_time = co_bridge::E_WAIT_FIVE_SECOND;;
 
 int getWaitTime() {
     return g_wait_time;
@@ -36,35 +37,35 @@ int execute(const std::string& uri, const std::string& sql, async::mysql::async_
     unsigned int co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
         assert(false);
-        return E_CO_RETURN_ERROR;
+        return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    int64_t unique_id = co_async::gen_unique_id();
+    int64_t unique_id = co_bridge::gen_unique_id();
     co_mysql_result* result = new co_mysql_result;
 
-    int64_t timer_id = co_async::add_timer(g_wait_time, [result, co_id, unique_id]() {
+    int64_t timer_id = co_bridge::add_timer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
-        co_async::rm_unique_id(unique_id);
+        co_bridge::rm_unique_id(unique_id);
         Coroutine::resume(co_id);
     });
 
     async::mysql::execute(uri, sql, [result, timer_id, co_id, unique_id](int err, void* res) {
-        if (!co_async::rm_unique_id(unique_id)) {
+        if (!co_bridge::rm_unique_id(unique_id)) {
             mysql_free_result((MYSQL_RES*)res);
             return;
         }
-        co_async::rm_timer(timer_id);
+        co_bridge::rm_timer(timer_id);
         result->res = (MYSQL_RES*)res;
         result->err = err;
         Coroutine::resume(co_id);
     });
 
-    co_async::add_unique_id(unique_id);
+    co_bridge::add_unique_id(unique_id);
     Coroutine::yield();
 
-    int ret = E_CO_RETURN_OK;
+    int ret = co_bridge::E_CO_RETURN_OK;
     if (result->timeout_flag) {
-        ret = E_CO_RETURN_TIMEOUT;
+        ret = co_bridge::E_CO_RETURN_TIMEOUT;
     }
     else {
         int affected_rows = 0;
@@ -98,34 +99,34 @@ int execute(const std::string& uri, const std::string& sql, async::mysql::async_
     unsigned int co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
         assert(false);
-        return E_CO_RETURN_ERROR;
+        return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    int64_t unique_id = co_async::gen_unique_id();
+    int64_t unique_id = co_bridge::gen_unique_id();
     co_mysql_result* result = new co_mysql_result;
 
-    int64_t timer_id = co_async::add_timer(g_wait_time, [result, co_id, unique_id]() {
+    int64_t timer_id = co_bridge::add_timer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
-        co_async::rm_unique_id(unique_id);
+        co_bridge::rm_unique_id(unique_id);
         Coroutine::resume(co_id);
     });
 
     async::mysql::execute(uri, sql, [result, timer_id, co_id, unique_id](int err, int affected_row) {
-        if (!co_async::rm_unique_id(unique_id)) {
+        if (!co_bridge::rm_unique_id(unique_id)) {
             return;
         }
-        co_async::rm_timer(timer_id);
+        co_bridge::rm_timer(timer_id);
         result->affected_row = affected_row;
         result->err = err;
         Coroutine::resume(co_id);
     });
 
-    co_async::add_unique_id(unique_id);
+    co_bridge::add_unique_id(unique_id);
     Coroutine::yield();
 
-    int ret = E_CO_RETURN_OK;
+    int ret = co_bridge::E_CO_RETURN_OK;
     if (result->timeout_flag) {
-        ret = E_CO_RETURN_TIMEOUT;
+        ret = co_bridge::E_CO_RETURN_TIMEOUT;
     }
     else {
         cb(result->err, result->affected_row);

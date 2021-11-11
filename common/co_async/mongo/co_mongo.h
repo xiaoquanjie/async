@@ -8,7 +8,6 @@
 #pragma once
 
 #include "common/async/mongo/async_mongo.h"
-#include "common/co_async/co_io.h"
 
 namespace co_async {
 namespace mongo {

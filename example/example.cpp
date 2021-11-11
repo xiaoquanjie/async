@@ -1,5 +1,5 @@
 #include "common/async/async.h"
-#include "common/co_async/co_async.hpp"
+#include "common/co_bridge/co_bridge.h"
 #include "common/coroutine/coroutine.hpp"
 #include "common/threads/thread_pool.h"
 #include <sys/time.h>
@@ -37,13 +37,13 @@ void redis_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
             // 执行redis访问并等待协程返回
             std::string value;
             int ret = co_async::redis::execute(url, async::redis::GetRedisCmd("mytest"), value);
-            if (ret == co_async::E_CO_RETURN_TIMEOUT) {
+            if (ret == co_bridge::E_CO_RETURN_TIMEOUT) {
                 timeout_count++;
             }
-            else if (ret == co_async::E_CO_RETURN_ERROR) {
+            else if (ret == co_bridge::E_CO_RETURN_ERROR) {
                 fail_count++;
             }
-            else if (ret == co_async::E_CO_RETURN_OK) {
+            else if (ret == co_bridge::E_CO_RETURN_OK) {
                 success_count++;
                 if (print_log) {
                     std::cout << "redis value:" << value << std::endl;
@@ -90,13 +90,13 @@ void mongo_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
             // 执行mongo访问并等待协程返回
             std::string value;
             int ret = co_async::mongo::execute(url, async::mongo::FindMongoCmd({}), value);
-            if (ret == co_async::E_CO_RETURN_TIMEOUT) {
+            if (ret == co_bridge::E_CO_RETURN_TIMEOUT) {
                 timeout_count++;
             }
-            else if (ret == co_async::E_CO_RETURN_ERROR) {
+            else if (ret == co_bridge::E_CO_RETURN_ERROR) {
                 fail_count++;
             }
-            else if (ret == co_async::E_CO_RETURN_OK) {
+            else if (ret == co_bridge::E_CO_RETURN_OK) {
                 success_count++;
                 if (print_log) {
                     std::cout << "mongo value:" << value << std::endl;
@@ -149,13 +149,13 @@ void curl_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
             int ret = co_async::curl::get(url, [&count, &te, &body](int, int, std::string& b) {
                 body.swap(b);
             });
-            if (ret == co_async::E_CO_RETURN_TIMEOUT) {
+            if (ret == co_bridge::E_CO_RETURN_TIMEOUT) {
                 timeout_count++;
             }
-            else if (ret == co_async::E_CO_RETURN_ERROR) {
+            else if (ret == co_bridge::E_CO_RETURN_ERROR) {
                 fail_count++;
             }
-            else if (ret == co_async::E_CO_RETURN_OK) {
+            else if (ret == co_bridge::E_CO_RETURN_OK) {
                 success_count++;
                 if (print_log) {
                     std::cout << "curl body.len: " << body.length() << std::endl;
@@ -212,13 +212,13 @@ void cpu_test(bool use_co, int& count, TimeElapsed& te) {
                 result += res;
             });
 
-            if (ret == co_async::E_CO_RETURN_TIMEOUT) {
+            if (ret == co_bridge::E_CO_RETURN_TIMEOUT) {
                 timeout_count++;
             }
-            else if (ret == co_async::E_CO_RETURN_ERROR) {
+            else if (ret == co_bridge::E_CO_RETURN_ERROR) {
                 fail_count++;
             }
-            else if (ret == co_async::E_CO_RETURN_OK) {
+            else if (ret == co_bridge::E_CO_RETURN_OK) {
                 success_count++;
             }
                 
@@ -338,7 +338,7 @@ int main3() {
         }
 
         if (use_co) {
-            if (co_async::loop()) {
+            if (co_bridge::loop()) {
                 idle_cnt = 0;
             }
             else {
@@ -452,7 +452,7 @@ int main5() {
     }, 0);
 
     while (true) {
-        co_async::loop();
+        co_bridge::loop();
         sleep(1);
     }
     return 0;
@@ -538,14 +538,14 @@ int main() {
                 }
             });
             // 检查访问状态，成功还是失败或超时
-            if (ret != co_async::E_CO_RETURN_OK) {
+            if (ret != co_bridge::E_CO_RETURN_OK) {
                 std::cout << "failed to mysql::execute|" << ret << std::endl;
             }
         }, 0);
     }
     
     while (true) {
-        co_async::loop();
+        co_bridge::loop();
         usleep(10);
     }
     return 0;

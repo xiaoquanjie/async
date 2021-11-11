@@ -8,7 +8,6 @@
 #pragma once
 
 #include "common/async/cpu/async_cpu.h"
-#include "common/co_async/co_io.h"
 
 namespace co_async {
 namespace cpu {

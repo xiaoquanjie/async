@@ -6,48 +6,12 @@
 //----------------------------------------------------------------*/
 
 #include "common/co_async/co_io.h"
-#include <unordered_set>
-#include <assert.h>
-#include "common/co_async/time_pool.h"
 #include "common/coroutine/coroutine.hpp"
-#include "common/async/async.h"
+#include "common/co_bridge/co_bridge.h"
+#include <vector>
+#include <assert.h>
 
 namespace co_async { 
-
-int64_t g_unique_id = 1;
-std::unordered_set<int64_t> g_unique_id_set;
-TimerPool time_pool;
-
-int64_t gen_unique_id() {
-    return g_unique_id++;
-}
-
-void add_unique_id(int64_t id) {
-    assert(g_unique_id_set.find(id) == g_unique_id_set.end());
-    g_unique_id_set.insert(id);
-}
-
-bool rm_unique_id(int64_t id) {
-    auto iter = g_unique_id_set.find(id);
-    if (iter != g_unique_id_set.end()) {
-        g_unique_id_set.erase(iter);
-        return true;
-    }
-    return false;
-}
-
-int64_t add_timer(int interval, std::function<void()> func) {
-    return time_pool.AddTimer(interval, func);
-}
-
-void rm_timer(int64_t timer_id) {
-    time_pool.CancelTimer(timer_id);
-}
-
-bool loop() {
-    time_pool.Update();
-    return async::loop();
-}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -58,30 +22,30 @@ struct co_parallel_result {
 
 int parallel(const std::initializer_list<fn_cb>& fns) {
     if (fns.size() == 0) {
-        return E_CO_RETURN_ERROR;
+        return co_bridge::E_CO_RETURN_ERROR;
     }
 
     unsigned int co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
         assert(false);
-        return E_CO_RETURN_ERROR;
+        return co_bridge::E_CO_RETURN_ERROR;
     }
 
     co_parallel_result* result = new co_parallel_result;
     result->fns = fns.size();
 
-    int64_t unique_id = co_async::gen_unique_id();
-    int64_t timer_id = co_async::add_timer(10 * 1000, [result, co_id, unique_id]() {
+    int64_t unique_id = co_bridge::gen_unique_id();
+    int64_t timer_id = co_bridge::add_timer(10 * 1000, [result, co_id, unique_id]() {
         result->timeout_flag = true;
-        co_async::rm_unique_id(unique_id);
+        co_bridge::rm_unique_id(unique_id);
         Coroutine::resume(co_id);
     });
 
     auto done = [unique_id, timer_id, co_id] () {
-        if (!co_async::rm_unique_id(unique_id)) {
+        if (!co_bridge::rm_unique_id(unique_id)) {
             return;
         }
-        co_async::rm_timer(timer_id);
+        co_bridge::rm_timer(timer_id);
         Coroutine::resume(co_id);
     };
 
@@ -96,12 +60,12 @@ int parallel(const std::initializer_list<fn_cb>& fns) {
         f(next);
     }
 
-    co_async::add_unique_id(unique_id);
+    co_bridge::add_unique_id(unique_id);
     Coroutine::yield();
 
-    int ret = E_CO_RETURN_OK;
+    int ret = co_bridge::E_CO_RETURN_OK;
     if (result->timeout_flag) {
-        ret = E_CO_RETURN_TIMEOUT;
+        ret = co_bridge::E_CO_RETURN_TIMEOUT;
     }
     
     delete result;
@@ -119,13 +83,13 @@ struct co_series_result {
 
 int series(const std::initializer_list<fn_cb>& fns) {
     if (fns.size() == 0) {
-        return E_CO_RETURN_ERROR;
+        return co_bridge::E_CO_RETURN_ERROR;
     }
 
     unsigned int co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
         assert(false);
-        return E_CO_RETURN_ERROR;
+        return co_bridge::E_CO_RETURN_ERROR;
     }
 
     co_series_result* result = new co_series_result;
@@ -133,18 +97,18 @@ int series(const std::initializer_list<fn_cb>& fns) {
         result->fns.push_back(f);
     }
 
-    int64_t unique_id = co_async::gen_unique_id();
-    int64_t timer_id = co_async::add_timer(10 * 1000, [result, co_id, unique_id]() {
+    int64_t unique_id = co_bridge::gen_unique_id();
+    int64_t timer_id = co_bridge::add_timer(10 * 1000, [result, co_id, unique_id]() {
         result->timeout_flag = true;
-        co_async::rm_unique_id(unique_id);
+        co_bridge::rm_unique_id(unique_id);
         Coroutine::resume(co_id);
     });
 
     auto done = [unique_id, timer_id, co_id] () {
-        if (!co_async::rm_unique_id(unique_id)) {
+        if (!co_bridge::rm_unique_id(unique_id)) {
             return;
         }
-        co_async::rm_timer(timer_id);
+        co_bridge::rm_timer(timer_id);
         Coroutine::resume(co_id);
     };
 
@@ -161,12 +125,12 @@ int series(const std::initializer_list<fn_cb>& fns) {
     result->next = next;
     result->fns[result->idx](next);
 
-    co_async::add_unique_id(unique_id);
+    co_bridge::add_unique_id(unique_id);
     Coroutine::yield();
 
-    int ret = E_CO_RETURN_OK;
+    int ret = co_bridge::E_CO_RETURN_OK;
     if (result->timeout_flag) {
-        ret = E_CO_RETURN_TIMEOUT;
+        ret = co_bridge::E_CO_RETURN_TIMEOUT;
     }
     
     delete result;

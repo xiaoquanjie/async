@@ -2,6 +2,7 @@
 #include "common/co_bridge/co_bridge.h"
 #include "common/coroutine/coroutine.hpp"
 #include "common/threads/thread_pool.h"
+#include "common/ipc/zero_mq_handler.h"
 #include <sys/time.h>
 #include <unistd.h>
 #include <iostream>
@@ -504,7 +505,7 @@ int main6() {
     return 0;
 }
 
-int main() {
+int main7() {
     // 定义一个线程池对象
     ThreadPool tp;
     // 设置mysql的异步驱动由线程池来执行
@@ -547,6 +548,31 @@ int main() {
     while (true) {
         co_bridge::loop();
         usleep(10);
+    }
+    return 0;
+}
+
+///////////////////////////////////////////////////////////////////
+
+class NetHandler : public ZeromqHandler {
+public:
+
+protected:
+    void onData(const std::string& data)  {
+        std::cout << data << std::endl;
+    }
+};
+
+
+int main() {
+    NetHandler routerHandler, clientHandler;
+    routerHandler.listen(1, "tcp://0.0.0.0:1000");
+    clientHandler.connect(2, "tcp://127.0.0.1:1000"); 
+    clientHandler.sendData("hello world");
+    while (true) {
+        routerHandler.update(0);
+        clientHandler.update(0);
+        usleep(1);
     }
     return 0;
 }

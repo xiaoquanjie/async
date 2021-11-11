@@ -13,10 +13,13 @@ c++异步io库
 4、 如需使用mysql模块，则cmake时需定义宏USE_ASYNC_MYSQL。如：cmake .. -DUSE_ASYNC_MYSQL=1
     mysql模块依赖：mariadb库
 
+5、 如需使用ipc模块，则cmake时需定义宏USE_IPC。如：cmake .. -DUSE_USE_IPC=1
+    ipc模块依赖：zeromq库
+
 5、cmake例子：
     1）根目录下执行：mkdir -p build
     2）cd build
-    3）cmake .. -DUSE_ASYNC_CURL=1 -DUSE_ASYNC_REDIS=1 -DUSE_ASYNC_MONGO=1 -DUSE_ASYNC_MYSQL=1  -DCMAKE_BUILD_TYPE=Debug
+    3）cmake .. -DUSE_ASYNC_CURL=1 -DUSE_ASYNC_REDIS=1 -DUSE_ASYNC_MONGO=1 -DUSE_ASYNC_MYSQL=1 -DUSE_USE_IPC=1 -DCMAKE_BUILD_TYPE=Debug
 
 依赖库安装：
     如果库安装路径、链接版本、头文件等出现报错，可以根据编译环境调整 common/CMakeLists.txt文件
@@ -44,6 +47,8 @@ common                  ----> 库目录
     co_async            ----> 协程与异步io的结合
 
     co_bridge           ----> 协程io桥，提供各个协程io时需要调用的共同接口，算是一种协调者
+
+    ipc                 ----> 提供进程间的通信，适合用于后端服务之间的通信。使用zeromq库作为实现者
 
 
 层次结构：co表示coroutine协程

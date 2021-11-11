@@ -48,4 +48,9 @@ if(USE_ASYNC_MYSQL)
     set(LINK_LIBRARYS ${LINK_LIBRARYS} mariadb)
 endif(USE_ASYNC_MYSQL)
 
+if(USE_IPC)
+    add_definitions(-DUSE_IPC)
+    set(LINK_LIBRARYS ${LINK_LIBRARYS} zmq)
+endif(USE_IPC)
+
 target_link_libraries(${TARGET_NAME} PRIVATE ${LINK_LIBRARYS})

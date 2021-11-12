@@ -20,17 +20,14 @@ public:
     struct Context {
         Context();
         ~Context();
+        uint32_t m_gen_id;
         void* m_ctx;
     };
 
     // addr格式：tcp://192.168.0.81:7000
-    ZeromqUnit(uint32_t id, const std::string& addr);
+    ZeromqUnit(uint32_t identify, const std::string& addr);
 
-    ~ZeromqUnit();
-
-    bool listen();
-
-    bool connect();
+    virtual ~ZeromqUnit();
 
     int recvFd();
 
@@ -38,25 +35,60 @@ public:
 
     bool isPollIn();
 
-    int recvData(std::string& data);
+    virtual int recvData(std::string& identify, std::string& data) = 0;
 
-    // @id表示发送到哪个dealer
-    int sendData(uint32_t id, const std::string& data);
+    virtual std::string identify() = 0;
 
-    int sendData(const std::string& data);
+    uint32_t zeromqId();
 
-    uint32_t id();
+    uint32_t uniqueId();
 protected:
-    bool reInit();
+    bool reInit(bool is_router);
+
+    int send(bool is_router, const std::string& identify, const std::string& data);
 
     void printError();
-private:
+
+protected:
     static Context m_ctx;
     void* m_sock;
     std::string m_addr;
-    uint32_t m_id;
-    bool m_is_conn;
+    uint32_t m_unique_id;   // 内部分配的唯一id
+    uint32_t m_zeromq_id;   // zeromq用的标识符id
 };
 
+/////////////////////////////////////////////////////
 
+// router
+class ZeromqRouter : public ZeromqUnit {
+public:
+    ZeromqRouter(uint32_t identify, const std::string& addr);
 
+    bool listen();
+
+    virtual int recvData(std::string& identify, std::string& data) override;
+
+    virtual std::string identify() override;
+
+    // @id表示发送到哪个dealer
+    int sendData(uint32_t identify, const std::string& data);
+
+    // @identify表示发送到哪个标识符
+    int sendData(const std::string& identify, const std::string& data);
+};
+
+////////////////////////////////////////////////////
+
+// dealer
+class ZeromqDealer : public ZeromqUnit {
+public:
+    ZeromqDealer(uint32_t identify, const std::string& addr);    
+
+    bool connect();
+
+    virtual int recvData(std::string& identify, std::string& data) override;
+
+    virtual std::string identify() override;
+
+    int sendData(const std::string& data);
+};

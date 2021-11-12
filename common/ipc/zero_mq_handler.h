@@ -7,31 +7,55 @@
 
 #pragma once
 
+#include "common/ipc/zero_mq_unit.h"
 #include <vector>
 #include <memory>
 
-class ZeromqUnit;
-
-// ZeromqUnit管理器, 要么全是router, 要么全是dealer，不能混合
+// ZeromqUnit管理器
 class ZeromqHandler {
 public:
     typedef std::shared_ptr<ZeromqUnit> ZeromqUnitPtr;
 
-    bool listen(uint32_t id, const std::string& addr);    
-
-    bool connect(uint32_t id, const std::string& addr);
-
     bool update(unsigned int);
 
-    int sendData(uint32_t id, const std::string& data);
-
-    int sendData(const std::string& data);
 protected:
     bool addUnit(ZeromqUnitPtr ptr);
 
     // 数据回调
-    virtual void onData(const std::string& data) {}
-private:
+    // @unique_id代表一个ZeromqUnit的唯一id
+    // @identify表示的是对方连接的标识符
+    // @data是数据包
+    virtual void onData(uint32_t unique_id, std::string& identify, const std::string& data) {}
+
+protected:
     std::vector<ZeromqUnitPtr> m_unit_vec;
-    int m_poll_id = 0;
+};
+
+/////////////////////////////////////////////////////
+
+// router, 可以监听多个相同功能的端口（但一般不会这么做)
+class ZeromqRouterHandler : public ZeromqHandler {
+public:
+    // 返回唯一id, 失败返回0
+    uint32_t listen(uint32_t id, const std::string& addr);
+
+    // @unique_id代表一个ZeromqUnit的唯一id
+    // @other_id对方的id
+    // @data数据
+    int sendData(uint32_t unique_id, uint32_t other_id, const std::string& data);
+
+    int sendData(uint32_t unique_id, const std::string& identify, const std::string& data);
+};
+
+/////////////////////////////////////////////////////
+
+// dealer, 可以连接多个相同功能的router
+class ZeromqDealerHandler : public ZeromqHandler {
+public:
+    // 返回唯一id, 失败返回0
+    uint32_t connect(uint32_t id, const std::string& addr);    
+
+    // @unique_id代表一个ZeromqUnit的唯一id
+    // @data数据
+    int sendData(uint32_t unique_id, const std::string& data);
 };

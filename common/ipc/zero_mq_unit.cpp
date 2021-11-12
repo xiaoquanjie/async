@@ -101,7 +101,7 @@ uint32_t ZeromqUnit::zeromqId() {
     return m_zeromq_id;
 }
 
-uint32_t ZeromqUnit::uniqueId() {
+uint64_t ZeromqUnit::uniqueId() {
     return m_unique_id;
 }
 

@@ -63,7 +63,7 @@ bool ZeromqHandler::addUnit(ZeromqUnitPtr ptr) {
 
 /////////////////////////////////////////////////////
 
-uint32_t ZeromqRouterHandler::listen(uint32_t id, const std::string& addr) {
+uint64_t ZeromqRouterHandler::listen(uint32_t id, const std::string& addr) {
     auto ptr = std::make_shared<ZeromqRouter>(id, addr);
     if (!ptr->listen()) {
         assert(false);
@@ -74,7 +74,7 @@ uint32_t ZeromqRouterHandler::listen(uint32_t id, const std::string& addr) {
     return ptr->uniqueId();
 }
 
-int ZeromqRouterHandler::sendData(uint32_t unique_id, uint32_t other_id, const std::string& data) {
+int ZeromqRouterHandler::sendData(uint64_t unique_id, uint32_t other_id, const std::string& data) {
     for (auto& item : m_unit_vec) {
         if (item->uniqueId() == unique_id) {
             typedef std::shared_ptr<ZeromqRouter> ZeromqRouterPtr;
@@ -87,7 +87,7 @@ int ZeromqRouterHandler::sendData(uint32_t unique_id, uint32_t other_id, const s
     return 0;
 }
 
-int ZeromqRouterHandler::sendData(uint32_t unique_id, const std::string& identify, const std::string& data) {
+int ZeromqRouterHandler::sendData(uint64_t unique_id, const std::string& identify, const std::string& data) {
     for (auto& item : m_unit_vec) {
         if (item->uniqueId() == unique_id) {
             typedef std::shared_ptr<ZeromqRouter> ZeromqRouterPtr;
@@ -102,7 +102,7 @@ int ZeromqRouterHandler::sendData(uint32_t unique_id, const std::string& identif
 
 /////////////////////////////////////////////////////
 
-uint32_t ZeromqDealerHandler::connect(uint32_t id, const std::string& addr) {
+uint64_t ZeromqDealerHandler::connect(uint32_t id, const std::string& addr) {
     auto ptr = std::make_shared<ZeromqDealer>(id, addr);
     if (!ptr->connect()) {
         assert(false);
@@ -113,7 +113,7 @@ uint32_t ZeromqDealerHandler::connect(uint32_t id, const std::string& addr) {
     return ptr->uniqueId();
 }
 
-int ZeromqDealerHandler::sendData(uint32_t unique_id, const std::string& data) {
+int ZeromqDealerHandler::sendData(uint64_t unique_id, const std::string& data) {
     for (auto& item : m_unit_vec) {
         if (item->uniqueId() == unique_id) {
             typedef std::shared_ptr<ZeromqDealer> ZeromqDealerPtr;

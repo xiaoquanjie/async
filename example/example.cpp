@@ -558,7 +558,7 @@ class RouterHandler : public ZeromqRouterHandler {
 public:
 
 protected:
-    void onData(uint32_t unique_id, std::string& identify, const std::string& data)  {
+    void onData(uint64_t unique_id, std::string& identify, const std::string& data)  {
         std::cout << "router:" << unique_id << "|" << identify <<"|" << data << std::endl;
         std::string rsp_data = ("router resoond " + data);
         this->sendData(unique_id, identify, rsp_data);
@@ -569,7 +569,7 @@ class DealerHandler : public ZeromqDealerHandler {
 public:
 
 protected:
-    void onData(uint32_t unique_id, std::string& identify, const std::string& data)  {
+    void onData(uint64_t unique_id, std::string& identify, const std::string& data)  {
         std::cout << "dealer:" << unique_id << "|" << identify <<"|" << data << std::endl;
     }
 };

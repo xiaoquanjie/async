@@ -20,7 +20,7 @@ public:
     struct Context {
         Context();
         ~Context();
-        uint32_t m_gen_id;
+        uint64_t m_gen_id;
         void* m_ctx;
     };
 
@@ -41,7 +41,7 @@ public:
 
     uint32_t zeromqId();
 
-    uint32_t uniqueId();
+    uint64_t uniqueId();
 protected:
     bool reInit(bool is_router);
 
@@ -53,7 +53,7 @@ protected:
     static Context m_ctx;
     void* m_sock;
     std::string m_addr;
-    uint32_t m_unique_id;   // 内部分配的唯一id
+    uint64_t m_unique_id;   // 内部分配的唯一id
     uint32_t m_zeromq_id;   // zeromq用的标识符id
 };
 

@@ -16,9 +16,10 @@ void setWaitTime(int wait_time) {
 
 struct co_ipc_result {
     bool timeout_flag = false;
+    const char* data = 0;
 };
 
-int send(std::function<void(int64_t)> io_send_func) {
+int send(std::function<void(int64_t)> io_send_func, const char** data) {
     unsigned int co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
         assert(false);
@@ -37,25 +38,29 @@ int send(std::function<void(int64_t)> io_send_func) {
     // 执行真正的io发送
     io_send_func(sequence_id);
 
-    co_bridge::add_sequence_id(sequence_id, timer_id, co_id);
+    co_bridge::add_sequence_id(sequence_id, timer_id, co_id, result);
     Coroutine::yield();
 
     int ret = co_bridge::E_CO_RETURN_OK;
     if (result->timeout_flag) {
+        *data = 0;
         ret = co_bridge::E_CO_RETURN_TIMEOUT;
     }
 
+    *data = result->data;
     delete result;
     return ret;
 }
 
-void resume(int64_t sequence_id) {
+void recv(int64_t sequence_id, const char* data) {
     int64_t timer_id =0;
     unsigned int co_id = 0;
-    if (!co_bridge::rm_sequence_id(sequence_id, timer_id, co_id)) {
+    co_ipc_result* result = 0;
+    if (!co_bridge::rm_sequence_id(sequence_id, timer_id, co_id, (void**)&result)) {
         return;
     }
 
+    result->data = data;
     co_bridge::rm_timer(timer_id);
     Coroutine::resume(co_id);
 }

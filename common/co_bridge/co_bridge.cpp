@@ -10,6 +10,7 @@ namespace co_bridge {
 struct sequence_info {
     int64_t timer_id = 0;
     unsigned int co_id = 0;
+    void* extra = 0;
 };
 
 int64_t g_unique_id = 1;
@@ -39,19 +40,21 @@ int64_t gen_sequence_id() {
     return g_unique_id++;
 }
 
-void add_sequence_id(int64_t id, int64_t timer_id, unsigned int co_id) {
+void add_sequence_id(int64_t id, int64_t timer_id, unsigned int co_id, void* extra) {
     assert(g_sequence_map.find(id) == g_sequence_map.end());
     auto pair = g_sequence_map.insert(std::make_pair(id, sequence_info()));
     auto iter = pair.first;
     iter->second.timer_id = timer_id;
     iter->second.co_id = co_id;
+    iter->second.extra = extra;
 }
 
-bool rm_sequence_id(int64_t id, int64_t& timer_id, unsigned int& co_id) {
+bool rm_sequence_id(int64_t id, int64_t& timer_id, unsigned int& co_id, void** extra) {
     auto iter = g_sequence_map.find(id);
     if (iter != g_sequence_map.end()) {
         timer_id = iter->second.timer_id;
         co_id = iter->second.co_id;
+        *extra = iter->second.extra;
         g_sequence_map.erase(iter);
         return true;
     }

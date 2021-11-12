@@ -49,9 +49,9 @@ bool rm_unique_id(int64_t id);
 // 生成唯一序列码
 int64_t gen_sequence_id();
 
-void add_sequence_id(int64_t id, int64_t timer_id, unsigned int co_id);
+void add_sequence_id(int64_t id, int64_t timer_id, unsigned int co_id, void* extra);
 
-bool rm_sequence_id(int64_t id, int64_t& timer_id, unsigned int& co_id);
+bool rm_sequence_id(int64_t id, int64_t& timer_id, unsigned int& co_id, void** extra);
 
 bool rm_sequence_id(int64_t id);
 

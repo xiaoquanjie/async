@@ -46,6 +46,15 @@ void add_unique_id(int64_t id);
 
 bool rm_unique_id(int64_t id);
 
+// 生成唯一序列码
+int64_t gen_sequence_id();
+
+void add_sequence_id(int64_t id, int64_t timer_id, unsigned int co_id);
+
+bool rm_sequence_id(int64_t id, int64_t& timer_id, unsigned int& co_id);
+
+bool rm_sequence_id(int64_t id);
+
 int64_t add_timer(int interval, std::function<void()> func);
 
 void rm_timer(int64_t timer_id);

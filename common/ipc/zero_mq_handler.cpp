@@ -55,9 +55,9 @@ bool ZeromqHandler::update(unsigned int) {
 bool ZeromqHandler::addUnit(ZeromqUnitPtr ptr) {
     // 按id进行排序
     m_unit_vec.push_back(ptr);
-    std::sort(m_unit_vec.begin(), m_unit_vec.end(), [](ZeromqUnitPtr ptr1, ZeromqUnitPtr ptr2) {
-        return ptr1->zeromqId() < ptr2->zeromqId();
-    });
+    // std::sort(m_unit_vec.begin(), m_unit_vec.end(), [](ZeromqUnitPtr ptr1, ZeromqUnitPtr ptr2) {
+    //     return ptr1->zeromqId() < ptr2->zeromqId();
+    // });
     return true;
 }
 

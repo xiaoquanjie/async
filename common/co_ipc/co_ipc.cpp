@@ -26,19 +26,19 @@ int send(std::function<void(int64_t)> io_send_func, const char** data) {
         return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    int64_t sequence_id = co_bridge::gen_sequence_id();
+    int64_t sequence_id = co_bridge::genSequenceId();
     co_ipc_result* result = new co_ipc_result;
 
-    int64_t timer_id = co_bridge::add_timer(g_wait_time, [result, co_id, sequence_id]() {
+    int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, sequence_id]() {
         result->timeout_flag = true;
-        co_bridge::rm_sequence_id(sequence_id);
+        co_bridge::rmSequenceId(sequence_id);
         Coroutine::resume(co_id);
     });
 
     // 执行真正的io发送
     io_send_func(sequence_id);
 
-    co_bridge::add_sequence_id(sequence_id, timer_id, co_id, result);
+    co_bridge::addSequenceId(sequence_id, timer_id, co_id, result);
     Coroutine::yield();
 
     int ret = co_bridge::E_CO_RETURN_OK;
@@ -56,12 +56,12 @@ void recv(int64_t sequence_id, const char* data) {
     int64_t timer_id =0;
     unsigned int co_id = 0;
     co_ipc_result* result = 0;
-    if (!co_bridge::rm_sequence_id(sequence_id, timer_id, co_id, (void**)&result)) {
+    if (!co_bridge::rmSequenceId(sequence_id, timer_id, co_id, (void**)&result)) {
         return;
     }
 
     result->data = data;
-    co_bridge::rm_timer(timer_id);
+    co_bridge::rmTimer(timer_id);
     Coroutine::resume(co_id);
 }
 

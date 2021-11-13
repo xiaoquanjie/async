@@ -26,7 +26,7 @@ int wait(uint32_t interval) {
         return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    co_bridge::add_timer(interval, [co_id]() {
+    co_bridge::addTimer(interval, [co_id]() {
         Coroutine::resume(co_id);
     });
 
@@ -34,16 +34,16 @@ int wait(uint32_t interval) {
     return co_bridge::E_CO_RETURN_OK;
 }
 
-int64_t gen_unique_id() {
+int64_t genUniqueId() {
     return g_unique_id++;
 }
 
-void add_unique_id(int64_t id) {
+void addUniqueId(int64_t id) {
     assert(g_unique_id_set.find(id) == g_unique_id_set.end());
     g_unique_id_set.insert(id);
 }
 
-bool rm_unique_id(int64_t id) {
+bool rmUniqueId(int64_t id) {
     auto iter = g_unique_id_set.find(id);
     if (iter != g_unique_id_set.end()) {
         g_unique_id_set.erase(iter);
@@ -52,11 +52,11 @@ bool rm_unique_id(int64_t id) {
     return false;
 }
 
-int64_t gen_sequence_id() {
+int64_t genSequenceId() {
     return g_unique_id++;
 }
 
-void add_sequence_id(int64_t id, int64_t timer_id, unsigned int co_id, void* extra) {
+void addSequenceId(int64_t id, int64_t timer_id, unsigned int co_id, void* extra) {
     assert(g_sequence_map.find(id) == g_sequence_map.end());
     auto pair = g_sequence_map.insert(std::make_pair(id, sequence_info()));
     auto iter = pair.first;
@@ -65,7 +65,7 @@ void add_sequence_id(int64_t id, int64_t timer_id, unsigned int co_id, void* ext
     iter->second.extra = extra;
 }
 
-bool rm_sequence_id(int64_t id, int64_t& timer_id, unsigned int& co_id, void** extra) {
+bool rmSequenceId(int64_t id, int64_t& timer_id, unsigned int& co_id, void** extra) {
     auto iter = g_sequence_map.find(id);
     if (iter != g_sequence_map.end()) {
         timer_id = iter->second.timer_id;
@@ -77,7 +77,7 @@ bool rm_sequence_id(int64_t id, int64_t& timer_id, unsigned int& co_id, void** e
     return false;
 }
 
-bool rm_sequence_id(int64_t id) {
+bool rmSequenceId(int64_t id) {
     auto iter = g_sequence_map.find(id);
     if (iter != g_sequence_map.end()) {
         g_sequence_map.erase(iter);
@@ -86,11 +86,11 @@ bool rm_sequence_id(int64_t id) {
     return false;
 }
 
-int64_t add_timer(int interval, std::function<void()> func) {
+int64_t addTimer(int interval, std::function<void()> func) {
     return g_time_pool.AddTimer(interval, func);
 }
 
-void rm_timer(int64_t timer_id) {
+void rmTimer(int64_t timer_id) {
     g_time_pool.CancelTimer(timer_id);
 }
 

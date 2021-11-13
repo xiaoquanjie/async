@@ -45,27 +45,27 @@ int get(const std::string &url, const std::map<std::string, std::string>& header
         return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    int64_t unique_id = co_bridge::gen_unique_id();
+    int64_t unique_id = co_bridge::genUniqueId();
     co_curl_result* result = new co_curl_result;
 
-    int64_t timer_id = co_bridge::add_timer(g_wait_time, [result, co_id, unique_id]() {
+    int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
-        co_bridge::rm_unique_id(unique_id);
+        co_bridge::rmUniqueId(unique_id);
         Coroutine::resume(co_id);
     });
 
     async::curl::get(url, headers, [result, timer_id, co_id, unique_id](int curl_code, int rsp_code, std::string& body) {
-        if (!co_bridge::rm_unique_id(unique_id)) {
+        if (!co_bridge::rmUniqueId(unique_id)) {
             return;
         }
-        co_bridge::rm_timer(timer_id);
+        co_bridge::rmTimer(timer_id);
         result->curl_code = curl_code;
         result->rsp_code = rsp_code;
         result->body.swap(body);
         Coroutine::resume(co_id);
     });
 
-    co_bridge::add_unique_id(unique_id);
+    co_bridge::addUniqueId(unique_id);
     Coroutine::yield();
 
     int ret = co_bridge::E_CO_RETURN_OK;
@@ -92,28 +92,28 @@ int post(const std::string& url, const std::string& content, const std::map<std:
         return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    int64_t unique_id = co_bridge::gen_unique_id();
+    int64_t unique_id = co_bridge::genUniqueId();
     bool timeout_flag = false;
 
-    int64_t timer_id = co_bridge::add_timer(g_wait_time, [&timeout_flag, co_id, unique_id]() {
+    int64_t timer_id = co_bridge::addTimer(g_wait_time, [&timeout_flag, co_id, unique_id]() {
         timeout_flag = true;
-        co_bridge::rm_unique_id(unique_id);
+        co_bridge::rmUniqueId(unique_id);
         Coroutine::resume(co_id);
     });
 
     co_curl_result* result = new co_curl_result;
     async::curl::post(url, content, headers, [result, timer_id, co_id, unique_id](int curl_code, int rsp_code, std::string& body) {
-        if (!co_bridge::rm_unique_id(unique_id)) {
+        if (!co_bridge::rmUniqueId(unique_id)) {
             return;
         }
-        co_bridge::rm_timer(timer_id);
+        co_bridge::rmTimer(timer_id);
         result->curl_code = curl_code;
         result->rsp_code = rsp_code;
         result->body.swap(body);
         Coroutine::resume(co_id);
     });
 
-    co_bridge::add_unique_id(unique_id);
+    co_bridge::addUniqueId(unique_id);
     Coroutine::yield();
 
     if (timeout_flag) {

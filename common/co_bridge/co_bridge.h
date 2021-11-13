@@ -43,24 +43,24 @@ enum Wait_Time {
 int wait(uint32_t interval);
 
 // 生成唯一id
-int64_t gen_unique_id();
+int64_t genUniqueId();
 
-void add_unique_id(int64_t id);
+void addUniqueId(int64_t id);
 
-bool rm_unique_id(int64_t id);
+bool rmUniqueId(int64_t id);
 
 // 生成唯一序列码
-int64_t gen_sequence_id();
+int64_t genSequenceId();
 
-void add_sequence_id(int64_t id, int64_t timer_id, unsigned int co_id, void* extra);
+void addSequenceId(int64_t id, int64_t timer_id, unsigned int co_id, void* extra);
 
-bool rm_sequence_id(int64_t id, int64_t& timer_id, unsigned int& co_id, void** extra);
+bool rmSequenceId(int64_t id, int64_t& timer_id, unsigned int& co_id, void** extra);
 
-bool rm_sequence_id(int64_t id);
+bool rmSequenceId(int64_t id);
 
-int64_t add_timer(int interval, std::function<void()> func);
+int64_t addTimer(int interval, std::function<void()> func);
 
-void rm_timer(int64_t timer_id);
+void rmTimer(int64_t timer_id);
 
 // 循环，内部调用异步循环
 bool loop();

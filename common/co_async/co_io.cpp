@@ -34,18 +34,18 @@ int parallel(const std::initializer_list<fn_cb>& fns) {
     co_parallel_result* result = new co_parallel_result;
     result->fns = fns.size();
 
-    int64_t unique_id = co_bridge::gen_unique_id();
-    int64_t timer_id = co_bridge::add_timer(10 * 1000, [result, co_id, unique_id]() {
+    int64_t unique_id = co_bridge::genUniqueId();
+    int64_t timer_id = co_bridge::addTimer(10 * 1000, [result, co_id, unique_id]() {
         result->timeout_flag = true;
-        co_bridge::rm_unique_id(unique_id);
+        co_bridge::rmUniqueId(unique_id);
         Coroutine::resume(co_id);
     });
 
     auto done = [unique_id, timer_id, co_id] () {
-        if (!co_bridge::rm_unique_id(unique_id)) {
+        if (!co_bridge::rmUniqueId(unique_id)) {
             return;
         }
-        co_bridge::rm_timer(timer_id);
+        co_bridge::rmTimer(timer_id);
         Coroutine::resume(co_id);
     };
 
@@ -60,7 +60,7 @@ int parallel(const std::initializer_list<fn_cb>& fns) {
         f(next);
     }
 
-    co_bridge::add_unique_id(unique_id);
+    co_bridge::addUniqueId(unique_id);
     Coroutine::yield();
 
     int ret = co_bridge::E_CO_RETURN_OK;
@@ -97,18 +97,18 @@ int series(const std::initializer_list<fn_cb>& fns) {
         result->fns.push_back(f);
     }
 
-    int64_t unique_id = co_bridge::gen_unique_id();
-    int64_t timer_id = co_bridge::add_timer(10 * 1000, [result, co_id, unique_id]() {
+    int64_t unique_id = co_bridge::genUniqueId();
+    int64_t timer_id = co_bridge::addTimer(10 * 1000, [result, co_id, unique_id]() {
         result->timeout_flag = true;
-        co_bridge::rm_unique_id(unique_id);
+        co_bridge::rmUniqueId(unique_id);
         Coroutine::resume(co_id);
     });
 
     auto done = [unique_id, timer_id, co_id] () {
-        if (!co_bridge::rm_unique_id(unique_id)) {
+        if (!co_bridge::rmUniqueId(unique_id)) {
             return;
         }
-        co_bridge::rm_timer(timer_id);
+        co_bridge::rmTimer(timer_id);
         Coroutine::resume(co_id);
     };
 
@@ -125,7 +125,7 @@ int series(const std::initializer_list<fn_cb>& fns) {
     result->next = next;
     result->fns[result->idx](next);
 
-    co_bridge::add_unique_id(unique_id);
+    co_bridge::addUniqueId(unique_id);
     Coroutine::yield();
 
     int ret = co_bridge::E_CO_RETURN_OK;

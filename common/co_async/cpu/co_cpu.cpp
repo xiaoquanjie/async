@@ -36,25 +36,25 @@ int execute(async::cpu::async_cpu_op op, void* user_data, async::cpu::async_cpu_
         return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    int64_t unique_id = co_bridge::gen_unique_id();
+    int64_t unique_id = co_bridge::genUniqueId();
     co_cpu_result* result = new co_cpu_result;
 
-    int64_t timer_id = co_bridge::add_timer(g_wait_time, [result, co_id, unique_id]() {
+    int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
-        co_bridge::rm_unique_id(unique_id);
+        co_bridge::rmUniqueId(unique_id);
         Coroutine::resume(co_id);
     });
 
     async::cpu::execute(op, user_data, [result, co_id, timer_id, unique_id](int64_t res, void*) {
-        if (!co_bridge::rm_unique_id(unique_id)) {
+        if (!co_bridge::rmUniqueId(unique_id)) {
             return;
         }
-        co_bridge::rm_timer(timer_id);
+        co_bridge::rmTimer(timer_id);
         result->result = res;
         Coroutine::resume(co_id);
     });
 
-    co_bridge::add_unique_id(unique_id);
+    co_bridge::addUniqueId(unique_id);
     Coroutine::yield();
 
     int ret = co_bridge::E_CO_RETURN_OK;

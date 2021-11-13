@@ -40,27 +40,27 @@ int execute(const std::string& uri, const std::string& sql, async::mysql::async_
         return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    int64_t unique_id = co_bridge::gen_unique_id();
+    int64_t unique_id = co_bridge::genUniqueId();
     co_mysql_result* result = new co_mysql_result;
 
-    int64_t timer_id = co_bridge::add_timer(g_wait_time, [result, co_id, unique_id]() {
+    int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
-        co_bridge::rm_unique_id(unique_id);
+        co_bridge::rmUniqueId(unique_id);
         Coroutine::resume(co_id);
     });
 
     async::mysql::execute(uri, sql, [result, timer_id, co_id, unique_id](int err, void* res) {
-        if (!co_bridge::rm_unique_id(unique_id)) {
+        if (!co_bridge::rmUniqueId(unique_id)) {
             mysql_free_result((MYSQL_RES*)res);
             return;
         }
-        co_bridge::rm_timer(timer_id);
+        co_bridge::rmTimer(timer_id);
         result->res = (MYSQL_RES*)res;
         result->err = err;
         Coroutine::resume(co_id);
     });
 
-    co_bridge::add_unique_id(unique_id);
+    co_bridge::addUniqueId(unique_id);
     Coroutine::yield();
 
     int ret = co_bridge::E_CO_RETURN_OK;
@@ -102,26 +102,26 @@ int execute(const std::string& uri, const std::string& sql, async::mysql::async_
         return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    int64_t unique_id = co_bridge::gen_unique_id();
+    int64_t unique_id = co_bridge::genUniqueId();
     co_mysql_result* result = new co_mysql_result;
 
-    int64_t timer_id = co_bridge::add_timer(g_wait_time, [result, co_id, unique_id]() {
+    int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
-        co_bridge::rm_unique_id(unique_id);
+        co_bridge::rmUniqueId(unique_id);
         Coroutine::resume(co_id);
     });
 
     async::mysql::execute(uri, sql, [result, timer_id, co_id, unique_id](int err, int affected_row) {
-        if (!co_bridge::rm_unique_id(unique_id)) {
+        if (!co_bridge::rmUniqueId(unique_id)) {
             return;
         }
-        co_bridge::rm_timer(timer_id);
+        co_bridge::rmTimer(timer_id);
         result->affected_row = affected_row;
         result->err = err;
         Coroutine::resume(co_id);
     });
 
-    co_bridge::add_unique_id(unique_id);
+    co_bridge::addUniqueId(unique_id);
     Coroutine::yield();
 
     int ret = co_bridge::E_CO_RETURN_OK;

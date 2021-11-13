@@ -42,24 +42,24 @@ int execute(const std::string& uri,
     }
 
     co_redis_result* result = new co_redis_result;
-    int64_t unique_id = co_bridge::gen_unique_id();
+    int64_t unique_id = co_bridge::genUniqueId();
    
-    int64_t timer_id = co_bridge::add_timer(g_wait_time, [result, co_id, unique_id]() {
+    int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
-        co_bridge::rm_unique_id(unique_id);
+        co_bridge::rmUniqueId(unique_id);
         Coroutine::resume(co_id);
     });
 
     async::redis::execute(uri, cmd, [result, timer_id, co_id, unique_id](async::redis::RedisReplyParserPtr parser) {
-        if (!co_bridge::rm_unique_id(unique_id)) {
+        if (!co_bridge::rmUniqueId(unique_id)) {
             return;
         }
-        co_bridge::rm_timer(timer_id);
+        co_bridge::rmTimer(timer_id);
         result->parser = parser;
         Coroutine::resume(co_id);
     });
 
-    co_bridge::add_unique_id(unique_id);
+    co_bridge::addUniqueId(unique_id);
     Coroutine::yield();
     
     int ret = co_bridge::E_CO_RETURN_OK;

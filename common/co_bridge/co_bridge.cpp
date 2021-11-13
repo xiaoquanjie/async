@@ -1,5 +1,6 @@
 #include "common/co_bridge/co_bridge.h"
 #include "common/co_bridge/time_pool.h"
+#include "common/coroutine/coroutine.hpp"
 #include "common/async/async.h"
 #include <unordered_set>
 #include <unordered_map>
@@ -17,6 +18,21 @@ int64_t g_unique_id = 1;
 std::unordered_set<int64_t> g_unique_id_set;
 std::unordered_map<int64_t, sequence_info> g_sequence_map;
 TimerPool g_time_pool;
+
+int wait(uint32_t interval) {
+    unsigned int co_id = Coroutine::curid();
+    if (co_id == M_MAIN_COROUTINE_ID) {
+        assert(false);
+        return co_bridge::E_CO_RETURN_ERROR;
+    }
+
+    co_bridge::add_timer(interval, [co_id]() {
+        Coroutine::resume(co_id);
+    });
+
+    Coroutine::yield();
+    return co_bridge::E_CO_RETURN_OK;
+}
 
 int64_t gen_unique_id() {
     return g_unique_id++;

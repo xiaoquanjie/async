@@ -39,6 +39,9 @@ enum Wait_Time {
     E_WAIT_TWO_MINUTE = 2 * 60 * 1000,
 };
 
+// 毫秒
+int wait(uint32_t interval);
+
 // 生成唯一id
 int64_t gen_unique_id();
 

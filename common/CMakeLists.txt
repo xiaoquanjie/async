@@ -53,4 +53,8 @@ if(USE_IPC)
     set(LINK_LIBRARYS ${LINK_LIBRARYS} zmq)
 endif(USE_IPC)
 
+if(USE_TRANS)
+    add_definitions(-DUSE_TRANS)
+endif(USE_TRANS)
+
 target_link_libraries(${TARGET_NAME} PRIVATE ${LINK_LIBRARYS})

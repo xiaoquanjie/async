@@ -3,6 +3,7 @@
 #include "common/coroutine/coroutine.hpp"
 #include "common/threads/thread_pool.h"
 #include "common/ipc/zero_mq_handler.h"
+#include "common/transaction/transaction_mgr.h"
 #include <sys/time.h>
 #include <unistd.h>
 #include <iostream>
@@ -575,7 +576,7 @@ protected:
 };
 
 
-int main() {
+int main8() {
     RouterHandler routerHandler;
     DealerHandler dealerHandler;
     routerHandler.listen(1, "tcp://0.0.0.0:1000");
@@ -589,5 +590,102 @@ int main() {
         dealerHandler.update(0);
         usleep(1);
     }
+    return 0;
+}
+
+///////////////////////////////////////////////////////////////////
+
+struct RequestStruct {
+    int id = 1;
+};
+
+struct RespondStruct {
+    int ret = 2;
+};
+
+void operator >> (std::istringstream& iss, RequestStruct& s) {
+    iss >> s.id;
+}
+
+// 实现一个带解析器的ServerTransaction
+template<typename RequestType, typename RespondType = NullRespond>
+class ServerTransaction : public Transaction<RequestType, RespondType> {
+public:
+    ServerTransaction(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id)
+		: Transaction<RequestType, RespondType>(req_cmd_id, rsp_cmd_id, trans_id) {}
+
+protected:
+    // 实现包解析器
+    virtual bool ParsePacket(const char* packet, uint32_t packet_size) override {
+        std::istringstream iss(std::string(packet, packet_size));
+        iss >> Transaction<RequestType, RespondType>::m_request;
+        return true;
+    }
+
+    virtual void BeforeOnRequest() override {
+        std::cout << "before" << std::endl;
+    }
+
+    virtual void AfterOnRequest() override {
+        std::cout << "after, 回复数据" << std::endl;
+    }
+};
+
+// 实现一个带解析器的ServerTransaction
+template<typename RequestType>
+class ServerTransaction<RequestType, NullRespond> : public Transaction<RequestType> {
+public:
+    ServerTransaction(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id)
+		: Transaction<RequestType>(req_cmd_id, rsp_cmd_id, trans_id) {}
+
+protected:
+    // 实现包解析器
+    virtual bool ParsePacket(const char* packet, uint32_t packet_size) override {
+        std::istringstream iss(std::string(packet, packet_size));
+        iss >> Transaction<RequestType>::m_request;
+        return true;
+    }
+
+    virtual void BeforeOnRequest() override {
+        std::cout << "before" << std::endl;
+    }
+
+    virtual void AfterOnRequest() override {
+        std::cout << "after" << std::endl;
+    }
+};
+
+// 具体的例子
+class MyTestTransaction : public ServerTransaction<RequestStruct> {
+public:
+    MyTestTransaction(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id)
+		: ServerTransaction(req_cmd_id, rsp_cmd_id, trans_id) {}
+
+    int OnRequest() override {
+        std::cout << "data:" << m_request.id << std::endl;
+        return 0;
+    }
+};
+
+class MyTestTransaction2 : public ServerTransaction<RequestStruct, RespondStruct> {
+public:
+    MyTestTransaction2(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id)
+		: ServerTransaction(req_cmd_id, rsp_cmd_id, trans_id) {}
+
+    int OnRequest() override {
+        std::cout << "data:" << m_request.id << std::endl;
+        m_respond.ret = 3;
+        return 0;
+    }
+};
+
+int main() {
+    MyTestTransaction trans1(0, 0, 0);
+    MyTestTransaction2 trans2(0, 0, 0);
+    // 模拟数据包
+    std::ostringstream oss;
+    oss << 100;
+    trans1.Handle(oss.str().c_str(), oss.str().length());
+    trans2.Handle(oss.str().c_str(), oss.str().length());
     return 0;
 }

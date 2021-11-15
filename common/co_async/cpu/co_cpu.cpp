@@ -12,7 +12,7 @@
 namespace co_async {
 namespace cpu {
 
-int g_wait_time = co_bridge::E_WAIT_TWO_MINUTE;
+int g_wait_time = co_bridge::E_WAIT_THIRTY_SECOND;
 
 int getWaitTime() {
     return g_wait_time;

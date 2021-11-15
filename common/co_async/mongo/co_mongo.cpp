@@ -14,7 +14,7 @@
 namespace co_async {
 namespace mongo {
 
-int g_wait_time = co_bridge::E_WAIT_FIVE_SECOND;
+int g_wait_time = co_bridge::E_WAIT_THIRTY_SECOND;
 
 int getWaitTime() {
     return g_wait_time;

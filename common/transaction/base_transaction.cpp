@@ -9,6 +9,7 @@
 
 #include "common/transaction/base_transaction.h"
 #include "common/coroutine/coroutine.hpp"
+#include "common/transaction/transaction_mgr.h"
 
 void BaseTransaction::Construct() {
     m_req_cmd_id = 0;
@@ -38,7 +39,7 @@ uint32_t BaseTransaction::RspCmdId() {
     return m_rsp_cmd_id;
 }
 
-uint32_t BaseTransaction::SetTransId(uint32_t trans_id) {
+void BaseTransaction::SetTransId(uint32_t trans_id) {
     m_trans_id = trans_id;
 }
 
@@ -59,6 +60,7 @@ void _transaction_coroutine_enter_(void* p) {
     // 运行
     trans->InCoroutine();
     // 协程退出
+    trans_mgr::recycleTransaction(trans);
 }
 
 #endif

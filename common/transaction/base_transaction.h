@@ -29,7 +29,7 @@ public:
 
     uint32_t RspCmdId();
 
-    uint32_t SetTransId(uint32_t trans_id);
+    void SetTransId(uint32_t trans_id);
 
     uint32_t TransId();
 

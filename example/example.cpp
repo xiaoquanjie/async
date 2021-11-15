@@ -595,25 +595,25 @@ int main8() {
 
 ///////////////////////////////////////////////////////////////////
 
-struct RequestStruct {
+// 模拟消息id
+#define CmdTestStructReq (1)
+#define CmdTestStructRsp (2)
+
+struct TestStructReq {
     int id = 1;
 };
 
-struct RespondStruct {
+struct TestStructRsp {
     int ret = 2;
 };
 
-void operator >> (std::istringstream& iss, RequestStruct& s) {
+void operator >> (std::istringstream& iss, TestStructReq& s) {
     iss >> s.id;
 }
 
 // 实现一个带解析器的ServerTransaction
 template<typename RequestType, typename RespondType = NullRespond>
 class ServerTransaction : public Transaction<RequestType, RespondType> {
-public:
-    ServerTransaction(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id)
-		: Transaction<RequestType, RespondType>(req_cmd_id, rsp_cmd_id, trans_id) {}
-
 protected:
     // 实现包解析器
     virtual bool ParsePacket(const char* packet, uint32_t packet_size) override {
@@ -634,10 +634,6 @@ protected:
 // 实现一个带解析器的ServerTransaction
 template<typename RequestType>
 class ServerTransaction<RequestType, NullRespond> : public Transaction<RequestType> {
-public:
-    ServerTransaction(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id)
-		: Transaction<RequestType>(req_cmd_id, rsp_cmd_id, trans_id) {}
-
 protected:
     // 实现包解析器
     virtual bool ParsePacket(const char* packet, uint32_t packet_size) override {
@@ -655,37 +651,34 @@ protected:
     }
 };
 
-// 具体的例子
-class MyTestTransaction : public ServerTransaction<RequestStruct> {
+// 定义一个事务
+class TestStructTransaction : public ServerTransaction<TestStructReq, TestStructRsp> {
 public:
-    MyTestTransaction(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id)
-		: ServerTransaction(req_cmd_id, rsp_cmd_id, trans_id) {}
-
-    int OnRequest() override {
-        std::cout << "data:" << m_request.id << std::endl;
-        return 0;
-    }
-};
-
-class MyTestTransaction2 : public ServerTransaction<RequestStruct, RespondStruct> {
-public:
-    MyTestTransaction2(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id)
-		: ServerTransaction(req_cmd_id, rsp_cmd_id, trans_id) {}
-
     int OnRequest() override {
         std::cout << "data:" << m_request.id << std::endl;
         m_respond.ret = 3;
+        std::cout << "co_id:" << Coroutine::curid() << std::endl;
+
+        // 访问redis
+        std::string value;
+        co_async::redis::execute("192.168.0.88|6379||0|0", async::redis::GetRedisCmd("mytest"), value);
+        std::cout << "redis value:" << value << std::endl;
         return 0;
     }
 };
 
+// 注册
+REGIST_TRANSACTION(TestStruct);
+
 int main() {
-    MyTestTransaction trans1(0, 0, 0);
-    MyTestTransaction2 trans2(0, 0, 0);
     // 模拟数据包
     std::ostringstream oss;
     oss << 100;
-    trans1.Handle(oss.str().c_str(), oss.str().length());
-    trans2.Handle(oss.str().c_str(), oss.str().length());
+    trans_mgr::handle(CmdTestStructReq, oss.str().c_str(), oss.str().length());
+
+    while (true) {
+        co_bridge::loop();
+        usleep(1);
+    }
     return 0;
 }

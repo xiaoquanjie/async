@@ -17,6 +17,7 @@ c++异步io库
     ipc模块依赖：zeromq库
 
 6、 如需使用transaction模块，则cmake时需定义宏USE_TRANS。如：cmake .. -DUSE_TRANS=1
+    transaction模块依赖：无依赖
 
 5、cmake例子：
     1）根目录下执行：mkdir -p build

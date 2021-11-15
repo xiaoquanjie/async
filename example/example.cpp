@@ -670,6 +670,18 @@ public:
 // 注册
 REGIST_TRANSACTION(TestStruct);
 
+class MyTickTransaction : public BaseTickTransaction {
+public:
+    void OnTick(uint32_t) {
+        // 访问redis
+        std::string value;
+        co_async::redis::execute("192.168.0.88|6379||0|0", async::redis::GetRedisCmd("mytest"), value);
+        std::cout << "tick redis value:" << value << std::endl;
+    }
+};
+
+REGIST_TICK_TRANSACTION(MyTickTransaction);
+
 int main() {
     // 模拟数据包
     std::ostringstream oss;
@@ -678,7 +690,8 @@ int main() {
 
     while (true) {
         co_bridge::loop();
-        usleep(1);
+        usleep(2000);
+        trans_mgr::tick(0);
     }
     return 0;
 }

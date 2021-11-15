@@ -20,6 +20,7 @@ public:
 
     void Tick(uint32_t cur_time);
 
+    virtual bool ParsePacket(const char*, uint32_t) override { return false; }
 protected:
     virtual void InCoroutine() override;
 

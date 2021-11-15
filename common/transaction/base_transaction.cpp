@@ -18,18 +18,28 @@ void BaseTransaction::Construct() {
     m_packet_size = 0;
 }
 
-BaseTransaction::BaseTransaction(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id) {
-    m_req_cmd_id = req_cmd_id;
-    m_rsp_cmd_id = rsp_cmd_id;
-    m_trans_id = trans_id;
+BaseTransaction::BaseTransaction() {
+    Construct();
+}
+
+void BaseTransaction::SetReqCmdId(uint32_t cmd) {
+    m_req_cmd_id = cmd;
 }
 
 uint32_t BaseTransaction::ReqCmdId() {
     return m_req_cmd_id;
 }
 
+void BaseTransaction::SetRspCmdId(uint32_t cmd) {
+    m_rsp_cmd_id = cmd;
+}
+
 uint32_t BaseTransaction::RspCmdId() {
     return m_rsp_cmd_id;
+}
+
+uint32_t BaseTransaction::SetTransId(uint32_t trans_id) {
+    m_trans_id = trans_id;
 }
 
 uint32_t BaseTransaction::TransId() {

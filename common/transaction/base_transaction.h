@@ -17,13 +17,19 @@ public:
 
     void Construct();
 
-    BaseTransaction(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id);
+    BaseTransaction();
 
     virtual ~BaseTransaction() {}
 
+    void SetReqCmdId(uint32_t cmd);
+
     uint32_t ReqCmdId();
 
+    void SetRspCmdId(uint32_t cmd);
+
     uint32_t RspCmdId();
+
+    uint32_t SetTransId(uint32_t trans_id);
 
     uint32_t TransId();
 
@@ -47,10 +53,6 @@ protected:
 template<typename RequestType>
 class OneWayTransaction : public BaseTransaction {
 public:
-    OneWayTransaction(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id) 
-        : BaseTransaction(req_cmd_id, rsp_cmd_id, trans_id) {
-    }
-
     int ReturnValue() {
         return m_return_value;
     }
@@ -92,10 +94,6 @@ protected:
 template<typename RequestType, typename RespondType>
 class TwoWayTransaction : public BaseTransaction { 
 public:
-    TwoWayTransaction(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id) 
-        : BaseTransaction(req_cmd_id, rsp_cmd_id, trans_id) {
-    }
-
     int ReturnValue() {
         return m_return_value;
     }
@@ -145,9 +143,6 @@ struct NullRespond {};
 template<typename RequestType, typename RespondType = NullRespond>
 class Transaction 
 	: public TwoWayTransaction<RequestType, RespondType> {
-public:
-	Transaction(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id)
-		: TwoWayTransaction<RequestType, RespondType>(req_cmd_id, rsp_cmd_id, trans_id) {}
 };
 
 // 利用模板特化重载Transaction类型---一个参数
@@ -155,7 +150,4 @@ template<typename RequestType>
 class Transaction<RequestType, NullRespond> 
 	: public OneWayTransaction<RequestType> {
 public:
-	Transaction(uint32_t req_cmd_id, uint32_t rsp_cmd_id, uint32_t trans_id)
-		: OneWayTransaction<RequestType>(req_cmd_id, rsp_cmd_id, trans_id) {
-	}
 };

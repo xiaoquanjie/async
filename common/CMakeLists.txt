@@ -59,7 +59,7 @@ endif(USE_TRANS)
 
 if(USE_NET)
     add_definitions(-DUSE_NET)
-    set(LINK_LIBRARYS ${LINK_LIBRARYS} event_core)
+    set(LINK_LIBRARYS ${LINK_LIBRARYS} event_core event_extra)
 endif(USE_NET)
 
 target_link_libraries(${TARGET_NAME} PRIVATE ${LINK_LIBRARYS})

@@ -34,6 +34,7 @@ public:
 
     void* getEventBase();
 
+    // @time_t保留
     void update(time_t);
 
     // @addr: ip:port

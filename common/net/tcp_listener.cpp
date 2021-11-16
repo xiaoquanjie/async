@@ -66,6 +66,10 @@ void TcpListener::update(time_t) {
 }
 
 bool TcpListener::listen(const std::string& addr) {
+    if (m_listener) {
+        return false;
+    }
+    
     sockaddr staddr;
 	int len = sizeof(staddr);
 	auto ret = evutil_parse_sockaddr_port(addr.c_str(), &staddr, &len);

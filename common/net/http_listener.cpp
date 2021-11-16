@@ -119,6 +119,9 @@ void on_request_cb_helper(void* r, void* ctx) {
         }
         delete[] buf;
 	}
+    else {
+        l->m_data_cb(l, r, 0, 0);
+    }
 }
 
 void on_request_cb(evhttp_request* request, void* ctx) {

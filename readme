@@ -19,10 +19,14 @@ c++异步io库
 6、 如需使用transaction模块，则cmake时需定义宏USE_TRANS。如：cmake .. -DUSE_TRANS=1
     transaction模块依赖：无依赖
 
+7、 如需使用net模块，则cmake时需定义宏USE_NET。如: cmake .. -DUSE_NET=1
+    net模块依赖：libevent
+
 5、cmake例子：
     1）根目录下执行：mkdir -p build
     2）cd build
-    3）cmake .. -DUSE_ASYNC_CURL=1 -DUSE_ASYNC_REDIS=1 -DUSE_ASYNC_MONGO=1 -DUSE_ASYNC_MYSQL=1 -DUSE_IPC=1 -DUSE_TRANS=1 -DCMAKE_BUILD_TYPE=Debug
+    3）cmake .. -DUSE_ASYNC_CURL=1 -DUSE_ASYNC_REDIS=1 -DUSE_ASYNC_MONGO=1 \
+        -DUSE_ASYNC_MYSQL=1 -DUSE_IPC=1 -DUSE_TRANS=1 -DUSE_NET=1 -DCMAKE_BUILD_TYPE=Debug
 
 依赖库安装：
     如果库安装路径、链接版本、头文件等出现报错，可以根据编译环境调整 common/CMakeLists.txt文件
@@ -56,6 +60,8 @@ common                  ----> 库目录
     co_ipc              ----> 用以提供进程间通信时协程式的send接口
 
     transaction         ----> 提供以协程方式运行的包处理接口
+
+    net                 ----> 提供tcp server/client接口，udp server/client接口，http server接口
 
 
 层次结构：co表示coroutine协程

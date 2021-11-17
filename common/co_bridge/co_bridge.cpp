@@ -94,9 +94,9 @@ void rmTimer(int64_t timer_id) {
     g_time_pool.CancelTimer(timer_id);
 }
 
-bool loop() {
+bool loop(uint32_t cur_time) {
     g_time_pool.Update();
-    return async::loop();
+    return async::loop(cur_time);
 }
 
 }

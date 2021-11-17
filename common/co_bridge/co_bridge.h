@@ -63,6 +63,6 @@ int64_t addTimer(int interval, std::function<void()> func);
 void rmTimer(int64_t timer_id);
 
 // 循环，内部调用异步循环
-bool loop();
+bool loop(uint32_t cur_time = 0);
 
 }

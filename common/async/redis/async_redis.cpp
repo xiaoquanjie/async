@@ -454,18 +454,16 @@ void execute(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb cb) 
     g_redis_global_data.request_queue.push(data);
 }
 
-void statistics() {
+void statistics(uint32_t cur_time) {
     if (!g_log_cb) {
         return;
     }
 
-    time_t now = 0;
-    time(&now);
-    if (now - g_last_statistics_time <= 120) {
+    if (cur_time - g_last_statistics_time <= 120) {
         return;
     }
 
-    g_last_statistics_time = now;
+    g_last_statistics_time = cur_time;
     log("[statistics] cur_task:%d, req_task:%d, rsp_task:%d",
         (g_redis_global_data.req_task_cnt - g_redis_global_data.rsp_task_cnt),
         g_redis_global_data.req_task_cnt,
@@ -516,12 +514,12 @@ void local_process_task() {
     }
 }
 
-bool loop() {
+bool loop(uint32_t cur_time) {
     if (!g_redis_global_data.init) {
         return false;
     }
 
-    statistics();
+    statistics(cur_time);
 
     // flag为false时，代表可操作
     if (g_redis_global_data.flag) {

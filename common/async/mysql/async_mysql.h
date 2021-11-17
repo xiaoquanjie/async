@@ -32,7 +32,7 @@ void setMaxConnection(unsigned int cnt);
 
 void setKeepConnection(unsigned int cnt);
 
-bool loop();
+bool loop(uint32_t cur_time);
 
 void setThreadFunc(std::function<void(std::function<void()>)>);
 

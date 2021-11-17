@@ -23,7 +23,7 @@ typedef std::function<void(MongoReplyParserPtr)> async_mongo_cb;
 // @uri: [mongourl-db-collection]
 void execute(std::string uri, const BaseMongoCmd& cmd, async_mongo_cb cb);
 
-bool loop();
+bool loop(uint32_t cur_time);
 
 void setThreadFunc(std::function<void(std::function<void()>)>);
 

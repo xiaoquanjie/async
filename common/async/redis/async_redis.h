@@ -25,7 +25,7 @@ void execute(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb cb);
 // 同步redis接口, 无连接池
 bool executeSync(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb cb);
 
-bool loop();
+bool loop(uint32_t cur_time);
 
 void setThreadFunc(std::function<void(std::function<void()>)>);
 

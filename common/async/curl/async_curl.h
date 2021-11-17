@@ -25,7 +25,7 @@ void post(const std::string& url, const std::string& content, async_curl_cb cb);
 
 void post(const std::string& url, const std::string& content, const std::map<std::string, std::string>& headers, async_curl_cb cb);
 
-bool loop();
+bool loop(uint32_t cur_time);
 
 void setThreadFunc(std::function<void(std::function<void()>)>);
 

@@ -11,30 +11,33 @@
 namespace async {
 
 // 内置的循环
-std::vector<std::function<bool()>> g_loop_array = {
+std::vector<std::function<bool(uint32_t)>> g_loop_array = {
 #ifdef USE_ASYNC_REDIS
-    std::bind(async::redis::loop),
+    std::bind(async::redis::loop, std::placeholders::_1),
 #endif
 
 #ifdef USE_ASYNC_MONGO
-    std::bind(async::mongo::loop),
+    std::bind(async::mongo::loop, std::placeholders::_1),
 #endif
 
 #ifdef USE_ASYNC_CURL
-    std::bind(async::curl::loop),
+    std::bind(async::curl::loop, std::placeholders::_1),
 #endif
 
 #ifdef USE_ASYNC_MYSQL
-    std::bind(async::mysql::loop),
+    std::bind(async::mysql::loop, std::placeholders::_1),
 #endif
 
-    std::bind(async::cpu::loop)
+    std::bind(async::cpu::loop, std::placeholders::_1)
 };
 
-bool loop() {
+bool loop(uint32_t cur_time) {
+    if (cur_time == 0) {
+       // time(&cur_time);
+    }
     bool is_busy = false;
     for (auto& f : g_loop_array) {
-        if (f()) {
+        if (f(cur_time)) {
             is_busy = true;
         }
     }
@@ -42,7 +45,7 @@ bool loop() {
     return is_busy;
 }
 
-void addToLoop(std::function<bool()> f) {
+void addToLoop(std::function<bool(uint32_t)> f) {
     g_loop_array.push_back(f);
 }
 

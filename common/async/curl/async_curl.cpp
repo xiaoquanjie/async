@@ -272,18 +272,16 @@ void post(const std::string& url, const std::string& content, const std::map<std
     local_curl_request(METHOD_POST, url, headers, content, cb);
 }
 
-void statistics() {
+void statistics(uint32_t cur_time) {
     if (!g_log_cb) {
         return;
     }
 
-    time_t now = 0;
-    time(&now);
-    if (now - g_last_statistics_time <= 120) {
+    if (cur_time - g_last_statistics_time <= 120) {
         return;
     }
 
-    g_last_statistics_time = now;
+    g_last_statistics_time = cur_time;
 
     log("[statistics] cur_task:%d, req_task:%d, rsp_task:%d",
         (g_curl_global_data.req_task_cnt - g_curl_global_data.rsp_task_cnt),
@@ -345,12 +343,12 @@ void local_process_task() {
     }
 }
 
-bool loop() {
+bool loop(uint32_t cur_time) {
     if (!g_curl_global_data.init) {
         return false;
     }
 
-    statistics();
+    statistics(cur_time);
 
     if (g_curl_global_data.flag) {
         return true;

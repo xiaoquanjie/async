@@ -457,19 +457,17 @@ void execute(std::string uri, const BaseMongoCmd& cmd, async_mongo_cb cb) {
     g_mongo_global_data.req_task_cnt++;
 }
 
-void statistics() {
+void statistics(uint32_t cur_time) {
     if (!g_log_cb) {
         return;
     }
 
-    time_t now = 0;
-    time(&now);
-    if (now - g_last_statistics_time <= 120) {
+    if (cur_time - g_last_statistics_time <= 120) {
         return;
     }
 
     // 没有输出连接池大小
-    g_last_statistics_time = now;
+    g_last_statistics_time = cur_time;
     log("[statistics] cur_task:%d, req_task:%d, rsp_task:%d",
         (g_mongo_global_data.req_task_cnt - g_mongo_global_data.rsp_task_cnt),
         g_mongo_global_data.req_task_cnt,
@@ -506,14 +504,14 @@ void local_process_task() {
     }
 }
 
-bool loop() {
+bool loop(uint32_t cur_time) {
     if (!g_mongo_global_data.init) {
         return false;
     }
 
     local_process_task();
     local_process_respond();
-    statistics();
+    statistics(cur_time);
 
     // 是否有任务
     bool has_task = false;

@@ -50,6 +50,10 @@ std::function<void(const char*)> g_log_cb = [](const char* data) {
 };
 
 void log(const char* format, ...) {
+    if (!g_log_cb) {
+        return;
+    }
+    
     char buf[1024] = { 0 };
     va_list ap;
     va_start(ap, format);
@@ -100,6 +104,10 @@ void setLogFunc(std::function<void(const char*)> cb) {
 }
 
 void statistics() {
+    if (!g_log_cb) {
+        return;
+    }
+
     time_t now = 0;
     time(&now);
     if (now - g_last_statistics_time <= 120) {

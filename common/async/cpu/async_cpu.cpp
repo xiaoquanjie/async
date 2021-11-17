@@ -53,7 +53,7 @@ void log(const char* format, ...) {
     if (!g_log_cb) {
         return;
     }
-    
+
     char buf[1024] = { 0 };
     va_list ap;
     va_start(ap, format);
@@ -121,12 +121,27 @@ void statistics() {
         g_cpu_global_data.rsp_task_cnt);
 }
 
-bool loop() {
-    // 是否有任务
-    bool has_task = false;
-    if (g_cpu_global_data.req_task_cnt != g_cpu_global_data.rsp_task_cnt) {
-        has_task = true;
+void local_process_respond() {
+    if (g_cpu_global_data.respond_queue.empty()) {
+        return;
     }
+
+    // 交换队列
+    std::queue<cpu_respond_data> respond_queue;
+    g_cpu_global_data.respond_mutext.lock();
+    respond_queue.swap(g_cpu_global_data.respond_queue);
+    g_cpu_global_data.respond_mutext.unlock();
+
+    // 运行结果
+    while (!respond_queue.empty()) {
+        g_cpu_global_data.rsp_task_cnt++;
+        cpu_respond_data rsp = std::move(respond_queue.front());
+        respond_queue.pop();
+        rsp.req->cb(rsp.result, rsp.req->user_data);
+    }
+}
+
+void local_process_task() {
     if (!g_cpu_global_data.request_queue.empty()) {
         if (g_cpu_global_data.thr_func) {
             g_cpu_global_data.thr_func(get_thread_func());
@@ -135,24 +150,18 @@ bool loop() {
             get_thread_func()();
         }
     }
+}
 
-    // 运行结果
-    if (!g_cpu_global_data.respond_queue.empty()) {
-        // 交换队列
-        std::queue<cpu_respond_data> respond_queue;
-        g_cpu_global_data.respond_mutext.lock();
-        respond_queue.swap(g_cpu_global_data.respond_queue);
-        g_cpu_global_data.respond_mutext.unlock();
-
-        while (!respond_queue.empty()) {
-            g_cpu_global_data.rsp_task_cnt++;
-            cpu_respond_data rsp = std::move(respond_queue.front());
-            respond_queue.pop();
-            rsp.req->cb(rsp.result, rsp.req->user_data);
-        } 
-    }
-
+bool loop() {
+    local_process_respond();
+    local_process_task();
     statistics();
+
+    // 是否有任务
+    bool has_task = false;
+    if (g_cpu_global_data.req_task_cnt != g_cpu_global_data.rsp_task_cnt) {
+        has_task = true;
+    }
     return has_task;
 }
 

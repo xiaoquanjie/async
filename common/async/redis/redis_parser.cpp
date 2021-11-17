@@ -67,19 +67,8 @@ bool RedisReplyParser::GetError(std::string& value) {
 void RedisReplyParser::GetInteger(long long& value) {
 	RedisException error;
 	do {
-		if (!(redisReply*)_reply) {
-			error = RedisException(M_ERR_REDIS_REPLY_NULL);
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_NIL) {
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_ERROR) {
-			error = RedisException(((redisReply*)_reply)->str);
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_SELF_TIMEOUT) {
-			error = RedisException(M_ERR_REDIS_CONNECT_FAIL);
+		error = checkReply(_reply, 0);
+		if (!error.Empty()) {
 			break;
 		}
 
@@ -107,19 +96,8 @@ void RedisReplyParser::GetInteger(long long& value) {
 void RedisReplyParser::GetString(std::string& value) {
 	RedisException error;
 	do {
-		if (!((redisReply*)_reply)) {
-			error = RedisException(M_ERR_REDIS_REPLY_NULL);
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_NIL) {
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_ERROR) {
-			error = RedisException(((redisReply*)_reply)->str);
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_SELF_TIMEOUT) {
-			error = RedisException(M_ERR_REDIS_CONNECT_FAIL);
+		error = checkReply(_reply, 0);
+		if (!error.Empty()) {
 			break;
 		}
 
@@ -148,19 +126,8 @@ void RedisReplyParser::GetString(std::string& value) {
 void RedisReplyParser::GetString(char* value, unsigned int len) {
 	RedisException error;
 	do {
-		if (!((redisReply*)_reply)) {
-			error = RedisException(M_ERR_REDIS_REPLY_NULL);
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_NIL) {
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_ERROR) {
-			error = RedisException(((redisReply*)_reply)->str);
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_SELF_TIMEOUT) {
-			error = RedisException(M_ERR_REDIS_CONNECT_FAIL);
+		error = checkReply(_reply, 0);
+		if (!error.Empty()) {
 			break;
 		}
 
@@ -194,23 +161,8 @@ void RedisReplyParser::GetString(char* value, unsigned int len) {
 void RedisReplyParser::GetOk(bool& value) {
 	RedisException error;
 	do {
-		if (!((redisReply*)_reply)) {
-			error = RedisException(M_ERR_REDIS_REPLY_NULL);
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_NIL) {
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_ERROR) {
-			error = RedisException(((redisReply*)_reply)->str);
-			break;
-		}	
-		if (((redisReply*)_reply)->type == REDIS_REPLY_SELF_TIMEOUT) {
-			error = RedisException(M_ERR_REDIS_CONNECT_FAIL);
-			break;
-		}	
-		if (((redisReply*)_reply)->type != REDIS_REPLY_STATUS) {
-			error = RedisException(M_ERR_NOT_DEFINED);
+		error = checkReply(_reply, REDIS_REPLY_STATUS);
+		if (!error.Empty()) {
 			break;
 		}
 
@@ -232,188 +184,68 @@ void RedisReplyParser::GetOk(bool& value) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void RedisReplyParser::GetValue(void* reply, std::string& value) {
-	value.append(((redisReply*)reply)->str, ((redisReply*)reply)->len);
+bool RedisReplyParser::GetValue(void* reply, std::string& value) {
+	if (((redisReply*)reply)->type == REDIS_REPLY_STRING) {
+		value.append(((redisReply*)reply)->str, ((redisReply*)reply)->len);
+		return true;
+	}
+	return false;
 }
 
-template<typename T>
-void RedisReplyParser::GetValue(void* reply, T& value) {
-	std::istringstream iss(std::string(((redisReply*)reply)->str, ((redisReply*)reply)->len));
-	iss >> value;
-}
-
-template <typename T>
-void RedisReplyParser::GetArray(T &values) {
+RedisException checkReply(void* reply, int hope) {
 	RedisException error;
 	do {
-		if (!((redisReply*)_reply)) {
+		if (!((redisReply*)reply)) {
 			error = RedisException(M_ERR_REDIS_REPLY_NULL);
 			break;
 		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_NIL) {
+		if (((redisReply*)reply)->type == REDIS_REPLY_NIL) {
 			break;
 		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_ERROR) {
-			error = RedisException(((redisReply*)_reply)->str);
+		if (((redisReply*)reply)->type == REDIS_REPLY_ERROR) {
+			error = RedisException(((redisReply*)reply)->str);
 			break;
 		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_SELF_TIMEOUT) {
+		if (((redisReply*)reply)->type == REDIS_REPLY_SELF_TIMEOUT) {
 			error = RedisException(M_ERR_REDIS_CONNECT_FAIL);
 			break;
 		}
-		if (((redisReply*)_reply)->type != REDIS_REPLY_ARRAY) {
+		if (hope != 0 && ((redisReply*)reply)->type != hope) {
 			error = RedisException(M_ERR_NOT_DEFINED);
 			break;
 		}
-
-		for (size_t idx = 0; idx < ((redisReply*)_reply)->elements; ++idx) {
-			redisReply *ele = ((redisReply*)_reply)->element[idx];
-			typename T::value_type v;
-			DataConstruct(v);
-			if (ele->type == REDIS_REPLY_STRING) {
-				GetValue(ele, v);
-			}
-			values.push_back(v);
-		}
+		
 	} while (false);
 
-	if (!error.Empty()) {
-		throw error;
+	return error;
+}
+
+void iteratorReply(void* reply, std::function<void(void*)> f) {
+	if (((redisReply *)reply)->type != REDIS_REPLY_ARRAY) {
+		return;
+	}
+	for (size_t idx = 0; idx < ((redisReply *)reply)->elements; ++idx) {
+		redisReply *ele = ((redisReply *)reply)->element[idx];
+		f(ele);
 	}
 }
 
-template<typename T>
-void RedisReplyParser::GetArray(std::set<T>& values) {
-	RedisException error;
-	do {
-		if (!((redisReply*)_reply)) {
-			error = RedisException(M_ERR_REDIS_REPLY_NULL);
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_NIL) {
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_ERROR) {
-			error = RedisException(((redisReply*)_reply)->str);
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_SELF_TIMEOUT) {
-			error = RedisException(M_ERR_REDIS_CONNECT_FAIL);
-			break;
-		}
-		if (((redisReply*)_reply)->type != REDIS_REPLY_ARRAY) {
-			error = RedisException(M_ERR_NOT_DEFINED);
-			break;
-		}
-
-		for (size_t idx = 0; idx < ((redisReply*)_reply)->elements; ++idx) {
-			redisReply *ele = ((redisReply*)_reply)->element[idx];
-			T v;
-			DataConstruct(v);
-			if (ele->type == REDIS_REPLY_STRING) {
-				GetValue(ele, v);
-			}
-			values.insert(v);
-		}
-	} while (false);
-
-	if (!error.Empty()) {
-		throw error;
+void iteratorReply(void* reply, std::function<void(void*, void*)> f) {
+	if (((redisReply *)reply)->type != REDIS_REPLY_ARRAY) {
+		return;
+	}
+	for (size_t idx = 0; idx < ((redisReply*)reply)->elements; idx += 2) {
+		redisReply *ele = ((redisReply *)reply)->element[idx];
+		redisReply *ele2 = ((redisReply *)reply)->element[idx + 1];
+		f(ele, ele2);
 	}
 }
 
-template <typename T1, typename T2>
-void RedisReplyParser::GetMap(std::map<T1, T2> &values) {
-	RedisException error;
-	do {
-		if (!((redisReply*)_reply)) {
-			error = RedisException(M_ERR_REDIS_REPLY_NULL);
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_NIL) {
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_ERROR) {
-			error = RedisException(((redisReply*)_reply)->str);
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_SELF_TIMEOUT) {
-			error = RedisException(M_ERR_REDIS_CONNECT_FAIL);
-			break;
-		}
-		if (((redisReply*)_reply)->type != REDIS_REPLY_ARRAY) {
-			error = RedisException(M_ERR_NOT_DEFINED);
-			break;
-		}
-
-		for (size_t idx = 0; idx < ((redisReply*)_reply)->elements; idx += 2) {
-			T1 value1;
-			GetValue(((redisReply*)_reply)->element[idx], value1);
-
-			T2 value2;
-			GetValue(((redisReply*)_reply)->element[idx + 1], value2);
-
-			values.insert(std::make_pair(value1, value2));
-		}
-
-	} while (false);
-
-	if (!error.Empty()) {
-		throw error;
-	}
-}
-
-template<typename T>
-void RedisReplyParser::GetScan(long long& cursor, T& values) {
-    RedisException error;
-    do {
-        if (!((redisReply*)_reply)) {
-			error = RedisException(M_ERR_REDIS_REPLY_NULL);
-			break;
-		}
-        if (((redisReply*)_reply)->type == REDIS_REPLY_NIL) {
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_ERROR) {
-			error = RedisException(((redisReply*)_reply)->str);
-			break;
-		}
-		if (((redisReply*)_reply)->type == REDIS_REPLY_SELF_TIMEOUT) {
-			error = RedisException(M_ERR_REDIS_CONNECT_FAIL);
-			break;
-		}
-        if (((redisReply*)_reply)->type != REDIS_REPLY_ARRAY) {
-			error = RedisException(M_ERR_NOT_DEFINED);
-			break;
-		}
-
-        if (((redisReply*)_reply)->elements < 2) {
-            error = RedisException(M_ERR_REDIS_SCAN);
-			break;
-        }
-
-        GetValue(((redisReply*)_reply)->element[0], cursor);
-        redisReply* sub_reply = ((redisReply*)_reply)->element[1];
-        if (sub_reply->type != REDIS_REPLY_ARRAY) {
-            error = RedisException(M_ERR_REDIS_SCAN);
-            break;
-        }
-
-        for (size_t idx = 0; idx < sub_reply->elements; ++idx) {
-            redisReply *ele = sub_reply->element[idx];
-			typename T::value_type v;
-			DataConstruct(v);
-			if (ele->type == REDIS_REPLY_STRING) {
-				GetValue(ele, v);
-			}
-			values.push_back(v);
-		}
-
-    } while (false);
-
-    if (!error.Empty()) {
-		throw error;
-	}
+void iteratorReply(void* reply, void** ele1, void** ele2) {
+	if (((redisReply*)reply)->elements == 2) {
+		*ele1 = ((redisReply*)reply)->element[0];
+		*ele2 = ((redisReply*)reply)->element[1];
+    }
 }
 
 } // redis

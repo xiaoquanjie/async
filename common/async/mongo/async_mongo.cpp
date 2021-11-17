@@ -56,7 +56,7 @@ struct mongo_addr {
             }
         }
         else {
-            printf("uri error:%s\n", uri.c_str());
+            printf("[mongo] uri error:%s\n", uri.c_str());
             assert(false);
         }
     }
@@ -136,13 +136,13 @@ mongo_core* thread_create_core(const mongo_addr& addr) {
             bson_error_t error;
             core->mongoc_uri = mongoc_uri_new_with_error(core->addr.addr.c_str(), &error);
             if (!core->mongoc_uri) {
-                printf("failed to call mongoc_uri_new_with_error:%s\n", core->addr.addr.c_str());
+                printf("[mongo] failed to call mongoc_uri_new_with_error:%s\n", core->addr.addr.c_str());
                 break;
             }
 
             core->mongoc_client = mongoc_client_new_from_uri(core->mongoc_uri);
             if (!core->mongoc_client) {
-                printf("failed to call mongoc_client_new_from_uri:%s\n", core->addr.addr.c_str());
+                printf("[mongo] failed to call mongoc_client_new_from_uri:%s\n", core->addr.addr.c_str());
                 break;
             }
 
@@ -355,7 +355,7 @@ void thread_mongo_process(mongo_custom_data* req_data, mongo_global_data* global
                                                                        req_data->addr.collection.c_str());
         if (!collection) {
             bson_set_error((bson_error_t*)rsp_data.parser->error, 0, 2, "failed to get mongo collection");
-            printf("failed to call mongoc_client_get_collection:%s|%s\n",
+            printf("[mongo] failed to call mongoc_client_get_collection:%s|%s\n",
                                    req_data->addr.db.c_str(),
                                    req_data->addr.collection.c_str());
             break;

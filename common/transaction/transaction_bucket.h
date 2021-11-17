@@ -10,6 +10,7 @@
 #include "common/transaction/base_transaction.h"
 #include <stdint.h>
 #include <list>
+#include <typeinfo>
 
 namespace trans_mgr {
 
@@ -31,8 +32,14 @@ public:
 
     virtual uint32_t Size() const = 0;
 
+    virtual const char* TransName() = 0;
+
     uint32_t ReqCmdId() {
         return m_req_cmd_id;
+    }
+
+    uint32_t RspCmdId() {
+        return m_rsp_cmd_id;
     }
 protected:
     uint32_t m_req_cmd_id;
@@ -83,6 +90,10 @@ public:
 
     uint32_t Size() const {
         return m_trans_vec.size();
+    }
+
+    virtual const char* TransName() {
+        return typeid(TransactionType).name();
     }
 
 protected:

@@ -18,6 +18,7 @@ namespace trans_mgr {
 uint32_t g_trans_id = 1;
 uint32_t g_max_concurrent_trans = 100000;
 uint32_t g_cur_concurrent_trans = 0;
+time_t   g_last_check_time = 0;
 std::unordered_map<uint32_t, TransactionBucket*> g_trans_bucket_map;
 std::list<BaseTickTransaction*> g_tick_trans_list;
 
@@ -33,7 +34,7 @@ void setMaxTrans(uint32_t max_trans) {
 
 int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size) {
     if (g_cur_concurrent_trans >= g_max_concurrent_trans) {
-        printf("over max concurrent trans limit:%d\n", g_cur_concurrent_trans);
+        printf("[transaction] over max concurrent trans limit:%d\n", g_cur_concurrent_trans);
         return -1;
     }
 
@@ -48,6 +49,7 @@ int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size) {
         return -1;
     }
 
+    g_cur_concurrent_trans++;
     t->Handle(packet, packet_size);
     return 0;
 }
@@ -55,6 +57,10 @@ int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size) {
 void tick(uint32_t cur_time) {
     for (auto iter = g_tick_trans_list.begin(); iter != g_tick_trans_list.end(); ++iter) {
         (*iter)->Tick(cur_time);
+    }
+    if (cur_time - g_last_check_time >= 120) {
+        g_last_check_time = cur_time;
+        printf("[transaction] current concurrent count:%d\n", g_cur_concurrent_trans);
     }
 }
 
@@ -66,10 +72,10 @@ int registBucket(TransactionBucket* bucket) {
         return -1;
     }
 
+    printf("[transaction] regist req_cmd:%d, rsp_cmd:%d, trans:%s\n", bucket->ReqCmdId(), bucket->RspCmdId(), bucket->TransName());
     g_trans_bucket_map.insert(std::make_pair(bucket->ReqCmdId(), bucket));
     return 0;
 }
-
 
 void recycleTransaction(BaseTransaction* t) {
     if (t->ReqCmdId() == 0 && t->RspCmdId() == 0) {
@@ -81,6 +87,7 @@ void recycleTransaction(BaseTransaction* t) {
         return;          
     }
 
+    g_cur_concurrent_trans--;
     iter->second->Recycle(t);
 }
 

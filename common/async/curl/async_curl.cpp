@@ -73,13 +73,13 @@ bool local_curl_global_init() {
 
     auto code = curl_global_init(CURL_GLOBAL_ALL);
     if (code != CURLE_OK) {
-        printf("curl: failed to call curl_global_init: %d\n", code);
+        printf("[curl] failed to call curl_global_init: %d\n", code);
         return false;
     }
 
     g_curl_global_data.curlm = curl_multi_init();
     if (!g_curl_global_data.curlm) {
-        printf("curl: failed to call curl_multi_init: %d\n", errno);
+        printf("[curl] failed to call curl_multi_init: %d\n", errno);
         return false;
     }
 
@@ -111,7 +111,7 @@ curl_custom_data* local_create_curl_custom_data(int method,
 {
     CURL* curl = curl_easy_init();
     if (!curl) {
-        printf("curl: failed to call curl_easy_init: %d, method:%d, url:%s\n", errno, method, url.c_str());
+        printf("[curl] failed to call curl_easy_init: %d, method:%d, url:%s\n", errno, method, url.c_str());
         return 0;
     }
 
@@ -169,7 +169,7 @@ int thread_curl_multi_select(CURLM* curlm) {
 
     auto code = curl_multi_fdset(curlm, &fdread, &fdwrite, &fdexcep, &maxfd);
     if (CURLM_OK != code) {
-        printf("curl: failed to call curl_multi_fdset: %d\n", code);
+        printf("[curl] failed to call curl_multi_fdset: %d\n", code);
         return 0;
     }
 
@@ -194,7 +194,7 @@ void thread_curl_finish(CURLM* curlm, std::queue<curl_respond_data>& queue) {
         CURL* curl = (CURL*)curl_msg->easy_handle;
         auto curl_code = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
         if (CURLE_OK != curl_code) {
-            printf("curl: failed to call curl_easy_getinfo: %d\n", curl_code);
+            printf("[curl] failed to call curl_easy_getinfo: %d\n", curl_code);
         }
 
         // push to queue
@@ -220,7 +220,7 @@ void thread_curl_process(CURLM* curlm, std::queue<curl_respond_data>& queue, boo
         curl_multi_wait(curlm, NULL, 0, 0, NULL);
         auto code = curl_multi_perform(curlm, &still_running);
         if (code != CURLM_OK) {
-            printf("curl: failed to call curl_multi_perform: %d\n", code);
+            printf("[curl] failed to call curl_multi_perform: %d\n", code);
             break;
         }
     } while (still_running);
@@ -304,7 +304,7 @@ bool loop() {
         if (code != CURLM_OK) {
             curl_easy_cleanup(req->curl);
             delete req;
-            printf("curl: failed to call curl_multi_add_handle: %d\n", code);
+            printf("[curl] failed to call curl_multi_add_handle: %d\n", code);
             continue;
         }
 

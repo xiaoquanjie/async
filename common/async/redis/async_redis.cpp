@@ -201,7 +201,7 @@ void on_thread_redis_connect(const redisAsyncContext *c, int status) {
     bool flag = false;
     for (auto iter = g_redis_global_data.uri_map.begin(); iter != g_redis_global_data.uri_map.end(); ) {
         if (iter->second->ctxt == c) {
-            printf("redis: %s connection|%p|uri:%s\n", (status == REDIS_OK ? "a new" : "a fail"),
+            printf("[redis] %s connection|%p|uri:%s\n", (status == REDIS_OK ? "a new" : "a fail"),
                                    c,
                                    iter->second->addr.uri.c_str());
             if (status == REDIS_OK) {
@@ -219,7 +219,7 @@ void on_thread_redis_connect(const redisAsyncContext *c, int status) {
     }
 
     if (!flag) {
-        printf("redis: a connection error|%p\n", c);
+        printf("[redis] a connection error|%p\n", c);
     }
 }
 
@@ -227,7 +227,7 @@ void on_thread_redis_disconnect(const redisAsyncContext* c, int) {
     bool flag = false;
     for (auto iter = g_redis_global_data.uri_map.begin(); iter != g_redis_global_data.uri_map.end(); ) {
         if (iter->second->ctxt == c) {
-            printf("redis: a disconnection|%p|uri:%s\n", c, iter->second->addr.uri.c_str());
+            printf("[redis] a disconnection|%p|uri:%s\n", c, iter->second->addr.uri.c_str());
             iter->second->state = enum_disconnected_state;
             // erase掉
             g_redis_global_data.uri_map.erase(iter++);
@@ -238,7 +238,7 @@ void on_thread_redis_disconnect(const redisAsyncContext* c, int) {
     }
 
     if (!flag) {
-        printf("redis: a disconnection error|%p\n", c);
+        printf("[redis] a disconnection error|%p\n", c);
     }
 }
 
@@ -248,11 +248,11 @@ void on_thread_redis_selectdb(void*, void* r, void* user_data) {
     if (reply->type == REDIS_REPLY_STATUS
         && strcmp(reply->str, "OK") == 0) {
         data->core->state = enum_selected_state;
-        printf("redis: select db ok|%d\n", data->addr.idx);
+        printf("[redis] select db ok|%d\n", data->addr.idx);
     }
     else {
         data->core->state = enum_disconnected_state;
-        printf("redis: failed to select db|%d\n", reply->type);
+        printf("[redis] failed to select db|%d\n", reply->type);
     }
 
     // delete redis_custom_data;
@@ -325,7 +325,7 @@ redis_core_ptr thread_create_core(const redis_addr& addr, bool new_create) {
         }
 
         if (!core->ctxt) {
-            printf("redis: failed to call redisClusterAsyncConnect or redisAsyncConnect\n");
+            printf("[redis] failed to call redisClusterAsyncConnect or redisAsyncConnect\n");
             return nullptr;
         }
 
@@ -436,7 +436,7 @@ bool local_redis_init() {
 
     g_redis_global_data.evt_base = event_base_new();
     if (!g_redis_global_data.evt_base) {
-        printf("redis: failed to call event_base_new\n");
+        printf("[redis] failed to call event_base_new\n");
         return false;
     }
 

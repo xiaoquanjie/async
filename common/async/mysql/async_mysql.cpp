@@ -55,7 +55,7 @@ struct mysql_addr {
             this->pwd = values[4];
         }
         else {
-            printf("uri error:%s\n", uri.c_str());
+            printf("[mysql] uri error:%s\n", uri.c_str());
             assert(false);
         }
     }
@@ -153,7 +153,7 @@ mysql_core_ptr local_create_core(const mysql_addr& addr, uri_data& uri_map) {
     core->state = enum_null_state;
     auto mysql = mysql_init(&core->mysql);
     if (!mysql) {
-        printf("failed to call mysql_init\n");
+        printf("[mysql] failed to call mysql_init\n");
         return nullptr;
     }
 
@@ -225,7 +225,7 @@ void thread_mysql_look_state(std::list<mysql_custom_data *> &request_queue,
                                                 data->sql.length());
             if (err != 0) {
                 data->core->state = enum_error_state;
-                printf("failed to call mysql_real_query_start:%d\n", err);
+                printf("[mysql] failed to call mysql_real_query_start:%d\n", err);
             }
             else {
                 if (data->status == 0) {
@@ -293,7 +293,7 @@ void thread_mysql_wait(std::list<mysql_custom_data *> &request_queue,
     int rc = select(max_fd + 1, &fd_r, &fd_w, &fd_e, &to);
 
     if (rc < 0) {
-        printf("failed to call select\n");
+        printf("[mysql] failed to call select\n");
         return;
     }
 
@@ -524,7 +524,7 @@ bool loop() {
             
             int err = mysql_errno(&item.data->core->mysql);
             if (err != 0) {
-                printf("failed to call mysql:%s|%s\n", mysql_error(&item.data->core->mysql), item.data->sql.c_str());
+                printf("[mysql] failed to call mysql:%s|%s\n", mysql_error(&item.data->core->mysql), item.data->sql.c_str());
             }
 
             int affected_rows = 0;

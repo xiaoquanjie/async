@@ -10,6 +10,7 @@
 #include "common/transaction/transaction_mgr.h"
 #include <unordered_map>
 #include <assert.h>
+#include <stdarg.h>
 
 namespace trans_mgr {
 
@@ -24,6 +25,27 @@ std::list<BaseTickTransaction*> g_tick_trans_list;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// 日志输出接口
+std::function<void(const char*)> g_log_cb = [](const char* data) {
+    printf("[transaction] %s\n", data);
+};
+
+void log(const char* format, ...) {
+    if (!g_log_cb) {
+        return;
+    }
+
+    char buf[1024] = { 0 };
+    va_list ap;
+    va_start(ap, format);
+    vsprintf(buf, format, ap);
+    g_log_cb(buf);
+}
+
+void setLogFunc(std::function<void(const char*)> cb) {
+    g_log_cb = cb;
+}
+
 uint32_t genTransId() {
     return (g_trans_id++);
 }
@@ -34,7 +56,7 @@ void setMaxTrans(uint32_t max_trans) {
 
 int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size) {
     if (g_cur_concurrent_trans >= g_max_concurrent_trans) {
-        printf("[transaction] over max concurrent trans limit:%d\n", g_cur_concurrent_trans);
+        log("over max concurrent trans limit:%d\n", g_cur_concurrent_trans);
         return -1;
     }
 
@@ -60,7 +82,7 @@ void tick(uint32_t cur_time) {
     }
     if (cur_time - g_last_check_time >= 120) {
         g_last_check_time = cur_time;
-        printf("[transaction] current concurrent count:%d\n", g_cur_concurrent_trans);
+        log("[statistics] cur_trans:%d\n", g_cur_concurrent_trans);
     }
 }
 
@@ -72,7 +94,7 @@ int registBucket(TransactionBucket* bucket) {
         return -1;
     }
 
-    printf("[transaction] regist req_cmd:%d, rsp_cmd:%d, trans:%s\n", bucket->ReqCmdId(), bucket->RspCmdId(), bucket->TransName());
+    log("regist req_cmd:%d, rsp_cmd:%d, trans:%s\n", bucket->ReqCmdId(), bucket->RspCmdId(), bucket->TransName());
     g_trans_bucket_map.insert(std::make_pair(bucket->ReqCmdId(), bucket));
     return 0;
 }

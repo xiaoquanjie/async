@@ -10,6 +10,7 @@
 #include "common/transaction/base_transaction.h"
 #include "common/transaction/base_tick_transaction.h"
 #include "common/transaction/transaction_bucket.h"
+#include <functional>
 
 namespace trans_mgr {
 
@@ -29,6 +30,8 @@ void recycleTransaction(BaseTransaction* t);
 
 // 注册tick事务
 int registTickTransaction(TransactionBucket* bucket);
+
+void setLogFunc(std::function<void(const char*)> cb);
 
 };
 

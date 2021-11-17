@@ -137,6 +137,10 @@ void log(const char* format, ...) {
     g_log_cb(buf);
 }
 
+void setLogFunc(std::function<void(const char*)> cb) {
+    g_log_cb = cb;
+}
+
 ///////////////////////////////////////////////////////////////////////
 
 mongo_core* thread_create_core(const mongo_addr& addr) {

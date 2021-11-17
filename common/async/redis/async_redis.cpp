@@ -157,6 +157,10 @@ void log(const char* format, ...) {
     g_log_cb(buf);
 }
 
+void setLogFunc(std::function<void(const char*)> cb) {
+    g_log_cb = cb;
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 
 redisReply* copy_redis_reply(redisReply* reply) {
@@ -485,7 +489,7 @@ void local_process_respond() {
         g_redis_global_data.rsp_task_cnt++;
         redis_respond_data rsp = std::move(respond_queue.front());
         respond_queue.pop();
-        RedisReplyParserPtr parser(new RedisReplyParser(rsp.reply));
+        RedisReplyParserPtr parser = std::make_shared<RedisReplyParser>(rsp.reply);
         rsp.data->cb(parser);
         delete rsp.data;
     }

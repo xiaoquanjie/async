@@ -32,6 +32,7 @@ struct co_cpu_result {
 int execute(async::cpu::async_cpu_op op, void* user_data, async::cpu::async_cpu_cb cb) {
     unsigned int co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
+        async::cpu::log("[co_cpu] not running in coroutine");
         assert(false);
         return co_bridge::E_CO_RETURN_ERROR;
     }

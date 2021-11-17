@@ -674,9 +674,9 @@ class MyTickTransaction : public BaseTickTransaction {
 public:
     void OnTick(uint32_t) {
         // 访问redis
-        std::string value;
-        co_async::redis::execute("192.168.0.88|6379||0|0", async::redis::GetRedisCmd("mytest"), value);
-        std::cout << "tick redis value:" << value << std::endl;
+        //std::string value;
+        //co_async::redis::execute("192.168.0.88|6379||0|0", async::redis::GetRedisCmd("mytest"), value);
+        //std::cout << "tick redis value:" << value << std::endl;
     }
 };
 
@@ -691,7 +691,7 @@ int main() {
     while (true) {
         co_bridge::loop();
         usleep(2000);
-        trans_mgr::tick(0);
+        trans_mgr::tick(time(0));
     }
     return 0;
 }

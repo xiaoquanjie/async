@@ -75,7 +75,7 @@ int execute(const std::string& uri, const async::mongo::BaseMongoCmd& cmd) {
     bool ok = true;
     int ret = co_async::mongo::execute(uri, cmd, [&ok](async::mongo::MongoReplyParserPtr parser) {
         if (!parser->IsOk()) {
-            printf("[co_mongo] failed to execute mongo:%s\n", parser->What());
+            async::mongo::log("[error] failed to execute mongo:%s\n", parser->What());
             ok = false;
         }
     });
@@ -91,7 +91,7 @@ int execute(const std::string& uri, const async::mongo::BaseMongoCmd& cmd, std::
     int ret = co_async::mongo::execute(uri, cmd, [&ok, &json_result](async::mongo::MongoReplyParserPtr parser) {
         if (!parser->IsOk()) {
             ok = false;
-            printf("[co_mongo] failed to execute mongo:%s\n", parser->What());
+            async::mongo::log("[error] failed to execute mongo:%s\n", parser->What());
             return;
         }
         

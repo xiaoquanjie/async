@@ -82,7 +82,7 @@ int execute(const std::string& uri,
     });
 
     if (result.size()) {
-        printf("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), result.c_str());
+        async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), result.c_str());
         return co_bridge::E_CO_RETURN_ERROR;
     }
     return ret;
@@ -98,7 +98,7 @@ int execute(const std::string& uri,
         }
         catch(async::redis::RedisException& exce) {
             ok = false;
-            printf("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
+            async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
         }
     });
 
@@ -118,7 +118,7 @@ int execute(const std::string& uri,
 		}
 		catch (const async::redis::RedisException &exce) {
             ok = false;
-			printf("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
+			async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
     });
 
@@ -138,7 +138,7 @@ int execute(const std::string& uri,
 		}
 		catch (const async::redis::RedisException &exce) {
             ok = false;
-			printf("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
+			async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
     });
 
@@ -160,7 +160,7 @@ int execute(const std::string& uri,
 		}
 		catch (const async::redis::RedisException &exce) {
             ok = false;
-			printf("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
+			async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
     });
 
@@ -182,7 +182,7 @@ int execute(const std::string& uri,
 		}
 		catch (const async::redis::RedisException &exce) {
             ok = false;
-			printf("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
+			async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
     });
 
@@ -205,7 +205,7 @@ int execute(const std::string& uri,
 		}
 		catch (const async::redis::RedisException &exce) {
             ok = false;
-			printf("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
+			async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
     });
 

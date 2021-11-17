@@ -16,16 +16,7 @@
 #include <hiredis-vip/adapters/libevent.h>
 #include <hiredis-vip/hiredis.h>
 #include <hiredis-vip/hircluster.h>
-
-// 定义该宏会打开调试日志
-//#define M_ASYNC_REDIS_CLIENT_LOG (1)
-
-#ifdef M_ASYNC_REDIS_CLIENT_LOG
-#include <stdio.h>
-    #define ASYNC_REDIS_CLIENT_LOG printf
-#else
-    #define ASYNC_REDIS_CLIENT_LOG(...) 
-#endif
+#include <mutex>
 
 namespace async {
 
@@ -139,32 +130,32 @@ struct redis_global_data {
     std::map<std::string, time_t> uri_ct_map;
     uint64_t req_task_cnt = 0;
     uint64_t rsp_task_cnt = 0;
-
-    ~redis_global_data() {
-        if (evt_base) {
-            event_base_free(evt_base);
-        }
-        thr_func = nullptr;
-        while (!request_queue.empty()) {
-            delete (request_queue.front());
-            request_queue.pop();
-        }
-        while (!prepare_queue.empty()) {
-            delete (prepare_queue.front());
-            prepare_queue.pop_front();
-        }
-        // important, 必须先交换出来
-        std::map<std::string, redis_core_ptr> tmp_map;
-        uri_map.swap(tmp_map);
-        for (auto& item : tmp_map) {
-            item.second.reset();
-        }
-        tmp_map.clear();
-    }
 };
 
 // 全局变量
-static redis_global_data g_redis_global_data;
+redis_global_data g_redis_global_data;
+
+time_t g_last_statistics_time = 0;
+
+// 日志输出接口
+std::function<void(const char*)> g_log_cb = [](const char* data) {
+    static std::mutex s_mutex;
+    s_mutex.lock();
+    printf("[async_redis] %s\n", data);
+    s_mutex.unlock();
+};
+
+void log(const char* format, ...) {
+    if (!g_log_cb) {
+        return;
+    }
+
+    char buf[1024] = { 0 };
+    va_list ap;
+    va_start(ap, format);
+    vsprintf(buf, format, ap);
+    g_log_cb(buf);
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
 
@@ -201,7 +192,7 @@ void on_thread_redis_connect(const redisAsyncContext *c, int status) {
     bool flag = false;
     for (auto iter = g_redis_global_data.uri_map.begin(); iter != g_redis_global_data.uri_map.end(); ) {
         if (iter->second->ctxt == c) {
-            printf("[redis] %s connection|%p|uri:%s\n", (status == REDIS_OK ? "a new" : "a fail"),
+            log("%s connection|%p|uri:%s\n", (status == REDIS_OK ? "a new" : "a fail"),
                                    c,
                                    iter->second->addr.uri.c_str());
             if (status == REDIS_OK) {
@@ -219,7 +210,7 @@ void on_thread_redis_connect(const redisAsyncContext *c, int status) {
     }
 
     if (!flag) {
-        printf("[redis] a connection error|%p\n", c);
+        log("[error] a connection error|%p\n", c);
     }
 }
 
@@ -227,7 +218,7 @@ void on_thread_redis_disconnect(const redisAsyncContext* c, int) {
     bool flag = false;
     for (auto iter = g_redis_global_data.uri_map.begin(); iter != g_redis_global_data.uri_map.end(); ) {
         if (iter->second->ctxt == c) {
-            printf("[redis] a disconnection|%p|uri:%s\n", c, iter->second->addr.uri.c_str());
+            log("a disconnection|%p|uri:%s\n", c, iter->second->addr.uri.c_str());
             iter->second->state = enum_disconnected_state;
             // erase掉
             g_redis_global_data.uri_map.erase(iter++);
@@ -238,7 +229,7 @@ void on_thread_redis_disconnect(const redisAsyncContext* c, int) {
     }
 
     if (!flag) {
-        printf("[redis] a disconnection error|%p\n", c);
+        log("[error] a disconnection error|%p\n", c);
     }
 }
 
@@ -248,11 +239,10 @@ void on_thread_redis_selectdb(void*, void* r, void* user_data) {
     if (reply->type == REDIS_REPLY_STATUS
         && strcmp(reply->str, "OK") == 0) {
         data->core->state = enum_selected_state;
-        printf("[redis] select db ok|%d\n", data->addr.idx);
     }
     else {
         data->core->state = enum_disconnected_state;
-        printf("[redis] failed to select db|%d\n", reply->type);
+        log("[error] failed to select db|%d\n", reply->type);
     }
 
     // delete redis_custom_data;
@@ -265,9 +255,6 @@ void on_thread_redis_result(void* c, void* r, void* user_data) {
     rsp_data.reply = copy_redis_reply((redisReply*)r);
     rsp_data.data = (redis_custom_data*)user_data;
     g_redis_global_data.respond_queue.push(rsp_data);
-    if (c) {
-        ASYNC_REDIS_CLIENT_LOG("redis: a result|%p\n", c);
-    }
 }
 
 void on_thread_redis_timeout(redis_custom_data* data) {
@@ -325,7 +312,7 @@ redis_core_ptr thread_create_core(const redis_addr& addr, bool new_create) {
         }
 
         if (!core->ctxt) {
-            printf("[redis] failed to call redisClusterAsyncConnect or redisAsyncConnect\n");
+            log("[error] failed to call redisClusterAsyncConnect or redisAsyncConnect\n");
             return nullptr;
         }
 
@@ -372,8 +359,6 @@ void thread_redis_op(redis_custom_data* user_data, void(*fn)(void*, void*, void*
                               &(argv[0]),
                               &(argv_len[0]));
     }
-
-    ASYNC_REDIS_CLIENT_LOG("redis: a op|%p|%s\n", user_data->core->ctxt, user_data->cmd.GetCmd().c_str());
 }
 
 void thread_redis_state() {
@@ -436,7 +421,7 @@ bool local_redis_init() {
 
     g_redis_global_data.evt_base = event_base_new();
     if (!g_redis_global_data.evt_base) {
-        printf("[redis] failed to call event_base_new\n");
+        log("[error] failed to call event_base_new\n");
         return false;
     }
 
@@ -465,46 +450,35 @@ void execute(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb cb) 
     g_redis_global_data.request_queue.push(data);
 }
 
-bool loop() {
-    if (!g_redis_global_data.init) {
-        return false;
-    }
-    // flag为false时，代表可操作
-    if (g_redis_global_data.flag) {
-        return true;
+void statistics() {
+    if (!g_log_cb) {
+        return;
     }
 
-    // 是否有任务
-    bool has_task = false;
+    time_t now = 0;
+    time(&now);
+    if (now - g_last_statistics_time <= 120) {
+        return;
+    }
+
+    // 没有输出连接池大小
+    g_last_statistics_time = now;
+    log("[statistics] cur_task:%d, req_task:%d, rsp_task:%d",
+        (g_redis_global_data.req_task_cnt - g_redis_global_data.rsp_task_cnt),
+        g_redis_global_data.req_task_cnt,
+        g_redis_global_data.rsp_task_cnt);
+    log("[statistics] cur_uri:%ld", g_redis_global_data.uri_map.size());
+}
+
+void local_process_respond() {
+    if (g_redis_global_data.respond_queue.empty()) {
+        return;
+    }
 
     // 交换出结果队列
     std::queue<redis_respond_data> respond_queue;
     g_redis_global_data.respond_queue.swap(respond_queue);
 
-    while (!g_redis_global_data.request_queue.empty()) {
-        // 挪到准备队列中
-        redis_custom_data* req = std::move(g_redis_global_data.request_queue.front());
-        g_redis_global_data.request_queue.pop();
-        g_redis_global_data.prepare_queue.push_back(req);
-        g_redis_global_data.req_task_cnt++;
-    }
-    
-    // if (!g_redis_global_data.prepare_queue.empty()) {
-    //     ASYNC_REDIS_CLIENT_LOG("redis: request count:%d simultaneously\n", 
-    //         (int)g_redis_global_data.prepare_queue.size());
-    // }
-
-    // 执行
-    if (g_redis_global_data.req_task_cnt != g_redis_global_data.rsp_task_cnt) {
-        has_task = true;
-        if (g_redis_global_data.thr_func) {
-            g_redis_global_data.thr_func(get_thread_func());
-        }
-        else {
-            get_thread_func()();
-        }
-    }
-        
     // 运行结果
     while (!respond_queue.empty()) {
         // 取出结果
@@ -515,7 +489,51 @@ bool loop() {
         rsp.data->cb(parser);
         delete rsp.data;
     }
+}
 
+void local_process_request() {
+    while (!g_redis_global_data.request_queue.empty()) {
+        // 挪到准备队列中
+        redis_custom_data* req = std::move(g_redis_global_data.request_queue.front());
+        g_redis_global_data.request_queue.pop();
+        g_redis_global_data.prepare_queue.push_back(req);
+        g_redis_global_data.req_task_cnt++;
+    }
+}
+
+void local_process_task() {
+    // 执行
+    if (g_redis_global_data.req_task_cnt != g_redis_global_data.rsp_task_cnt) {
+        if (g_redis_global_data.thr_func) {
+            g_redis_global_data.thr_func(get_thread_func());
+        }
+        else {
+            get_thread_func()();
+        }
+    }
+}
+
+bool loop() {
+    if (!g_redis_global_data.init) {
+        return false;
+    }
+
+    statistics();
+
+    // flag为false时，代表可操作
+    if (g_redis_global_data.flag) {
+        return true;
+    }
+
+    local_process_respond();
+    local_process_request();
+    local_process_task();
+
+    // 是否有任务
+    bool has_task = false;    
+    if (g_redis_global_data.req_task_cnt != g_redis_global_data.rsp_task_cnt) {
+        has_task = true;
+    }
     return has_task;
 }
 

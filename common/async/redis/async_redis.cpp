@@ -465,7 +465,6 @@ void statistics() {
         return;
     }
 
-    // 没有输出连接池大小
     g_last_statistics_time = now;
     log("[statistics] cur_task:%d, req_task:%d, rsp_task:%d",
         (g_redis_global_data.req_task_cnt - g_redis_global_data.rsp_task_cnt),

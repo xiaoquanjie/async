@@ -17,16 +17,7 @@
 #include <mutex>
 #include <map>
 #include <memory>
-
-// 定义该宏会打开调试日志
-#define M_ASYNC_MYSQL_LOG (1)
-
-#ifdef M_ASYNC_MYSQL_LOG
-#include <stdio.h>
-    #define ASYNC_MYSQL_LOG printf
-#else
-    #define ASYNC_MYSQL_LOG(...) 
-#endif
+#include <stdarg.h>
 
 namespace async {
 
@@ -55,7 +46,7 @@ struct mysql_addr {
             this->pwd = values[4];
         }
         else {
-            printf("[mysql] uri error:%s\n", uri.c_str());
+            log("[error] uri error:%s\n", uri.c_str());
             assert(false);
         }
     }
@@ -107,8 +98,10 @@ struct mysql_custom_data {
     int status = 0;
 };
 
+typedef std::shared_ptr<mysql_custom_data> mysql_custom_data_ptr;
+
 struct mysql_respond_data {
-    mysql_custom_data* data = 0;
+    mysql_custom_data_ptr data = 0;
     MYSQL_RES* res = 0;
 };
 
@@ -122,8 +115,8 @@ struct mysql_global_data {
     std::function<void(std::function<void()>)> thr_func;
     unsigned int max_connections = 128;
     unsigned int keep_connections = 64;
-    std::list<mysql_custom_data*> prepare_queue;
-    std::list<mysql_custom_data*> request_queue;
+    std::list<mysql_custom_data_ptr> prepare_queue;
+    std::list<mysql_custom_data_ptr> request_queue;
     std::list<mysql_respond_data> respond_queue;
     std::mutex request_mutext;
     std::mutex respond_mutext;
@@ -133,7 +126,33 @@ struct mysql_global_data {
     uint64_t rsp_task_cnt = 0;
 };
 
-static mysql_global_data g_mysql_global_data;
+mysql_global_data g_mysql_global_data;
+
+time_t g_last_statistics_time = 0;
+
+// 日志输出接口
+std::function<void(const char*)> g_log_cb = [](const char* data) {
+    static std::mutex s_mutex;
+    s_mutex.lock();
+    printf("[async_mysql] %s\n", data);
+    s_mutex.unlock();
+};
+
+void log(const char* format, ...) {
+    if (!g_log_cb) {
+        return;
+    }
+
+    char buf[1024] = { 0 };
+    va_list ap;
+    va_start(ap, format);
+    vsprintf(buf, format, ap);
+    g_log_cb(buf);
+}
+
+void setLogFunc(std::function<void(const char*)> cb) {
+    g_log_cb = cb;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -153,7 +172,7 @@ mysql_core_ptr local_create_core(const mysql_addr& addr, uri_data& uri_map) {
     core->state = enum_null_state;
     auto mysql = mysql_init(&core->mysql);
     if (!mysql) {
-        printf("[mysql] failed to call mysql_init\n");
+        log("[error] failed to call mysql_init\n");
         return nullptr;
     }
 
@@ -165,25 +184,25 @@ mysql_core_ptr local_create_core(const mysql_addr& addr, uri_data& uri_map) {
     return core;
 }
 
-mysql_custom_data *local_create_mysql_custom_data(const std::string &uri,
-                                                  const std::string &sql,
-                                                  async_mysql_query_cb q_cb,
-                                                  async_mysql_query_cb2 q_cb2,
-                                                  async_mysql_exec_cb e_cb)
+mysql_custom_data_ptr local_create_mysql_custom_data(const std::string &uri,
+                                                     const std::string &sql,
+                                                     async_mysql_query_cb q_cb,
+                                                     async_mysql_query_cb2 q_cb2,
+                                                     async_mysql_exec_cb e_cb)
 {
-    mysql_custom_data* data = new mysql_custom_data;
-    data->addr.Parse(uri);
-    data->sql = sql;
-    data->q_cb = q_cb;
-    data->q_cb2 = q_cb2;
-    data->e_cb = e_cb;
+    mysql_custom_data_ptr req = std::make_shared<mysql_custom_data>();
+    req->addr.Parse(uri);
+    req->sql = sql;
+    req->q_cb = q_cb;
+    req->q_cb2 = q_cb2;
+    req->e_cb = e_cb;
     
-    g_mysql_global_data.prepare_queue.push_back(data);
+    g_mysql_global_data.prepare_queue.push_back(req);
     g_mysql_global_data.req_task_cnt++;
-    return data;
+    return req;
 }
 
-void thread_mysql_look_state(std::list<mysql_custom_data *> &request_queue,
+void thread_mysql_look_state(std::list<mysql_custom_data_ptr> &request_queue,
                              std::list<mysql_respond_data> &respond_queue,
                              fd_set &fd_r,
                              fd_set &fd_w,
@@ -196,7 +215,7 @@ void thread_mysql_look_state(std::list<mysql_custom_data *> &request_queue,
     max_fd = 0;
 
     for (auto iter = request_queue.begin(); iter != request_queue.end();) {
-        mysql_custom_data* data = *iter;
+        mysql_custom_data_ptr data = *iter;
         if (data->core->state == enum_null_state) {
             MYSQL* ret = 0;
             data->status = mysql_real_connect_start(&ret,
@@ -225,7 +244,7 @@ void thread_mysql_look_state(std::list<mysql_custom_data *> &request_queue,
                                                 data->sql.length());
             if (err != 0) {
                 data->core->state = enum_error_state;
-                printf("[mysql] failed to call mysql_real_query_start:%d\n", err);
+                log("[error] failed to call mysql_real_query_start:%d\n", err);
             }
             else {
                 if (data->status == 0) {
@@ -276,7 +295,7 @@ void thread_mysql_look_state(std::list<mysql_custom_data *> &request_queue,
     }
 }
 
-void thread_mysql_wait(std::list<mysql_custom_data *> &request_queue,
+void thread_mysql_wait(std::list<mysql_custom_data_ptr> &request_queue,
                        std::list<mysql_respond_data> &respond_queue,
                        fd_set &fd_r,
                        fd_set &fd_w,
@@ -293,7 +312,7 @@ void thread_mysql_wait(std::list<mysql_custom_data *> &request_queue,
     int rc = select(max_fd + 1, &fd_r, &fd_w, &fd_e, &to);
 
     if (rc < 0) {
-        printf("[mysql] failed to call select\n");
+        log("[error] failed to call select\n");
         return;
     }
 
@@ -302,7 +321,7 @@ void thread_mysql_wait(std::list<mysql_custom_data *> &request_queue,
     }
 
     for (auto iter = request_queue.begin(); iter != request_queue.end();) {
-        mysql_custom_data* data = *iter;
+        mysql_custom_data_ptr data = *iter;
         int status = 0;
         
         if (FD_ISSET(data->core->fd, &fd_r)) {
@@ -368,7 +387,7 @@ void thread_mysql_wait(std::list<mysql_custom_data *> &request_queue,
     }
 }
 
-void thread_mysql_process(std::list<mysql_custom_data*> *request_queue, mysql_global_data* global_data) {
+void thread_mysql_process(std::list<mysql_custom_data_ptr> *request_queue, mysql_global_data* global_data) {
     std::list<mysql_respond_data> respond_queue;
 
     fd_set fd_r;
@@ -395,7 +414,7 @@ void thread_mysql_process(std::list<mysql_custom_data*> *request_queue, mysql_gl
 
 inline std::function<void()> get_thread_func() {
     // 取64个队列为一组
-    std::list<mysql_custom_data*>* request_queue = new std::list<mysql_custom_data*>;
+    std::list<mysql_custom_data_ptr>* request_queue = new std::list<mysql_custom_data_ptr>;
 
     {
         g_mysql_global_data.request_mutext.lock();
@@ -428,18 +447,6 @@ inline std::function<void()> get_thread_func() {
     return f;
 }
 
-void local_tick_check(time_t now) {
-    if (now - g_mysql_global_data.last_check_time > 60 * 5) {
-        g_mysql_global_data.last_check_time = now;
-        for (auto iter = g_mysql_global_data.uri_map.begin(); iter != g_mysql_global_data.uri_map.end(); ++iter) {
-            ASYNC_MYSQL_LOG("uri:%s, conns:%ld\n", iter->first.c_str(), iter->second.core_list.size());
-            while (iter->second.core_list.size() > g_mysql_global_data.keep_connections) {
-                iter->second.core_list.pop_back();
-            }
-        }
-    }
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void execute(const std::string& uri, const std::string& sql, async_mysql_query_cb cb) {
@@ -466,17 +473,35 @@ void setKeepConnection(unsigned int cnt) {
     }
 }
 
+void statistics() {
+    if (!g_log_cb) {
+        return;
+    }
+
+    time_t now = 0;
+    time(&now);
+    if (now - g_last_statistics_time <= 120) {
+        return;
+    }
+
+    // 没有输出连接池大小
+    g_last_statistics_time = now;
+    log("[statistics] cur_task:%d, req_task:%d, rsp_task:%d",
+        (g_mysql_global_data.req_task_cnt - g_mysql_global_data.rsp_task_cnt),
+        g_mysql_global_data.req_task_cnt,
+        g_mysql_global_data.rsp_task_cnt);
+    log("[statistics] cur_uri:%ld", g_mysql_global_data.uri_map.size());
+}
+
 bool loop() {
     bool has_task = false;
     
-    time_t now = 0;
-    time(&now);
-    local_tick_check(now);
+    statistics();
 
     // 创建
-    std::list<mysql_custom_data*> request_queue;
+    std::list<mysql_custom_data_ptr> request_queue;
     for (auto iter = g_mysql_global_data.prepare_queue.begin(); iter != g_mysql_global_data.prepare_queue.end();) {
-        mysql_custom_data* data = *iter;
+        mysql_custom_data_ptr data = *iter;
         uri_data& uri_map = g_mysql_global_data.uri_map[data->addr.uri];
         mysql_core_ptr core = local_create_core(data->addr, uri_map);
         if (!core) {
@@ -524,7 +549,7 @@ bool loop() {
             
             int err = mysql_errno(&item.data->core->mysql);
             if (err != 0) {
-                printf("[mysql] failed to call mysql:%s|%s\n", mysql_error(&item.data->core->mysql), item.data->sql.c_str());
+                log("[error] failed to call mysql:%s|%s\n", mysql_error(&item.data->core->mysql), item.data->sql.c_str());
             }
 
             int affected_rows = 0;
@@ -580,7 +605,6 @@ bool loop() {
                 // 释放资源
                 mysql_free_result(item.res);
             }
-            delete item.data;
         }
     }
 

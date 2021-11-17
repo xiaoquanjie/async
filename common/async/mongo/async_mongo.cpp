@@ -14,16 +14,7 @@
 #include <list>
 #include <mutex>
 #include <assert.h>
-
-// 定义该宏会打开调试日志
-//#define M_ASYNC_MONGO_CLIENT_LOG (1)
-
-#ifdef M_ASYNC_MONGO_CLIENT_LOG
-#include <stdio.h>
-    #define ASYNC_MONGO_CLIENT_LOG printf
-#else
-    #define ASYNC_MONGO_CLIENT_LOG(...) 
-#endif
+#include <memory>
 
 namespace async {
 
@@ -56,7 +47,7 @@ struct mongo_addr {
             }
         }
         else {
-            printf("[mongo] uri error:%s\n", uri.c_str());
+            log("[error] uri error:%s\n", uri.c_str());
             assert(false);
         }
     }
@@ -98,8 +89,10 @@ struct mongo_custom_data {
     async_mongo_cb cb;
 };
 
+typedef std::shared_ptr<mongo_custom_data> mongo_custom_data_ptr;
+
 struct mongo_respond_data {
-    mongo_custom_data* data;
+    mongo_custom_data_ptr req;
     MongoReplyParserPtr parser;
     mongo_respond_data() {
         parser = std::make_shared<MongoReplyParser>();
@@ -113,14 +106,36 @@ struct mongo_core_uri_data {
 struct mongo_global_data {
     bool init = false;
     std::function<void(std::function<void()>)> thr_func;
-    std::queue<mongo_custom_data*> request_queue;
+    std::queue<mongo_custom_data_ptr> request_queue;
     std::queue<mongo_respond_data> respond_queue;
     std::mutex respond_mutext;
     uint64_t req_task_cnt = 0;
     uint64_t rsp_task_cnt = 0;
 };
 
-static mongo_global_data g_mongo_global_data;
+mongo_global_data g_mongo_global_data;
+
+time_t g_last_statistics_time = 0;
+
+// 日志输出接口
+std::function<void(const char*)> g_log_cb = [](const char* data) {
+    static std::mutex s_mutex;
+    s_mutex.lock();
+    printf("[async_mongo] %s\n", data);
+    s_mutex.unlock();
+};
+
+void log(const char* format, ...) {
+    if (!g_log_cb) {
+        return;
+    }
+
+    char buf[1024] = { 0 };
+    va_list ap;
+    va_start(ap, format);
+    vsprintf(buf, format, ap);
+    g_log_cb(buf);
+}
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -136,13 +151,13 @@ mongo_core* thread_create_core(const mongo_addr& addr) {
             bson_error_t error;
             core->mongoc_uri = mongoc_uri_new_with_error(core->addr.addr.c_str(), &error);
             if (!core->mongoc_uri) {
-                printf("[mongo] failed to call mongoc_uri_new_with_error:%s\n", core->addr.addr.c_str());
+                log("[error] failed to call mongoc_uri_new_with_error:%s", core->addr.addr.c_str());
                 break;
             }
 
             core->mongoc_client = mongoc_client_new_from_uri(core->mongoc_uri);
             if (!core->mongoc_client) {
-                printf("[mongo] failed to call mongoc_client_new_from_uri:%s\n", core->addr.addr.c_str());
+                log("[error] failed to call mongoc_client_new_from_uri:%s", core->addr.addr.c_str());
                 break;
             }
 
@@ -160,7 +175,7 @@ mongo_core* thread_create_core(const mongo_addr& addr) {
 }
 
 // insert操作
-void thread_mongo_insert_op(mongoc_collection_t* mongoc_collection, mongo_custom_data* req_data, mongo_respond_data* rsp_data) {
+void thread_mongo_insert_op(mongoc_collection_t* mongoc_collection, mongo_custom_data_ptr req_data, mongo_respond_data* rsp_data) {
     // 判断是否有超时
     if (req_data->addr.expire_time > 0
         && !req_data->addr.expire_filed.empty()) {
@@ -181,7 +196,7 @@ void thread_mongo_insert_op(mongoc_collection_t* mongoc_collection, mongo_custom
 }
 
 // find操作
-void thread_mongo_find_op(mongoc_collection_t* mongoc_collection, mongo_custom_data* req_data, mongo_respond_data* rsp_data) {
+void thread_mongo_find_op(mongoc_collection_t* mongoc_collection, mongo_custom_data_ptr req_data, mongo_respond_data* rsp_data) {
     auto cursor = mongoc_collection_find(mongoc_collection,
                                          MONGOC_QUERY_NONE,
                                          0,
@@ -204,7 +219,7 @@ void thread_mongo_find_op(mongoc_collection_t* mongoc_collection, mongo_custom_d
 }
 
 // find opt操作
-void thread_mongo_find_opts_op(mongoc_collection_t* mongoc_collection, mongo_custom_data* req_data, mongo_respond_data* rsp_data) {
+void thread_mongo_find_opts_op(mongoc_collection_t* mongoc_collection, mongo_custom_data_ptr req_data, mongo_respond_data* rsp_data) {
     auto cursor = mongoc_collection_find_with_opts(mongoc_collection,
                                                    (bson_t *)req_data->cmd.d->doc_bson_ptr,
                                                    (bson_t *)req_data->cmd.d->opt_bson_ptr,
@@ -223,7 +238,7 @@ void thread_mongo_find_opts_op(mongoc_collection_t* mongoc_collection, mongo_cus
 }
 
 // delete one操作
-void thread_mongo_deleteone_op(mongoc_collection_t* mongoc_collection, mongo_custom_data* req_data, mongo_respond_data* rsp_data) {
+void thread_mongo_deleteone_op(mongoc_collection_t* mongoc_collection, mongo_custom_data_ptr req_data, mongo_respond_data* rsp_data) {
     bson_t bson_reply;
     if (!mongoc_collection_delete_one(mongoc_collection,
                                       (bson_t *)req_data->cmd.d->doc_bson_ptr,
@@ -241,7 +256,7 @@ void thread_mongo_deleteone_op(mongoc_collection_t* mongoc_collection, mongo_cus
 }
 
 // delete many操作
-void thread_mongo_deletemany_op(mongoc_collection_t* mongoc_collection, mongo_custom_data* req_data, mongo_respond_data* rsp_data) {
+void thread_mongo_deletemany_op(mongoc_collection_t* mongoc_collection, mongo_custom_data_ptr req_data, mongo_respond_data* rsp_data) {
     bson_t bson_reply;
     if (!mongoc_collection_delete_many(mongoc_collection,
                                        (bson_t *)req_data->cmd.d->doc_bson_ptr,
@@ -259,7 +274,7 @@ void thread_mongo_deletemany_op(mongoc_collection_t* mongoc_collection, mongo_cu
 }
 
 // update one
-void thread_mongo_updateone_op(mongoc_collection_t* mongoc_collection, mongo_custom_data* req_data, mongo_respond_data* rsp_data) {
+void thread_mongo_updateone_op(mongoc_collection_t* mongoc_collection, mongo_custom_data_ptr req_data, mongo_respond_data* rsp_data) {
     bson_t bson_reply;
     if (!mongoc_collection_update_one(mongoc_collection,
                                       (bson_t *)req_data->cmd.d->doc_bson_ptr,
@@ -278,7 +293,7 @@ void thread_mongo_updateone_op(mongoc_collection_t* mongoc_collection, mongo_cus
 }
 
 // update many
-void thread_mongo_updatemany_op(mongoc_collection_t* mongoc_collection, mongo_custom_data* req_data, mongo_respond_data* rsp_data) {
+void thread_mongo_updatemany_op(mongoc_collection_t* mongoc_collection, mongo_custom_data_ptr req_data, mongo_respond_data* rsp_data) {
     bson_t bson_reply;
     if (!mongoc_collection_update_many(mongoc_collection,
                                        (bson_t *)req_data->cmd.d->doc_bson_ptr,
@@ -297,7 +312,7 @@ void thread_mongo_updatemany_op(mongoc_collection_t* mongoc_collection, mongo_cu
 }
 
 // create idx操作
-void thread_mongo_createidx_op(mongoc_collection_t* mongoc_collection, mongo_custom_data* req_data, mongo_respond_data* rsp_data) {
+void thread_mongo_createidx_op(mongoc_collection_t* mongoc_collection, mongo_custom_data_ptr req_data, mongo_respond_data* rsp_data) {
     mongoc_index_opt_t opt;
     mongoc_index_opt_init(&opt);
     opt.unique = true;
@@ -312,7 +327,7 @@ void thread_mongo_createidx_op(mongoc_collection_t* mongoc_collection, mongo_cus
     }
 }
 
-void thread_mongo_createexpireidx_op(mongoc_collection_t* mongoc_collection, mongo_custom_data* req_data, mongo_respond_data* rsp_data) {
+void thread_mongo_createexpireidx_op(mongoc_collection_t* mongoc_collection, mongo_custom_data_ptr req_data, mongo_respond_data* rsp_data) {
     mongoc_index_opt_t opt;
     mongoc_index_opt_init(&opt);
     opt.unique = true;
@@ -338,9 +353,9 @@ void thread_mongo_createexpireidx_op(mongoc_collection_t* mongoc_collection, mon
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-void thread_mongo_process(mongo_custom_data* req_data, mongo_global_data* global_data) {
+void thread_mongo_process(mongo_custom_data_ptr req_data, mongo_global_data* global_data) {
     mongo_respond_data rsp_data;
-    rsp_data.data = req_data;
+    rsp_data.req = req_data;
     rsp_data.parser->op_result = 0;
 
     do {
@@ -355,7 +370,7 @@ void thread_mongo_process(mongo_custom_data* req_data, mongo_global_data* global
                                                                        req_data->addr.collection.c_str());
         if (!collection) {
             bson_set_error((bson_error_t*)rsp_data.parser->error, 0, 2, "failed to get mongo collection");
-            printf("[mongo] failed to call mongoc_client_get_collection:%s|%s\n",
+            log("[error] failed to call mongoc_client_get_collection:%s|%s\n",
                                    req_data->addr.db.c_str(),
                                    req_data->addr.collection.c_str());
             break;
@@ -401,7 +416,7 @@ void thread_mongo_process(mongo_custom_data* req_data, mongo_global_data* global
 inline std::function<void()> get_thread_func() {
     // 取一条
     assert(g_mongo_global_data.request_queue.size() > 0);
-    mongo_custom_data* req_data = g_mongo_global_data.request_queue.front();
+    mongo_custom_data_ptr req_data = g_mongo_global_data.request_queue.front();
     g_mongo_global_data.request_queue.pop();
 
     auto f = std::bind(thread_mongo_process,
@@ -430,25 +445,53 @@ bool local_mongo_cleanup() {
 void execute(std::string uri, const BaseMongoCmd& cmd, async_mongo_cb cb) {
     local_mongo_init();
     // 构造一个请求
-    mongo_custom_data* data = new mongo_custom_data;
-    data->cmd = cmd;
-    data->addr.Parse(uri);
-    data->cb = cb;
-    g_mongo_global_data.request_queue.push(data);
+    mongo_custom_data_ptr req = std::make_shared<mongo_custom_data>();
+    req->cmd = cmd;
+    req->addr.Parse(uri);
+    req->cb = cb;
+    g_mongo_global_data.request_queue.push(req);
     g_mongo_global_data.req_task_cnt++;
 }
 
-bool loop() {
-    if (!g_mongo_global_data.init) {
-        return false;
+void statistics() {
+    if (!g_log_cb) {
+        return;
     }
 
-    // 是否有任务
-    bool has_task = false;
-
-    if (g_mongo_global_data.req_task_cnt != g_mongo_global_data.rsp_task_cnt) {
-        has_task = true;
+    time_t now = 0;
+    time(&now);
+    if (now - g_last_statistics_time <= 120) {
+        return;
     }
+
+    // 没有输出连接池大小
+    g_last_statistics_time = now;
+    log("[statistics] cur_task:%d, req_task:%d, rsp_task:%d",
+        (g_mongo_global_data.req_task_cnt - g_mongo_global_data.rsp_task_cnt),
+        g_mongo_global_data.req_task_cnt,
+        g_mongo_global_data.rsp_task_cnt);
+}
+
+void local_process_respond() {
+    if (g_mongo_global_data.respond_queue.empty()) {
+        return;
+    }
+
+    // 交换队列
+    g_mongo_global_data.respond_mutext.lock();
+    std::queue<mongo_respond_data> respond_queue;
+    g_mongo_global_data.respond_queue.swap(respond_queue);
+    g_mongo_global_data.respond_mutext.unlock();
+
+    while (!respond_queue.empty()) {
+        g_mongo_global_data.rsp_task_cnt++;
+        mongo_respond_data rsp = std::move(respond_queue.front());
+        respond_queue.pop();
+        rsp.req->cb(rsp.parser);
+    }
+}
+
+void local_process_task() {
     if (!g_mongo_global_data.request_queue.empty()) {
         if (g_mongo_global_data.thr_func) {
             g_mongo_global_data.thr_func(get_thread_func());
@@ -457,24 +500,22 @@ bool loop() {
             get_thread_func()();
         }
     }
+}
 
-    // 运行结果
-    if (!g_mongo_global_data.respond_queue.empty()) {
-        g_mongo_global_data.respond_mutext.lock();
-        // 交换队列
-        std::queue<mongo_respond_data> respond_queue;
-        g_mongo_global_data.respond_queue.swap(respond_queue);
-        g_mongo_global_data.respond_mutext.unlock();
-
-        while (!respond_queue.empty()) {
-            g_mongo_global_data.rsp_task_cnt++;
-            mongo_respond_data rsp = std::move(respond_queue.front());
-            respond_queue.pop();
-            rsp.data->cb(rsp.parser);
-            delete rsp.data;
-        }
+bool loop() {
+    if (!g_mongo_global_data.init) {
+        return false;
     }
 
+    local_process_task();
+    local_process_respond();
+    statistics();
+
+    // 是否有任务
+    bool has_task = false;
+    if (g_mongo_global_data.req_task_cnt != g_mongo_global_data.rsp_task_cnt) {
+        has_task = true;
+    }
     return has_task;
 }
 

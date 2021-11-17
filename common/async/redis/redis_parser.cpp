@@ -9,7 +9,6 @@
 
 #include "common/async/redis/redis_parser.h"
 #include "common/async/redis/redis_exception.h"
-#include <string.h>
 #include <assert.h>
 
 #ifndef WIN32

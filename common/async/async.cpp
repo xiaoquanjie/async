@@ -49,6 +49,26 @@ void addToLoop(std::function<bool(uint32_t)> f) {
     g_loop_array.push_back(f);
 }
 
+void setLogFunc(std::function<void(const char*)> cb) {
+#ifdef USE_ASYNC_REDIS
+    async::redis::setLogFunc(cb);
+#endif
+
+#ifdef USE_ASYNC_MONGO
+    async::mongo::setLogFunc(cb);
+#endif
+
+#ifdef USE_ASYNC_CURL
+    async::curl::setLogFunc(cb);
+#endif
+
+#ifdef USE_ASYNC_MYSQL
+    async::mysql::setLogFunc(cb);
+#endif
+
+    async::cpu::setLogFunc(cb);
+}
+
 /////////////////////////////////////////////////
 
 struct parallel_result {

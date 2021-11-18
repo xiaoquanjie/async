@@ -22,6 +22,8 @@ bool loop(uint32_t cur_time = 0);
 // 添加入主循环中
 void addToLoop(std::function<bool(uint32_t)> f);
 
+void setLogFunc(std::function<void(const char*)> cb);
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 typedef std::function<void(int err)> done_cb;

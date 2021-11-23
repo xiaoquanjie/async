@@ -17,12 +17,13 @@ public:
     friend void on_cb_recv_t(void* bev, void* ctx);
     friend void on_cb_event_t(void* bev, short what, void* ctx);
 
+    // 如果event_base传递空，则内部将自创建一个base
     TcpClient(void* event_base);
 
     virtual ~TcpClient();
 
     void update(time_t);
-    
+
     // @addr: ip:port
     bool connect(const std::string& addr);
 

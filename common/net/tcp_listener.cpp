@@ -25,9 +25,11 @@ TcpListener::TcpListener(void* event_base) {
     m_event_base = event_base;
     m_header_size = 0;
     m_header_buf = 0;
+    m_listener = 0;
     m_created_base = false;
     if (!event_base) {
         m_event_base = event_base_new();
+        assert(m_event_base);
         m_created_base = true;
     }
 }

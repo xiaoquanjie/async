@@ -25,7 +25,7 @@ protected:
     // @unique_id代表一个ZeromqUnit的唯一id
     // @identify表示的是对方连接的标识符
     // @data是数据包
-    virtual void onData(uint64_t unique_id, std::string& identify, const std::string& data) {}
+    virtual void onData(uint64_t /*unique_id*/, std::string& /*identify*/, const std::string& /*data*/) {}
 
 protected:
     std::vector<ZeromqUnitPtr> m_unit_vec;

@@ -38,7 +38,7 @@ public:
 protected:
     virtual void InCoroutine() = 0;
 
-    virtual bool ParsePacket(const char* packet, uint32_t packet_size) = 0;
+    virtual bool ParsePacket(const char* /*packet*/, uint32_t /*packet_size*/) = 0;
 protected:
     uint32_t m_req_cmd_id;
     uint32_t m_rsp_cmd_id;

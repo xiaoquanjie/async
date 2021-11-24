@@ -35,7 +35,7 @@ public:
 
     bool isPollIn();
 
-    virtual int recvData(std::string& identify, std::string& data) = 0;
+    virtual int recvData(std::string& /*identify*/, std::string& /*data*/) = 0;
 
     virtual std::string identify() = 0;
 

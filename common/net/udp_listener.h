@@ -32,11 +32,10 @@ public:
     virtual void update(time_t cur_time);
 
     // @addr: ip:port
-    bool listen(const std::string& ip, uint16_t port);
+    bool listen(const std::string& addr);
 
     int send(uint32_t fd, const char* buf, uint32_t len);
 
-    // 设置接受数据的回调: 一个完整包的数据(如果没有设置解析器，则返回捕捉到的每一段数据)
     void setDataCb(std::function<void(UdpListener*, uint32_t, const char*, uint32_t)> cb);
 
 protected:

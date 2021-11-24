@@ -9,9 +9,6 @@
 
 #include "common/net/udp_listener.h"
 #include <event2/event.h>
-#include <event2/buffer.h>
-#include <unistd.h>
-#include <arpa/inet.h>
 #include <assert.h>
 #include <string.h>
 
@@ -107,7 +104,7 @@ void UdpListener::expire(time_t cur_time) {
     }
 }
 
-bool UdpListener::listen(const std::string& ip, uint16_t port) {
+bool UdpListener::listen(const std::string& addr) {
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd < 0) {
        return false;
@@ -115,23 +112,24 @@ bool UdpListener::listen(const std::string& ip, uint16_t port) {
 
     int flag = 1;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(int)) < 0) {
-       close(fd);
+       evutil_closesocket(fd);
        return false;
     }
 
-    struct sockaddr_in sock_addr;
-    memset(&sock_addr, 0, sizeof(sock_addr));
-    sock_addr.sin_family = AF_INET;
-    sock_addr.sin_addr.s_addr = inet_addr(ip.c_str());
-    sock_addr.sin_port = htons(port);
+    sockaddr sock_addr;
+    int len = sizeof(sock_addr);
+    if (evutil_parse_sockaddr_port(addr.c_str(), &sock_addr, &len) != 0) {
+        evutil_closesocket(fd);
+        return false;
+    }
 
-    if (bind(fd, (struct sockaddr *)&sock_addr, sizeof(struct sockaddr)) < 0) {
-       close(fd);
+    if (bind(fd, (struct sockaddr *)&sock_addr, len) < 0) {
+       evutil_closesocket(fd);
        return false;
     } 
 
-    auto evt = event_new((event_base*)m_event_base, fd, EV_READ|EV_PERSIST, on_cb_recv, this);
-    event_add(evt, nullptr);
+    m_evt = event_new((event_base*)m_event_base, fd, EV_READ|EV_PERSIST, on_cb_recv, this);
+    event_add((event*)m_evt, nullptr);
     return true;
 }
 

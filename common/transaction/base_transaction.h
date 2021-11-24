@@ -49,50 +49,11 @@ protected:
 
 /////////////////////////////////////////////////////////////////////
 
-// 单向包事务
-template<typename RequestType>
-class OneWayTransaction : public BaseTransaction {
-public:
-    int ReturnValue() {
-        return m_return_value;
-    }
+// 空回复
+struct NullRespond {};
 
-    RequestType& Request() {
-        return m_request;
-    }
-
-    void InCoroutine() override {
-        if (!m_packet) {
-            return;
-        }
-
-        // 解包
-        if (!ParsePacket(m_packet, m_packet_size)) {
-            return;
-        }
-
-        BeforeOnRequest();
-        m_return_value = OnRequest();
-        AfterOnRequest();
-    }
-
-    // 在OnRequest之后调用
-    virtual void BeforeOnRequest() {}
-
-    virtual int OnRequest() = 0;
-
-    virtual void AfterOnRequest() {}
-
-protected:
-    int m_return_value;      // 返回值
-    RequestType m_request;   // 请求数据结构
-};
-
-/////////////////////////////////////////////////////////////////////
-
-// 双向包事务
-template<typename RequestType, typename RespondType>
-class TwoWayTransaction : public BaseTransaction { 
+template<typename RequestType, typename RespondType=NullRespond>
+class Transaction : public BaseTransaction {
 public:
     int ReturnValue() {
         return m_return_value;
@@ -132,22 +93,4 @@ protected:
     int m_return_value;      // 返回值
     RequestType m_request;   // 请求的数据结构
     RespondType m_respond;   // 回复的数据结构
-};
-
-//////////////////////////////////////////////////////////////////////////////////
-
-// 空回复
-struct NullRespond {};
-
-// 利用模板特化重载Transaction类型---三个参数
-template<typename RequestType, typename RespondType = NullRespond>
-class Transaction 
-	: public TwoWayTransaction<RequestType, RespondType> {
-};
-
-// 利用模板特化重载Transaction类型---一个参数
-template<typename RequestType>
-class Transaction<RequestType, NullRespond> 
-	: public OneWayTransaction<RequestType> {
-public:
 };

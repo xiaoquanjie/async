@@ -8,6 +8,7 @@
 #ifdef USE_TRANS
 
 #include "common/transaction/transaction_mgr.h"
+#include "common/coroutine/coroutine.hpp"
 #include <unordered_map>
 #include <assert.h>
 #include <stdarg.h>
@@ -21,6 +22,7 @@ uint32_t g_max_concurrent_trans = 100000;
 uint32_t g_cur_concurrent_trans = 0;
 time_t   g_last_check_time = 0;
 std::unordered_map<uint32_t, TransactionBucket*> g_trans_bucket_map;
+std::unordered_map<uint64_t, uint64_t> g_trace_id_map;
 std::list<BaseTickTransaction*> g_tick_trans_list;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,6 +54,39 @@ uint32_t genTransId() {
 
 void setMaxTrans(uint32_t max_trans) {
     g_max_concurrent_trans = max_trans;
+}
+
+void setTraceId(uint64_t id) {
+    auto co_id = Coroutine::curid();
+    if (co_id == M_MAIN_COROUTINE_ID) {
+        assert(false);
+        return;
+    }
+
+    g_trace_id_map[co_id] = id;
+}
+
+uint64_t getTraceId() {
+    auto co_id = Coroutine::curid();
+    if (co_id == M_MAIN_COROUTINE_ID) {
+        assert(false);
+        return 0;
+    }
+    auto iter = g_trace_id_map.find(co_id);
+    if (iter == g_trace_id_map.end()) {
+        return 0;
+    }
+    return iter->second;
+}
+
+void clearTraceId() {
+    auto co_id = Coroutine::curid();
+    if (co_id == M_MAIN_COROUTINE_ID) {
+        assert(false);
+        return;
+    }
+
+    g_trace_id_map.erase(co_id);
 }
 
 int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size) {

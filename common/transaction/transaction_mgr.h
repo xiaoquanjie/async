@@ -33,7 +33,15 @@ int registTickTransaction(TransactionBucket* bucket);
 
 void setLogFunc(std::function<void(const char*)> cb);
 
+void setTraceId(uint64_t id);
+
+uint64_t getTraceId();
+
+void clearTraceId();
 };
+
+// 获取当前的追踪id
+
 
 // 注册相关的宏
 #define REAL_REGIST_TRANSACTION(t, req_cmd, rsp_cmd) \
@@ -48,3 +56,4 @@ static int ret_##t = trans_mgr::registBucket(new trans_mgr::TransactionBucketImp
 // 注册tick事务宏
 #define REGIST_TICK_TRANSACTION(t) \
 static int ret_##t = trans_mgr::registTickTransaction(new trans_mgr::TransactionBucketImpl<t>(0, 0));
+

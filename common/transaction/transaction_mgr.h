@@ -42,6 +42,7 @@ std::shared_ptr<void> getTransContext();
 void clearTransContext();
 };
 
+#define SetTransCtx(ctx)   trans_mgr::setTransContext(ctx)
 #define GetTransCtx(type)  std::dynamic_pointer_cast<type>(trans_mgr::getTransContext())
 
 // 注册相关的宏

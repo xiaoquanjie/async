@@ -43,7 +43,7 @@ void clearTransContext();
 };
 
 #define SetTransCtx(ctx)   trans_mgr::setTransContext(ctx)
-#define GetTransCtx(type)  std::dynamic_pointer_cast<type>(trans_mgr::getTransContext())
+#define GetTransCtx(type)  std::static_pointer_cast<type>(trans_mgr::getTransContext())
 
 // 注册相关的宏
 #define REAL_REGIST_TRANSACTION(t, req_cmd, rsp_cmd) \

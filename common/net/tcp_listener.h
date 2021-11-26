@@ -52,7 +52,7 @@ public:
     void setAcceptCb(std::function<void(TcpListener*, uint32_t fd)> cb);
 
     // 设置连接断开时的回调，无论什么原因，只要断开必然会触发
-    void setClosedCb(std::function<void(TcpListener*, uint32_t)> cb);
+    void setClosedCb(std::function<void(TcpListener*, uint32_t fd)> cb);
 
     // 设置接受数据的回调: 一个完整包的数据(如果没有设置解析器，则返回捕捉到的每一段数据)
     void setDataCb(std::function<void(TcpListener*, uint32_t fd, const char* d, uint32_t len)> cb);

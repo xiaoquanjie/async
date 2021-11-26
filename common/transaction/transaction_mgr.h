@@ -42,6 +42,8 @@ std::shared_ptr<void> getTransContext();
 void clearTransContext();
 };
 
+#define GetTransCtx(type)  std::dynamic_pointer_cast<type>(trans_mgr::getTransContext())
+
 // 注册相关的宏
 #define REAL_REGIST_TRANSACTION(t, req_cmd, rsp_cmd) \
 static int ret_##t = trans_mgr::registBucket(new trans_mgr::TransactionBucketImpl<t>(req_cmd, rsp_cmd));

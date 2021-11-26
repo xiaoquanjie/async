@@ -120,6 +120,15 @@ void TcpListener::close(uint32_t fd) {
     iter->second.is_closing = true;
 }
 
+std::string TcpListener::getIp(uint32_t fd) {
+    auto iter = m_conn_map.find(fd);
+	if (iter == m_conn_map.end()) {
+		return std::string("");
+	}
+
+    return iter->second.ip;
+}
+
 void TcpListener::closed(uint32_t fd) {
     auto iter = m_conn_map.find(fd);
 	if (iter == m_conn_map.end()) {

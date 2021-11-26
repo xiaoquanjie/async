@@ -11,6 +11,7 @@
 #include "common/transaction/base_tick_transaction.h"
 #include "common/transaction/transaction_bucket.h"
 #include <functional>
+#include <memory>
 
 namespace trans_mgr {
 
@@ -33,15 +34,13 @@ int registTickTransaction(TransactionBucket* bucket);
 
 void setLogFunc(std::function<void(const char*)> cb);
 
-void setTraceId(uint64_t id);
+// 设置事务的上下文环境
+void setTransContext(std::shared_ptr<void> ctx);
 
-uint64_t getTraceId();
+std::shared_ptr<void> getTransContext();
 
-void clearTraceId();
+void clearTransContext();
 };
-
-// 获取当前的追踪id
-
 
 // 注册相关的宏
 #define REAL_REGIST_TRANSACTION(t, req_cmd, rsp_cmd) \

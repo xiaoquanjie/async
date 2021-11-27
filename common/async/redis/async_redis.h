@@ -19,7 +19,7 @@ struct BaseRedisCmd;
 
 typedef std::function<void(RedisReplyParserPtr)> async_redis_cb;
 
-// @uri: [host:port:pwd:idx:cluster]
+// @uri: [host|port|pwd|idx|cluster]
 void execute(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb cb);
 
 // 同步redis接口, 无连接池

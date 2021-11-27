@@ -253,7 +253,7 @@ void on_thread_redis_selectdb(void*, void* r, void* user_data) {
     delete data;
 }
 
-void on_thread_redis_result(void* c, void* r, void* user_data) {
+void on_thread_redis_result(void* /*c*/, void* r, void* user_data) {
     // 将结果写入队列
     redis_respond_data rsp_data; 
     rsp_data.reply = copy_redis_reply((redisReply*)r);

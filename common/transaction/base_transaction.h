@@ -33,7 +33,7 @@ public:
 
     uint32_t TransId();
 
-    int Handle(const char* packet, uint32_t packet_size);
+    int Handle(const char* packet, uint32_t packet_size, void* ext);
 
 protected:
     virtual void InCoroutine() = 0;
@@ -45,6 +45,7 @@ protected:
     uint32_t m_trans_id;
     const char* m_packet;
     uint32_t m_packet_size;
+    void*    m_ext;
 };
 
 /////////////////////////////////////////////////////////////////////

@@ -17,6 +17,7 @@ void BaseTransaction::Construct() {
     m_trans_id = 0;
     m_packet = 0;
     m_packet_size = 0;
+    m_ext = 0;
 }
 
 BaseTransaction::BaseTransaction() {
@@ -47,10 +48,11 @@ uint32_t BaseTransaction::TransId() {
     return m_trans_id;
 }
 
-int BaseTransaction::Handle(const char* packet, uint32_t packet_size) {
+int BaseTransaction::Handle(const char* packet, uint32_t packet_size, void* ext) {
     // 启动协程
     m_packet = packet;
     m_packet_size = packet_size;
+    m_ext = ext;
     CoroutineTask::doTask(_transaction_coroutine_enter_, (void*)this);
     return 0;
 }

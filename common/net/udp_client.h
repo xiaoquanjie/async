@@ -33,7 +33,7 @@ protected:
     void* m_evt;
     void* m_addr;
     char* m_data_buf;
-    uint32_t m_fd;
+    int32_t m_fd;
     std::function<void(UdpClient*, const char*, uint32_t)> m_data_cb;
 };
 

@@ -22,7 +22,7 @@ void BaseTickTransaction::Tick(uint32_t cur_time) {
     m_cur_time = cur_time;
     m_work_state = en_working_state;
 
-    this->Handle(0, 0);
+    this->Handle(0, 0, 0);
 }
 
 void BaseTickTransaction::InCoroutine() {

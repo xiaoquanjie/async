@@ -89,7 +89,7 @@ void clearTransContext() {
     g_context_map.erase(co_id);
 }
 
-int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size) {
+int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size, void* ext) {
     if (g_cur_concurrent_trans >= g_max_concurrent_trans) {
         log("over max concurrent trans limit:%d\n", g_cur_concurrent_trans);
         return -1;
@@ -107,7 +107,7 @@ int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size) {
     }
 
     g_cur_concurrent_trans++;
-    t->Handle(packet, packet_size);
+    t->Handle(packet, packet_size, ext);
     return 0;
 }
 

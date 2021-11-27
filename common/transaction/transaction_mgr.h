@@ -19,7 +19,8 @@ namespace trans_mgr {
 void setMaxTrans(uint32_t max_trans);
 
 // 返回0说明启动trans成功, 返回-1说明目前已达到最大trans限制，可保留消息下次再调用
-int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size);
+// @ext 额外参数
+int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size, void* ext = 0);
 
 void tick(uint32_t cur_time);
 

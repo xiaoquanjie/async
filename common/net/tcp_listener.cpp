@@ -259,7 +259,7 @@ void on_accept_cb_helper(TcpListener* l, void* sock, void* bev) {
 }
 
 // 接受新连接的回调
-void on_accept_cb(evconnlistener* lst, evutil_socket_t fd, sockaddr* sock, int socklen, void* ctx) {
+void on_accept_cb(evconnlistener* /*lst*/, evutil_socket_t fd, sockaddr* sock, int socklen, void* ctx) {
     TcpListener* listener = (TcpListener*)ctx;
     auto base = (event_base*)listener->getEventBase();
 

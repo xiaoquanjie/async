@@ -110,6 +110,7 @@ int execute(const std::string& uri, const async::mongo::BaseMongoCmd& cmd, std::
 			json_result.append(json);
 			parser->FreeJson(json);
 		}
+        json_result.append("]");
     });
 
     if (!ok) {

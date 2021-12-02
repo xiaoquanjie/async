@@ -20,21 +20,25 @@ def iteratorSheet(xls_file_path, file_name, proto_path, data_path):
     book = xlrd.open_workbook(xls_file_path)
     dirname = os.path.dirname(sys.argv[0])
     for sheet in book.sheet_names():
-        flag = False
+        flag = True
         if g_white_files:
+            flag = False
             # 存在白名单
             for w_f in g_white_files:
                 if w_f[0] == file_name and w_f[1] == sheet:
                     flag = True
                     break
-        else:
-            # 存在黑名单
-            flag = True
-            for b_f in g_black_files:
-                if b_f[0] == file_name and b_f[1] == sheet:
-                    flag = False
-                    break
 
+        if not flag:
+            # 白名单未通过
+            continue
+
+        # 黑名单检查
+        for b_f in g_black_files:
+            if b_f[0] == file_name and b_f[1] == sheet:
+                flag = False
+                break
+            
         if not flag:
             continue
 

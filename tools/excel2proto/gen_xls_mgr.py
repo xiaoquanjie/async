@@ -59,33 +59,24 @@ def gen_source_file(proto_name, source_file):
     f.write(content)
     f.close()
 
-def gen_mgr_file(class_infos, mgr_file):
+def gen_mgr_f_file(class_infos, mgr_file):
     content = ''
     content += '#pragma once\n\n'
     #include
     content += '#include <assert.h>\n'
+    content += '#include <memory>\n'
     for cls in class_infos:
         content += '#include "' + cls.file_name + '"\n'
-    content += '\n'
+    content += '\n\n'
 
     #mgr class
     content += 'class SheetMgr {\n'
     content += 'public:\n'
-    content += '    bool Load(const std::string& dir_path) {\n'
-    content += '        std::string file_path;\n\n'
-    content += '        bool ret = false;\n'
-    for cls in class_infos:
-        content += '        file_path = dir_path + "/' +  cls.proto_name + '.conf";\n'
-        content += '        ret = m_' + cls.proto_name + '_reader.Load(file_path.c_str());\n'
-        content += '        if (ret == false) { assert(false); return false; }\n' 
-        content += '\n'
-
-    content += '        return true;\n'
-    content += '    }\n\n'
+    content += '    bool Load(const std::string& dir_path);\n\n'
 
     content += 'public:\n'
     for cls in class_infos:
-        content += '    ' + cls.class_name + ' m_' + cls.proto_name + '_reader;\n'
+        content += '    std::shared_ptr<' + cls.class_name + '> m_' + cls.proto_name + '_reader;\n'
     content += '};\n'
     
     #delete old file
@@ -95,6 +86,34 @@ def gen_mgr_file(class_infos, mgr_file):
     f = open(mgr_file, "w")
     f.write(content)
     f.close()
+
+def gen_mgr_c_file(class_infos, mgr_file):
+    content = ''
+    #include 
+    content += '#include "sheet_mgr.h"\n'
+
+    #mgr class
+    content += 'bool SheetMgr::Load(const std::string& dir_path) {\n'
+    content += '    std::string file_path;\n'
+    content += '    bool ret = false;\n\n'
+    for cls in class_infos:
+        content += '    file_path = dir_path + "/' +  cls.proto_name + '.conf";\n'
+        content += '    m_' + cls.proto_name + '_reader = std::make_shared<' + cls.class_name + '>();\n'
+        content += '    ret = m_' + cls.proto_name + '_reader->Load(file_path.c_str());\n'
+        content += '    if (ret == false) { assert(false); return false; }\n' 
+        content += '\n'
+    
+    content += '    return true;\n'
+    content += '}\n\n'
+
+    #delete old file
+    if os.path.exists(mgr_file):
+        os.remove(mgr_file)
+    #gen
+    f = open(mgr_file, "w")
+    f.write(content)
+    f.close()
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
@@ -139,5 +158,7 @@ if __name__ == '__main__':
         #print(c_f)
         
     #gen mgr
-    mgr_f = g_code_path + 'sheet_mgr.h'
-    gen_mgr_file(class_infos, mgr_f)
+    mgr_h_f = g_code_path + 'sheet_mgr.h'
+    mgr_c_f = g_code_path + 'sheet_mgr.cpp'
+    gen_mgr_f_file(class_infos, mgr_h_f)
+    gen_mgr_c_file(class_infos, mgr_c_f)

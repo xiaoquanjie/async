@@ -14,6 +14,8 @@ g_white_files = []
 # 黑名单
 g_black_files = []
 
+g_python_cmd = 'python3 '
+
 # 遍历sheet
 def iteratorSheet(xls_file_path, file_name, proto_path, data_path):
     print(xls_file_path)
@@ -42,7 +44,7 @@ def iteratorSheet(xls_file_path, file_name, proto_path, data_path):
         if not flag:
             continue
 
-        cmd = 'python3 '
+        cmd = g_python_cmd
         cmd += dirname + '/xls_translator.py '
         cmd += '--sheet ' + sheet + ' '
         cmd += '--file ' + xls_file_path + ' '
@@ -62,7 +64,9 @@ def protocFile(proto_path, pb_path):
         
         command = None
         if platform.system() == 'Windows':
-            command = "..\\bin\\protoc.exe "
+            dirname = os.path.dirname(sys.argv[0])
+            command = dirname
+            command += "\\protoc.exe "
             command += "--proto_path=" + proto_path + " "
             command += "--cpp_out=" + pb_path + " "
             command += f
@@ -110,11 +114,14 @@ if __name__ == '__main__':
     parser.add_argument('--data',  required=False,  help='the data directory path  [./data/]')
     parser.add_argument('--code',  required=False,  help='the code directory path   [./code/]')
     parser.add_argument('--pb',  required=False,  help='the code directory path   [./code/]')
+    parser.add_argument('--python', required=False, help='python command')
     parser.add_argument('--white', nargs='?', const='white_file', required=False, help='the white list')
     parser.add_argument('--black', nargs='?', const='black_file', required=False, help='the black list')
 
     #parser.print_help()
     args = parser.parse_args()
+    if args.python:
+        g_python_cmd = args.python + ' '
     #print(args)
 
     # 清除自动生成的文件
@@ -155,7 +162,7 @@ if __name__ == '__main__':
     #生成管理器代码
     if args.code:
         dirname = os.path.dirname(sys.argv[0])
-        cmd = 'python3 '
+        cmd = g_python_cmd
         cmd += dirname + '/gen_xls_mgr.py '
         cmd += args.proto + " " + args.code
         #print("%s" % (cmd))

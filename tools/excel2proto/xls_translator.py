@@ -110,16 +110,17 @@ class SheetInterpreter:
         # 将PB转换成py格式
         try:
             if platform.system() == "Windows":
-                command = "..\\bin\\protoc.exe "
+                dirname = os.path.dirname(sys.argv[0])
+                command = dirname
+                command += "\\protoc.exe "
                 command += "--proto_path=" + g_proto_path + " "
                 command += "--python_out=" + g_proto_path + " "
                 command += g_pb_file_name
-                #command = "..\\bin\\protoc.exe --proto_path=./proto --python_out=./proto " + g_pb_file_name
+                print(command)
                 os.system(command)
             else:
                 command = "cd " + g_proto_path + "; "
                 command += "protoc --python_out=. " + g_pb_file_name
-                #command = "cd proto; protoc --python_out=. " + g_pb_file_name
                 os.system(command)
         except:
             LOG_ERROR("protoc failed!")

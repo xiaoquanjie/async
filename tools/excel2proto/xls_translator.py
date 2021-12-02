@@ -5,6 +5,8 @@ import xlrd
 import sys
 import os
 import platform
+import argparse
+import shutil
 
 import imp
 imp.reload(sys)
@@ -18,7 +20,7 @@ from loghelper import Color
 # TAP的空格数
 TAP_BLANK_NUM = 4
 
-OUTPUT_FULE_PATH_BASE = "gameconfig_"
+#OUTPUT_FULE_PATH_BASE = "gameconfig_"
 g_pb_file_name = ""
 g_struct_name = ""
 g_proto_path = ""
@@ -85,7 +87,7 @@ class SheetInterpreter:
 
         self._LayoutFileHeader()
         self._output.append('syntax = "proto3";\n')
-        self._output.append("package gameconfig;\n")
+        self._output.append("package sheet;\n")
 
         global g_struct_name
         self._LayoutStructHead(g_struct_name)
@@ -520,26 +522,36 @@ class DataParser:
 开始函数
 """
 if __name__ == '__main__':
-    if len(sys.argv) < 5:
-        LOG_ERROR("Usage: param is too less for translate sheet")
-        sys.exit(-1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--sheet', required=True, help='sheet name')
+    parser.add_argument('--file', required=True, help='file path')
+    parser.add_argument('--proto', required=False, help='the proto directory path')
+    parser.add_argument('--data', required=False, help='the data directory path')
+    args = parser.parse_args()
 
-    sheet_name = sys.argv[1]
-    file_path = sys.argv[2]
-    g_proto_path = sys.argv[3]
-    g_data_path = sys.argv[4]
-    base_file_path = os.path.basename(file_path)
+    g_data_path = args.data
+    g_proto_path = args.proto
+    if not g_proto_path:
+        g_proto_path = './tmp_proto/'
     
+    if not os.path.exists(g_proto_path):
+        os.makedirs(g_proto_path)
+
     try:
-        LOG_INFO("begin interpreted file:%s sheet:%s" % (file_path, sheet_name))
-        interpreter = SheetInterpreter(file_path, sheet_name)
+        LOG_INFO("begin interpreted file:%s sheet:%s" % (args.file, args.sheet))
+        interpreter = SheetInterpreter(args.file, args.sheet)
         interpreter.interpreted()
-        parser = DataParser(file_path, sheet_name)
-        parser.Parse()
-        LOG_INFO("end interpreted file:%s sheet:%s" % (file_path, sheet_name))
+        if g_data_path:
+            parser = DataParser(args.file, args.sheet)
+            parser.Parse()
+            os.remove(g_data_path + g_struct_name + '.data')
+        
+        LOG_INFO("end interpreted file:%s sheet:%s" % (args.file, args.sheet))
         LOG_INFO("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
     except BaseException as e:
         LOG_ERROR("col: %d, error : %s" % (interpreter._col + 1, e))
-        LOG_ERROR("Interpreted file:%s sheet:%s Failed!!!" % (file_path, sheet_name))
+        LOG_ERROR("Interpreted file:%s sheet:%s Failed!!!" % (args.file, args.sheet))
         LOG_INFO("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
-        sys.exit(-1)
+    finally:
+        if g_proto_path == './tmp_proto/':
+            shutil.rmtree(g_proto_path)

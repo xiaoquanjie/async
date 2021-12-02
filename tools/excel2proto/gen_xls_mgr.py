@@ -100,8 +100,8 @@ def gen_mgr_c_file(class_infos, mgr_file):
     for cls in class_infos:
         content += '    file_path = dir_path + "/' +  cls.proto_name + '.conf";\n'
         content += '    m_' + cls.proto_name + '_reader = std::make_shared<' + cls.class_name + '>();\n'
-        content += '    ret = m_' + cls.proto_name + '_reader->Load(file_path.c_str());\n'
-        content += '    if (ret == false) { assert(false); return false; }\n' 
+        content += '    assert(ret = m_' + cls.proto_name + '_reader->Load(file_path.c_str()));\n'
+        content += '    if (ret == false) { return false; }\n' 
         content += '\n'
     
     content += '    return Check();\n'
@@ -110,8 +110,8 @@ def gen_mgr_c_file(class_infos, mgr_file):
     content += 'bool SheetMgr::Check() {\n'
     content += '    bool ret = false;\n\n'
     for cls in class_infos:
-        content += '    ret = m_' +  cls.proto_name + '_reader->check();\n'
-        content += '    if (ret == false) { assert(false); return false; }\n' 
+        content += '    assert(ret = m_' +  cls.proto_name + '_reader->check());\n'
+        content += '    if (ret == false) { return false; }\n' 
         content += '\n'
 
     content += '    return true;\n'

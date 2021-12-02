@@ -39,7 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('--excel', required=True,  help='the excel directory path')
     parser.add_argument('--proto', required=True,  help='the proto directory path')
     parser.add_argument('--data',  required=True,  help='the data directory path')
-    parser.add_argument('--code',  required=False, help='the code directory path')
+    parser.add_argument('--code',  required=True, help='the code directory path')
 
     parser.print_help()
     args = parser.parse_args()

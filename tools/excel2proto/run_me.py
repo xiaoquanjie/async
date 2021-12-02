@@ -54,7 +54,7 @@ def iteratorSheet(xls_file_path, file_name, proto_path, data_path):
         if os.system(cmd) != 0:
             raise 'fail' 
 
-def protocFile(proto_path):
+def protocFile(proto_path, pb_path):
     files = os.listdir(proto_path)
     for f in files:
         if not f.endswith('.proto'):
@@ -64,12 +64,14 @@ def protocFile(proto_path):
         if platform.system() == 'Windows':
             command = "..\\bin\\protoc.exe "
             command += "--proto_path=" + proto_path + " "
-            command += "--cpp_out=" + proto_path + " "
+            command += "--cpp_out=" + pb_path + " "
             command += f
         else:
-            command =  "cd " + proto_path + ";"
-            command += "protoc --cpp_out=./ "
+            command = 'protoc '
+            command += '--proto_path=' + proto_path + ' '
+            command += '--cpp_out=' + pb_path + ' ' 
             command += f
+        #print(command)
         os.system(command)
 
 def parseWhiteBlackFile(files, file_path):
@@ -117,8 +119,8 @@ if __name__ == '__main__':
 
     # 清除自动生成的文件
     clearDirectoryFile(args.proto, '.proto')
-    clearDirectoryFile(args.proto, '.pb.h')
-    clearDirectoryFile(args.proto, '.pb.cc')
+    clearDirectoryFile(args.pb, '.pb.h')
+    clearDirectoryFile(args.pb, '.pb.cc')
     clearDirectoryFile(args.data, '.conf')
     
     # 白名单
@@ -140,7 +142,7 @@ if __name__ == '__main__':
     
     # 生成c++版本的proto源文件
     if args.pb:
-        protocFile(args.proto)
+        protocFile(args.proto, args.pb)
     
     #删除无用文件
     pb_files = os.listdir(args.proto)

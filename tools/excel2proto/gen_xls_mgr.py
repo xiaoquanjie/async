@@ -106,8 +106,11 @@ if __name__ == '__main__':
     g_code_path = sys.argv[2]
     #print("%s:%s" % (g_proto_path, g_code_path))
     
+    if not os.path.exists(g_code_path):
+        os.makedirs(g_code_path)
+
     #copy sheet_reader.h
-    shutil.copy(dirname + '/sheet_reader.h', g_code_path + '/')
+    shutil.copy(dirname + '/sheet_reader.h', g_code_path)
 
     #迭代proto文件
     proto_names = []

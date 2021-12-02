@@ -131,12 +131,18 @@ class SheetInterpreter:
             self._col += 1
             return
 
+        field_s_or_r = str(self._sheet.cell_value(1, self._col))
         field_rule = str(self._sheet.cell_value(2, self._col))
         field_name = str(self._sheet.cell_value(3, self._col))
         field_comment = str(self._sheet.cell_value(4, self._col))
         proto_rule = ""
 
         field_type = field_rule
+
+        # 为了能支持解析singular or repeated的情况
+        if field_s_or_r == "repeated":
+            field_type = "string"
+
         if field_rule.startswith("array"):
             proto_rule = "repeated"
             if field_name.find("[") >= 0:
@@ -372,11 +378,17 @@ class DataParser:
             self._col += 1
             return
 
+        field_s_or_r = str(self._sheet.cell_value(1, self._col))
         field_rule = str(self._sheet.cell_value(2, self._col))
         field_name = str(self._sheet.cell_value(3, self._col))
         proto_rule = "optional"
 
         field_type = field_rule
+        
+        # 为了能支持解析singular or repeated的情况
+        if field_s_or_r == "repeated":
+            field_type = "string"
+
         if field_rule.startswith("array"):
             proto_rule = "repeated"
             if field_name.find("[") >= 0:

@@ -85,6 +85,9 @@ def parseWhiteBlackFile(files, file_path):
 
 # 清除文件
 def clearDirectoryFile(dir_path, suffix):
+    if not os.path.exists(dir_path):
+        return
+
     data_files = os.listdir(dir_path)
     for f in data_files:
         if f.endswith(suffix):

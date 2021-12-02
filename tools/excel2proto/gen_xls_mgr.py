@@ -23,13 +23,13 @@ def gen_header_file(proto_name, header_file):
     content += '#include "sheet_reader.h"\n'
     content += '#include <' + proto_name + '.pb.h>\n\n' 
     #new item
-    content += 'struct ' + new_proto_name + 'Item : public gameconfig::' + proto_name + ' {\n'
+    content += 'struct ' + new_proto_name + 'Item : public sheet::' + proto_name + ' {\n'
     content += '};\n\n'
     #reader
-    content += 'struct ' + new_proto_name + 'Reader : public SheetReader<SheetKey<>, ' + new_proto_name + 'Item, gameconfig::' \
-        + proto_name + ', gameconfig::' + proto_name + '_array> {\n'
+    content += 'struct ' + new_proto_name + 'Reader : public SheetReader<SheetKey<>, ' + new_proto_name + 'Item, sheet::' \
+        + proto_name + ', sheet::' + proto_name + '_array> {\n'
     content += 'protected:\n'
-    content += '    bool parser(SheetKey<>& key, ' + new_proto_name + 'Item& new_item, gameconfig::' + proto_name + '& item);\n'
+    content += '    bool parser(SheetKey<>& key, ' + new_proto_name + 'Item& new_item, sheet::' + proto_name + '& item);\n'
     content += '};\n'
 
     #delete old file
@@ -47,7 +47,7 @@ def gen_source_file(proto_name, source_file):
     #include
     content += '#include "' + proto_name + '_sheet_reader.h"\n\n'
     #reader
-    content += 'bool ' + new_proto_name + 'Reader::parser(SheetKey<>& key, ' + new_proto_name + 'Item& new_item, gameconfig::' + proto_name + '& item) {\n'
+    content += 'bool ' + new_proto_name + 'Reader::parser(SheetKey<>& key, ' + new_proto_name + 'Item& new_item, sheet::' + proto_name + '& item) {\n'
     content += '    return false;\n'
     content += '};\n'
 

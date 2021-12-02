@@ -8,12 +8,39 @@ import sys
 import shutil
 import argparse
 
+# 白名单
+g_white_files = []
+
+# 黑名单
+g_black_files = []
+
 # 遍历sheet
-def iteratorSheet(xls_file_path, proto_path, data_path):
+def iteratorSheet(xls_file_path, file_name, proto_path, data_path):
     print(xls_file_path)
     book = xlrd.open_workbook(xls_file_path)
+    dirname = os.path.dirname(sys.argv[0])
     for sheet in book.sheet_names():
-        cmd = 'python3 xls_translator.py ' + sheet + ' ' + xls_file_path + ' ' + proto_path + ' ' + data_path
+        flag = False
+        if g_white_files:
+            # 存在白名单
+            for w_f in g_white_files:
+                if w_f[0] == file_name and w_f[1] == sheet:
+                    flag = True
+                    break
+        else:
+            # 存在黑名单
+            flag = True
+            for b_f in g_black_files:
+                if b_f[0] == file_name and b_f[1] == sheet:
+                    flag = False
+                    break
+
+        if not flag:
+            continue
+
+        cmd = 'python3 '
+        cmd += dirname + '/xls_translator.py '
+        cmd += sheet + ' ' + xls_file_path + ' ' + proto_path + ' ' + data_path
         if os.system(cmd) != 0:
             raise 'fail' 
 
@@ -35,16 +62,57 @@ def protocFile(proto_path):
             command += f
         os.system(command)
 
+def parseWhiteBlackFile(files, file_path):
+    if file_path == 'white_file':
+        file_path = os.path.dirname(sys.argv[0]) + '/white_file'
+    if file_path == 'black_file':
+        file_path = os.path.dirname(sys.argv[0]) + '/black_file'
+
+    f = open(file_path)
+    while True:
+        line = f.readline()
+        line = line.strip()
+        if not line:
+            break
+        d = line.split(':')
+        files.append(d)
+
+    #print(files)
+
+# 清除文件
+def clearDirectoryFile(dir_path, suffix):
+    data_files = os.listdir(dir_path)
+    for f in data_files:
+        if f.endswith(suffix):
+            os.remove(dir_path + f)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--excel', required=True,  help='the excel directory path [./excel/]')
     parser.add_argument('--proto', required=True,  help='the proto directory path [./proto/]')
     parser.add_argument('--data',  required=True,  help='the data directory path  [./data/]')
-    parser.add_argument('--code',  required=True, help='the code directory path   [./code/]')
+    parser.add_argument('--code',  required=True,  help='the code directory path   [./code/]')
+    parser.add_argument('--white', nargs='?', const='white_file', required=False, help='the white list')
+    parser.add_argument('--black', nargs='?', const='black_file', required=False, help='the black list')
 
     parser.print_help()
     args = parser.parse_args()
+    #print(args)
+
+    # 清除自动生成的文件
+    clearDirectoryFile(args.proto, '.proto')
+    clearDirectoryFile(args.proto, '.pb.h')
+    clearDirectoryFile(args.proto, '.pb.cc')
+    clearDirectoryFile(args.data, '.conf')
     
+    # 白名单
+    if args.white:
+        parseWhiteBlackFile(g_white_files, args.white)
+
+    # 黑名单
+    if args.black:
+        parseWhiteBlackFile(g_black_files, args.black)
+
     # 生成proto_path目录
     if not os.path.exists(args.proto):
         os.makedirs(args.proto)
@@ -56,7 +124,7 @@ if __name__ == '__main__':
             continue
         if not f.endswith('.xlsx') and not f.endswith('.xls'):
             continue
-        iteratorSheet(args.excel + f, args.proto, args.data)
+        iteratorSheet(args.excel + f, f, args.proto, args.data)
     
     # 生成c++版本的proto源文件
     protocFile(args.proto)
@@ -75,7 +143,10 @@ if __name__ == '__main__':
             os.remove(args.data + f)
 
     #生成管理器代码
-    cmd = "python3 ./gen_xls_mgr.py " + args.proto + " " + args.code
+    dirname = os.path.dirname(sys.argv[0])
+    cmd = 'python3 '
+    cmd += dirname + '/gen_xls_mgr.py '
+    cmd += args.proto + " " + args.code
     #print("%s" % (cmd))
     os.system(cmd)
 

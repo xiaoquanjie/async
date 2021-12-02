@@ -52,21 +52,24 @@ if __name__ == '__main__':
     for f in files:
         if f.startswith('~.') or f.startswith("~$"):
             continue
+        if not f.endswith('.xlsx') and not f.endswith('.xls'):
+            continue
         iteratorSheet(excel_path + f, proto_path, data_path)
     
     # 生成c++版本的proto源文件
     protocFile(proto_path)
     
-
     #删除无用文件
-    for f in files:
+    pb_files = os.listdir(proto_path)
+    for f in pb_files:
         if f.endswith('.py'):
             os.remove(proto_path + f)
         elif f.endswith('__pycache__'):
             shutil.rmtree(proto_path + f)
 
     #生成管理器代码
-    cmd = "python3 gen_xls_mgr.py proto_path ./mgr/"
+    cmd = "python3 ./gen_xls_mgr.py " + proto_path + " " + proto_path
+    #print("%s" % (cmd))
     os.system(cmd)
 
 

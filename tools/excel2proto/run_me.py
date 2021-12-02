@@ -14,7 +14,8 @@ def iteratorSheet(xls_file_path, proto_path, data_path):
     book = xlrd.open_workbook(xls_file_path)
     for sheet in book.sheet_names():
         cmd = 'python3 xls_translator.py ' + sheet + ' ' + xls_file_path + ' ' + proto_path + ' ' + data_path
-        os.system(cmd)
+        if os.system(cmd) != 0:
+            raise 'fail' 
 
 def protocFile(proto_path):
     files = os.listdir(proto_path)
@@ -36,10 +37,10 @@ def protocFile(proto_path):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--excel', required=True,  help='the excel directory path')
-    parser.add_argument('--proto', required=True,  help='the proto directory path')
-    parser.add_argument('--data',  required=True,  help='the data directory path')
-    parser.add_argument('--code',  required=True, help='the code directory path')
+    parser.add_argument('--excel', required=True,  help='the excel directory path [./excel/]')
+    parser.add_argument('--proto', required=True,  help='the proto directory path [./proto/]')
+    parser.add_argument('--data',  required=True,  help='the data directory path  [./data/]')
+    parser.add_argument('--code',  required=True, help='the code directory path   [./code/]')
 
     parser.print_help()
     args = parser.parse_args()

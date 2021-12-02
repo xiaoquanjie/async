@@ -34,7 +34,7 @@ class LogHelper:
         handler = logging.FileHandler('xls_translator.log', mode='w')
         handler.setFormatter(formatter)
         LogHelper._logger = logging.getLogger()
-        LogHelper._logger.addHandler(handler)
+        #LogHelper._logger.addHandler(handler)
         LogHelper._logger.setLevel(logging.DEBUG)
 
         # console log

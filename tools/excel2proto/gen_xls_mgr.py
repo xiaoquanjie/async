@@ -73,6 +73,7 @@ def gen_mgr_f_file(class_infos, mgr_file):
     content += 'class SheetMgr {\n'
     content += 'public:\n'
     content += '    bool Load(const std::string& dir_path);\n\n'
+    content += '    bool Check();\n\n'
 
     content += 'public:\n'
     for cls in class_infos:
@@ -103,6 +104,16 @@ def gen_mgr_c_file(class_infos, mgr_file):
         content += '    if (ret == false) { assert(false); return false; }\n' 
         content += '\n'
     
+    content += '    return Check();\n'
+    content += '}\n\n'
+
+    content += 'bool SheetMgr::Check() {\n'
+    content += '    bool ret = false;\n\n'
+    for cls in class_infos:
+        content += '    ret = m_' +  cls.proto_name + '_reader->check();\n'
+        content += '    if (ret == false) { assert(false); return false; }\n' 
+        content += '\n'
+
     content += '    return true;\n'
     content += '}\n\n'
 

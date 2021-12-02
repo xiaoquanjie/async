@@ -174,6 +174,8 @@ public:
         return m_item_map;
     }
 
+    virtual bool check() const { return true; }
+    
 protected:
     // 解析器实现
     virtual bool parser(KEY& key, NEW_ITEM_TYPE& new_item, ITEM_TYPE& item) = 0;

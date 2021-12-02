@@ -67,7 +67,7 @@ def gen_mgr_f_file(class_infos, mgr_file):
     content += '#include <memory>\n'
     for cls in class_infos:
         content += '#include "' + cls.file_name + '"\n'
-    content += '\n\n'
+    content += '\n'
 
     #mgr class
     content += 'class SheetMgr {\n'
@@ -90,7 +90,7 @@ def gen_mgr_f_file(class_infos, mgr_file):
 def gen_mgr_c_file(class_infos, mgr_file):
     content = ''
     #include 
-    content += '#include "sheet_mgr.h"\n'
+    content += '#include "sheet_mgr.h"\n\n'
 
     #mgr class
     content += 'bool SheetMgr::Load(const std::string& dir_path) {\n'

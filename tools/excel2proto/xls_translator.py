@@ -127,7 +127,7 @@ class SheetInterpreter:
         LOG_INFO("row=%d, col=%d", self._row, self._col)
 
         scope = self._sheet.cell_value(0, self._col)
-        if str(scope) != "C" and str(scope) != "S" and str(scope) != "CS" and str(scope) != "SC":
+        if str(scope) != "S" and str(scope) != "CS" and str(scope) != "SC":
             self._col += 1
             return
 
@@ -368,7 +368,7 @@ class DataParser:
 
     def _ParseField(self, max_repeated_num, repeated_num, item):
         scope = self._sheet.cell_value(0, self._col)
-        if str(scope) != "C" and str(scope) != "S" and str(scope) != "CS" and str(scope) != "SC":
+        if str(scope) != "S" and str(scope) != "CS" and str(scope) != "SC":
             self._col += 1
             return
 

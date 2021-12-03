@@ -102,7 +102,7 @@ public:
 template<typename KEY, typename NEW_ITEM_TYPE, typename ITEM_TYPE, typename ITEM_ARRAY_TYPE>
 struct SheetReader {
 public:    
-    bool Load(const char* file_path) {
+    virtual bool Load(const char* file_path) {
         std::ifstream ifs(file_path, std::ifstream::in);
         if (!ifs) {
             printf("failed to open proto file:%s\n", file_path);

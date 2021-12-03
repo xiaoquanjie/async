@@ -134,6 +134,7 @@ public:
             std::shared_ptr<NEW_ITEM_TYPE> ptr = std::make_shared<NEW_ITEM_TYPE>();
             KEY key;
             if (!parser(key, *ptr.get(), *(m_array->mutable_items(idx)))) {
+                printf("failed to parser item:%s|%s\n", file_path, m_array->mutable_items(idx)->ShortDebugString().c_str());
                 return false;
             }
             (*m_item_map)[key] = ptr;
@@ -175,7 +176,7 @@ public:
     }
 
     virtual bool check() const { return true; }
-    
+
 protected:
     // 解析器实现
     virtual bool parser(KEY& key, NEW_ITEM_TYPE& new_item, ITEM_TYPE& item) = 0;

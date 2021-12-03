@@ -25,6 +25,7 @@ g_pb_file_name = ""
 g_struct_name = ""
 g_proto_path = ""
 g_data_path = ""
+g_readable2 = False # 版本2的可读输出
 
 class SheetInterpreter:
     """通过excel配置生成配置的protobuf定义文件"""
@@ -363,8 +364,10 @@ class DataParser:
             self._ParseLine(item)
 
         #LOG_INFO("parse result:\n%s", item_array)
-
-        self._WriteReadableData2File(str(item_array))
+        if g_readable2:
+            self._WriteReadable2Data2File(item_array)
+        else:
+            self._WriteReadableData2File(str(item_array))
         data = item_array.SerializeToString()
         self._WriteData2File(data)
 
@@ -518,6 +521,16 @@ class DataParser:
         file.write(data.encode())
         file.close()
 
+    def _WriteReadable2Data2File(self, item_array):
+        content = ''
+        #print(item_array)
+        for item in item_array.items:
+            content += 'items { '
+            str_item = str(item)
+            str_item = str_item.replace('\n', ' ')
+            content += str_item + '}\n'
+
+        self._WriteReadableData2File(content)
 
 """
 开始函数
@@ -528,8 +541,10 @@ if __name__ == '__main__':
     parser.add_argument('--file', required=True, help='file path')
     parser.add_argument('--proto', required=False, help='the proto directory path')
     parser.add_argument('--data', required=False, help='the data directory path')
+    parser.add_argument('--r2', nargs='?', const=True, required=False, help='readable version2')
     args = parser.parse_args()
 
+    g_readable2 = args.r2
     g_data_path = args.data
     g_proto_path = args.proto
     if not g_proto_path:

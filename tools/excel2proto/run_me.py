@@ -17,7 +17,7 @@ g_black_files = []
 g_python_cmd = 'python3 '
 
 # 遍历sheet
-def iteratorSheet(xls_file_path, file_name, proto_path, data_path):
+def iteratorSheet(xls_file_path, file_name, proto_path, data_path, r2):
     print(xls_file_path)
     book = xlrd.open_workbook(xls_file_path)
     dirname = os.path.dirname(sys.argv[0])
@@ -51,7 +51,9 @@ def iteratorSheet(xls_file_path, file_name, proto_path, data_path):
         if proto_path:
             cmd += '--proto ' + proto_path + ' '
         if data_path:
-            cmd += '--data ' + data_path
+            cmd += '--data ' + data_path + ' '
+        if r2:
+            cmd += '--r2 ' 
 
         if os.system(cmd) != 0:
             raise 'fail' 
@@ -115,6 +117,7 @@ if __name__ == '__main__':
     parser.add_argument('--code',  required=False,  help='the code directory path   [./code/]')
     parser.add_argument('--pb',  required=False,  help='the code directory path   [./code/]')
     parser.add_argument('--python', required=False, help='python command')
+    parser.add_argument('--r2', nargs='?', const=True, required=False, help='readable version2')
     parser.add_argument('--white', nargs='?', const='white_file', required=False, help='the white list')
     parser.add_argument('--black', nargs='?', const='black_file', required=False, help='the black list')
 
@@ -145,7 +148,7 @@ if __name__ == '__main__':
             continue
         if not f.endswith('.xlsx') and not f.endswith('.xls'):
             continue
-        iteratorSheet(args.excel + f, f, args.proto, args.data)
+        iteratorSheet(args.excel + f, f, args.proto, args.data, args.r2)
     
     # 生成c++版本的proto源文件
     if args.pb:

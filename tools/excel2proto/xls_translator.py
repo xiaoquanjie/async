@@ -523,14 +523,11 @@ class DataParser:
 
     def _WriteReadable2Data2File(self, item_array):
         content = ''
-        #print(item_array)
-        for item in item_array.items:
-            content += 'items { '
-            str_item = str(item)
-            str_item = str_item.replace('\n', ' ')
-            content += str_item + '}\n'
-
-        self._WriteReadableData2File(content)
+        str_array = str(item_array)
+        str_array = str_array.replace('\n', '')
+        str_array = str_array.replace('}', ' }\n')
+        str_array = str_array.replace('{ ', '{')
+        self._WriteReadableData2File(str_array)
 
 """
 开始函数

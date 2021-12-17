@@ -29,6 +29,7 @@ struct curl_custom_data {
     std::string respond_body;
     async_curl_cb cb;
     CURL* curl = 0;
+    std::string post_content;
 
     ~curl_custom_data() {
         if (curl_headers) {
@@ -149,16 +150,23 @@ curl_custom_data_ptr local_create_curl_custom_data(int method,
     curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 120L);
     curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 120L);
+    
+    // create a new curl_custom_data
+    curl_custom_data_ptr data = std::make_shared<curl_custom_data>();
+    data->post_content = content;
+    data->curl = curl;
+    
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data->respond_body);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, on_thread_curl_writer);
 
     if (method == METHOD_POST) {
         curl_easy_setopt(curl, CURLOPT_POST, 1);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE, content.size());
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, content.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE, data->post_content.size());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data->post_content.c_str());
     }
     else if (method == METHOD_PUT) {
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, content.c_str());
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data->post_content.c_str());
     }
 
     // set header
@@ -171,12 +179,7 @@ curl_custom_data_ptr local_create_curl_custom_data(int method,
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
     }
 
-    // create a new curl_custom_data
-    curl_custom_data_ptr data = std::make_shared<curl_custom_data>();
     data->curl_headers = curl_headers;
-    data->curl = curl;
-    
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data->respond_body);
     return data;
 }
 

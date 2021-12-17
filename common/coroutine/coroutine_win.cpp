@@ -21,7 +21,15 @@ void __stdcall pub_coroutine(LPVOID p) {
 	}
 }
 
-bool Coroutine::init(unsigned int stack_size, bool pri_stack) {
+bool Coroutine::init(unsigned int stack_size) {
+	return _init(stack_size);
+}
+
+bool Coroutine::init() {
+	return _init(128 * 1204);
+}
+
+bool Coroutine::_init(unsigned int stack_size, bool pri_stack) {
 	_schedule_& schedule = gschedule;
 	if (schedule.init) {
 		return true;

@@ -25,7 +25,7 @@ void save_stack(_coroutine_* c, char* top) {
 	char dummy = 0;
 	assert(top - &dummy <= M_COROUTINE_STACK_SIZE);
 	c->_size = top - &dummy;
-	if (c->_cap < c->_size) {
+	if (c->_cap < c->_size || (c->_cap - c->_size > 1024)) {
 		free(c->_stack);
 		c->_cap = c->_size;
 		c->_stack = (char*)malloc(c->_cap);
@@ -35,7 +35,15 @@ void save_stack(_coroutine_* c, char* top) {
 
 ////////////////////////////////////////////////////////////
 
-bool Coroutine::init(unsigned int stack_size, bool pri_stack) {
+bool Coroutine::init(unsigned int stack_size) {
+	return _init(stack_size, true);
+}
+
+bool Coroutine::init() {
+	return _init(0, false);
+}
+
+bool Coroutine::_init(unsigned int stack_size, bool pri_stack) {
 	_schedule_& schedule = gschedule;
 	if (schedule.init) {
 		return true;

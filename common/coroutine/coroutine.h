@@ -86,8 +86,11 @@ struct _schedule_ : public _base_schedule_ {
 
 class Coroutine {
 public:
-	// init environment
-	static bool init(unsigned int stack_size = 128 * 1204, bool pri_stack = false);
+	// init private stack environment
+	static bool init(unsigned int stack_size);
+
+	// init public stack environment
+	static bool init();
 
 	// create one new coroutine
 	static int create(_coroutine_func_ routine, void* data);
@@ -107,6 +110,8 @@ public:
 	static bool destroy(int co_id);
 
 private:
+	static bool _init(unsigned int stack_size, bool pri_stack = false);
+
 	static void _alloc_schedule_(_schedule_& schedule);
 
 	static _coroutine_* _alloc_co_(_schedule_& schedule, _coroutine_func_ routine, void* data);

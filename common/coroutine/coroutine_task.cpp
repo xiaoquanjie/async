@@ -8,7 +8,7 @@
 #include "common/coroutine/coroutine_task.h"
 #include "common/coroutine/coroutine.h"
 #include "common/coroutine/tls.hpp"
-#include "common/coroutine/svector.hpp"
+#include <list>
 
 // 定义该宏会打开调试日志
 //#define M_COROUTINE_TASK_LOG (1)
@@ -22,7 +22,7 @@
 
 // max reserve coroutine count in CoroutineTask
 #ifndef M_MAX_RESERVE_COROUTINE
-#define M_MAX_RESERVE_COROUTINE (500)
+#define M_MAX_RESERVE_COROUTINE (100)
 #endif
 
 struct new_co_task {
@@ -31,7 +31,7 @@ struct new_co_task {
     void* p;
 };
 
-typedef svector<new_co_task*> new_co_task_vector;
+typedef std::list<new_co_task*> new_co_task_vector;
 
 new_co_task* create_new_co_task(coroutine_task_func func, void*p);
 bool recycle_new_co_task(new_co_task*);
@@ -54,7 +54,7 @@ bool CoroutineTask::doTask(coroutine_task_func func, void*p) {
 }
 
 bool CoroutineTask::resumeTask(int co_id) {
-    if (Coroutine::curid() == M_MAIN_COROUTINE_ID) {
+    if (Coroutine::curid() != M_MAIN_COROUTINE_ID) {
         COROUTINE_TASK_LOG("need to call resumeTask in main_coroutine\n");
         return false;
     }
@@ -74,8 +74,8 @@ new_co_task* create_new_co_task(coroutine_task_func func, void*p) {
         task->co_id = Coroutine::create(co_task_func, task);
     }
     else {
-        task = task_vec.back();
-        task_vec.pop_back();
+        task = task_vec.front();
+        task_vec.pop_front();
     }
     task->func = func;
     task->p = p;

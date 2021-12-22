@@ -99,4 +99,8 @@ bool loop(uint32_t cur_time) {
     return async::loop(cur_time);
 }
 
+void setLogFunc(std::function<void(const char*)> cb) {
+    async::setLogFunc(cb);
+}
+
 }

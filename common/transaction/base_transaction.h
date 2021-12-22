@@ -78,17 +78,18 @@ public:
             return;
         }
 
-        BeforeOnRequest();
-        m_return_value = OnRequest();
+        if (BeforeOnRequest()) {
+            m_return_value = OnRequest();
+        }
         AfterOnRequest();
     }
 
     // 在OnRequest之后调用
-    virtual void BeforeOnRequest() {}
+    virtual bool BeforeOnRequest() { return false; }
 
     virtual int OnRequest() = 0;
 
-    virtual void AfterOnRequest() {}
+    virtual bool AfterOnRequest() { return false; }
 
 protected:
     int m_return_value;      // 返回值

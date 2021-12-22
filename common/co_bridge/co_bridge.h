@@ -65,4 +65,6 @@ void rmTimer(int64_t timer_id);
 // 循环，内部调用异步循环
 bool loop(uint32_t cur_time = 0);
 
+void setLogFunc(std::function<void(const char*)> cb);
+
 }

@@ -266,6 +266,14 @@ struct HincrbyRedisCmd : public BaseRedisCmd {
 	HincrbyRedisCmd(const std::string& key, const std::string& member, int incr);
 };
 
+struct HmsetRedisCmd : public BaseRedisCmd {
+	HmsetRedisCmd(const std::string& key, const std::map<std::string, std::string>& member_to_value);
+};
+
+struct HmgetRedisCmd : public BaseRedisCmd {
+	HmgetRedisCmd(const std::string& key, const std::vector<std::string>& members);
+};
+
 } // redis
 } // async
 

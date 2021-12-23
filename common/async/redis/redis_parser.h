@@ -155,6 +155,8 @@ void RedisReplyParser::GetMap(std::map<T1, T2> &values) {
 			T2 value2;
 			DataConstruct(value2);
 			this->GetValue(ele2, value2);
+
+            values.insert(std::make_pair(value1, value2));
 		});
 	} while (false);
 

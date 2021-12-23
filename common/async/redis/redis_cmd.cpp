@@ -461,6 +461,21 @@ HincrbyRedisCmd::HincrbyRedisCmd(const std::string& key, const std::string& memb
 	cmd.push_back(std::to_string(incr));
 }
 
+HmsetRedisCmd::HmsetRedisCmd(const std::string& key, const std::map<std::string, std::string>& member_to_value) {
+    cmd.push_back("HMSET");
+    cmd.push_back(key);
+    for(auto const& iter : member_to_value) {
+        cmd.push_back(iter.first);
+        cmd.push_back(iter.second);
+    }
+}
+
+HmgetRedisCmd::HmgetRedisCmd(const std::string& key, const std::vector<std::string>& members) {
+    cmd.push_back("HMGET");
+    cmd.push_back(key);
+    cmd.insert(cmd.end(), members.begin(), members.end());
+}
+
 } // redis
 } // async
 

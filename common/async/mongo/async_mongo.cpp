@@ -209,12 +209,12 @@ void thread_mongo_find_op(mongoc_collection_t* mongoc_collection, mongo_custom_d
                                          (bson_t *)req_data->cmd.d->doc_bson_ptr,
                                          (bson_t *)req_data->cmd.d->opt_bson_ptr,
                                          nullptr);
-    std::vector<void *> *bson_vec = (std::vector<void *> *)rsp_data->parser->bsons;
+    auto& bson_vec = rsp_data->parser->bsons;
     // mongoc_cursor_next是组塞函数
     const bson_t *doc = 0;
     while (mongoc_cursor_next((mongoc_cursor_t *)cursor, &doc)) {
         // 拷贝一份bson
-        bson_vec->push_back(bson_copy(doc));
+        bson_vec.push_back(bson_copy(doc));
     }
     if (mongoc_cursor_error((mongoc_cursor_t *)cursor, (bson_error_t *)rsp_data->parser->error)) {
         rsp_data->parser->op_result = -1;
@@ -228,12 +228,12 @@ void thread_mongo_find_opts_op(mongoc_collection_t* mongoc_collection, mongo_cus
                                                    (bson_t *)req_data->cmd.d->doc_bson_ptr,
                                                    (bson_t *)req_data->cmd.d->opt_bson_ptr,
                                                    nullptr);
-    std::vector<void*>* bson_vec = (std::vector<void*>*)rsp_data->parser->bsons;
+    auto& bson_vec = rsp_data->parser->bsons;
     // mongoc_cursor_next是组塞函数
     const bson_t* doc = 0;
     while (mongoc_cursor_next((mongoc_cursor_t*)cursor, &doc)) {
         // 拷贝一份bson
-        bson_vec->push_back(bson_copy(doc));
+        bson_vec.push_back(bson_copy(doc));
     }
     if (mongoc_cursor_error((mongoc_cursor_t*)cursor, (bson_error_t *)rsp_data->parser->error)) {
             rsp_data->parser->op_result = -1;
@@ -254,8 +254,8 @@ void thread_mongo_deleteone_op(mongoc_collection_t* mongoc_collection, mongo_cus
         rsp_data->parser->op_result = -1;
     }
     else {
-        std::vector<void*>* bson_vec = (std::vector<void*>*)rsp_data->parser->bsons;
-        bson_vec->push_back(bson_copy(&bson_reply));
+        auto& bson_vec = rsp_data->parser->bsons;
+        bson_vec.push_back(bson_copy(&bson_reply));
     }
 }
 
@@ -272,8 +272,8 @@ void thread_mongo_deletemany_op(mongoc_collection_t* mongoc_collection, mongo_cu
         rsp_data->parser->op_result = -1;
     }
     else {
-        std::vector<void*>* bson_vec = (std::vector<void*>*)rsp_data->parser->bsons;
-        bson_vec->push_back(bson_copy(&bson_reply));
+        auto& bson_vec = rsp_data->parser->bsons;
+        bson_vec.push_back(bson_copy(&bson_reply));
     }
 }
 
@@ -291,8 +291,8 @@ void thread_mongo_updateone_op(mongoc_collection_t* mongoc_collection, mongo_cus
         rsp_data->parser->op_result = -1;
     }
     else {
-        std::vector<void*>* bson_vec = (std::vector<void*>*)rsp_data->parser->bsons;
-        bson_vec->push_back(bson_copy(&bson_reply));
+        auto& bson_vec = rsp_data->parser->bsons;
+        bson_vec.push_back(bson_copy(&bson_reply));
     }
 }
 
@@ -310,8 +310,8 @@ void thread_mongo_updatemany_op(mongoc_collection_t* mongoc_collection, mongo_cu
         rsp_data->parser->op_result = -1;
     }
     else {
-        std::vector<void*>* bson_vec = (std::vector<void*>*)rsp_data->parser->bsons;
-        bson_vec->push_back(bson_copy(&bson_reply));
+        auto& bson_vec = rsp_data->parser->bsons;
+        bson_vec.push_back(bson_copy(&bson_reply));
     }
 }
 

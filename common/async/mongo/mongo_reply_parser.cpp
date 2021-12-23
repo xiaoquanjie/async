@@ -8,7 +8,6 @@
 #ifdef USE_ASYNC_MONGO
 
 #include "common/async/mongo/mongo_reply_parser.h"
-#include <vector>
 #include <bson.h>
 
 namespace async {
@@ -16,21 +15,14 @@ namespace mongo {
 
 MongoReplyParser::MongoReplyParser() {
     this->error = malloc(sizeof(bson_error_t));
-    this->bsons = 0;
     this->bson_idx = 0;
-    this->bsons = new std::vector<void*>();
 }
 
 MongoReplyParser::~MongoReplyParser() {
     free(this->error);
     this->error = 0;
-    if (this->bsons) {
-        auto bson_vec = (std::vector<void*>*)(this->bsons);
-        for (auto p : *bson_vec) {
-            bson_destroy((bson_t*)p);
-        }
-        delete bson_vec;
-        this->bsons = 0;
+    for (auto p : this->bsons) {
+        bson_destroy((bson_t*)p);
     }
 }
 
@@ -47,16 +39,11 @@ const char* MongoReplyParser::What() {
 }
 
 const void* MongoReplyParser::NextBson() {
-    if (!this->bsons) {
+    if (this->bson_idx >= this->bsons.size()) {
         return 0;
     }
 
-    auto bson_vec = (std::vector<void*>*)(this->bsons);
-    if (this->bson_idx >= bson_vec->size()) {
-        return 0;
-    }
-
-    return (*bson_vec)[this->bson_idx++];
+    return this->bsons[this->bson_idx++];
 }
 
 void MongoReplyParser::ResetNextBson() {

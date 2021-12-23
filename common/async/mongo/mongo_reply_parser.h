@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <functional>
+#include <vector>
 
 namespace async {
 
@@ -38,7 +39,7 @@ struct MongoReplyParser {
     int op_result = -1;  // 0表示成功
     void* error;
     void* cursor;
-    void* bsons;
+    std::vector<void*> bsons;
     size_t bson_idx;
 };
 

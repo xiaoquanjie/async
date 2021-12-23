@@ -250,61 +250,65 @@ void bson_array_append(void *b, const char *field, void* val) {
 
 /////////////////////////////////////////////////////////////////////////////
 
-MongoKeyValue::~MongoKeyValue() {
-    clear();
+MongoKeyValue::Data::Data() {
 }
 
-MongoKeyValue& MongoKeyValue::operator =(const MongoKeyValue& kv) {
-    clear();
-    this->ref = kv.ref;
-    this->d = kv.d;
-    return *this;
+MongoKeyValue::Data::~Data() {
+    if ((this->type == en_type_str) || (this->type == en_type_binary)) {
+        free(this->meta.str);
+    }
+    else if ((this->type == en_type_bson) || (this->type == en_type_array)) {
+        destory_bson((bson_t*)this->meta.bson);
+    }
+}
+
+MongoKeyValue::~MongoKeyValue() {
 }
 
 MongoKeyValue::MongoKeyValue(const std::string &key, const std::string &val) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->type = en_type_str;
     this->d->key = key;
     copy_str(val.c_str(), val.size());
 }
 
 MongoKeyValue::MongoKeyValue(const std::string &key, const char *val) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->type = en_type_str;
     this->d->key = key;
     copy_str(val, strlen(val));
 }
 
 MongoKeyValue::MongoKeyValue(const std::string &key, int32_t val) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->type = en_type_int32;
     this->d->key = key;
     this->d->meta.i = val;
 }
 
 MongoKeyValue::MongoKeyValue(const std::string& key, uint32_t val) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->type = en_type_uint32;
     this->d->key = key;
     this->d->meta.i = (int32_t)val;
 }
 
 MongoKeyValue::MongoKeyValue(const std::string& key, int64_t val) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->type = en_type_int64;
     this->d->key = key;
     this->d->meta.i64 = val;
 }
 
 MongoKeyValue::MongoKeyValue(const std::string& key, uint64_t val) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->type = en_type_uint64;
     this->d->key = key;
     this->d->meta.i64 = (int64_t)val;
 }
 
 MongoKeyValue::MongoKeyValue(const std::string &key, double val) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->type = en_type_double;
     this->d->key = key;
     this->d->meta.f = val;
@@ -312,27 +316,27 @@ MongoKeyValue::MongoKeyValue(const std::string &key, double val) {
 
 MongoKeyValue::MongoKeyValue(const std::string &key, void *val) {
     // 传进来的val要求是bson_t类型,并且内部会进行自动释放
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->type = en_type_bson;
     this->d->key = key;
     this->d->meta.bson = val;
 }
 
 MongoKeyValue::MongoKeyValue(const std::string& key, bool val) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->type = en_type_bool;
     this->d->key = key;
     this->d->meta.i = val ? 1 : 0;
 }
 
 MongoKeyValue::MongoKeyValue(const std::string& key) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->type = en_type_null;
     this->d->key = key;
 }
 
 MongoKeyValue::MongoKeyValue(const std::string& key, const char* val, uint32_t size) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->type = en_type_binary;
     this->d->key = key;
     copy_str(val, size);
@@ -394,20 +398,6 @@ void MongoKeyValue::copy_str(const char* val, uint32_t size) {
     memcpy(this->d->meta.str, val, size);
     this->d->meta.str[size] = '\0';
     this->d->str_len = size;
-}
-
-void MongoKeyValue::clear() {
-    if (this->ref.use_count() == 1) {
-        if (this->is_str() || this->is_binary()) {
-            free(this->d->meta.str);
-        }
-        else if (this->is_bson() || this->is_array()) {
-            destory_bson((bson_t*)this->d->meta.bson);
-        }
-        delete this->d;
-        this->d = 0;
-    }
-    this->ref.reset();
 }
 
 ///////////////////////////////////////////////////////////////////

@@ -95,14 +95,14 @@ struct MongoKeyValue {
 		    char* str;
         } meta;
         uint32_t str_len = 0;
+
+        Data();
+        ~Data();
     };
 
-    Data* d;
-    std::shared_ptr<int> ref = std::make_shared<int>(1); // 做引用计数用
+    std::shared_ptr<Data> d;
     
     ~MongoKeyValue();
-
-    MongoKeyValue& operator =(const MongoKeyValue& kv);
 
     // 字符串
     MongoKeyValue(const std::string& key, const std::string& val);
@@ -142,7 +142,7 @@ struct MongoKeyValue {
             bson_append(b, std::to_string(idx).c_str(), vec[idx]);
         }
         
-        this->d = new Data;
+        this->d = std::make_shared<Data>();
         this->d->type = en_type_array;
         this->d->key = key;
         this->d->meta.bson = b;
@@ -155,7 +155,7 @@ struct MongoKeyValue {
             bson_append(b, std::to_string(idx).c_str(), array[idx]);
         }
         
-        this->d = new Data;
+        this->d = std::make_shared<Data>();
         this->d->type = en_type_array;
         this->d->key = key;
         this->d->meta.bson = b;
@@ -190,8 +190,6 @@ protected:
     MongoKeyValue() = delete;
 
     void copy_str(const char* val, uint32_t size);
-
-    void clear();
 };
 
 //////////////////////////////////////////////////////////////////

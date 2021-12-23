@@ -14,12 +14,26 @@
 namespace async {
 namespace mongo {
 
+BaseMongoCmd::Data::~Data()
+{
+    if (this->doc_bson_ptr)
+    {
+        destory_bson((bson_t *)this->doc_bson_ptr);
+    }
+    if (this->update_bson_ptr)
+    {
+        destory_bson((bson_t *)this->update_bson_ptr);
+    }
+    if (this->opt_bson_ptr)
+    {
+        destory_bson((bson_t *)this->opt_bson_ptr);
+    }
+}
+
 BaseMongoCmd::BaseMongoCmd() {
-    this->d = 0;
 }
 
 BaseMongoCmd::~BaseMongoCmd() {
-    clear();
 }
 
 bool BaseMongoCmd::IsDeleteCmd() const {
@@ -43,14 +57,11 @@ bool BaseMongoCmd::IsInsertCmd() const {
     return this->d->cmd == "insert";
 }
 
-BaseMongoCmd& BaseMongoCmd::operator =(const BaseMongoCmd& cmd) {
-    clear();
-    this->d = cmd.d;
-    this->ref = cmd.ref;
-    return *this;
-}
-
 std::string BaseMongoCmd::DebugString() {
+    if (!this->d) {
+        return "";
+    }
+
     std::string str;
     if (this->d->doc_bson_ptr) {
         char* s = bson_as_canonical_extended_json((bson_t*)this->d->doc_bson_ptr, NULL);
@@ -73,42 +84,17 @@ std::string BaseMongoCmd::DebugString() {
     return str;
 }
 
-void BaseMongoCmd::clear() {
-    if (this->ref.use_count() == 1)
-    {
-        if (this->d)
-        {
-            if (this->d->doc_bson_ptr)
-            {
-                destory_bson((bson_t *)this->d->doc_bson_ptr);
-            }
-            if (this->d->update_bson_ptr)
-            {
-                destory_bson((bson_t *)this->d->update_bson_ptr);
-            }
-            if (this->d->opt_bson_ptr)
-            {
-                destory_bson((bson_t *)this->d->opt_bson_ptr);
-            }
-
-            delete this->d;
-            this->d = 0;
-        }
-    }
-    this->ref.reset();
-}
-
 ///////////////////////////////////////////////////////////////
 
 InsertMongoCmd::InsertMongoCmd(const std::string& json) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "insert";
     this->d->doc_bson_ptr = new_from_json(json);
 }
 
 InsertMongoCmd::InsertMongoCmd(const std::initializer_list<MongoKeyValue> &fields)
 {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "insert";
     this->d->doc_bson_ptr = new_from_json("");
     bson_append(this->d->doc_bson_ptr, fields);
@@ -117,7 +103,7 @@ InsertMongoCmd::InsertMongoCmd(const std::initializer_list<MongoKeyValue> &field
 ///////////////////////////////////////////////////////////////
 
 FindMongoCmd::FindMongoCmd(const std::string& query, bool is_idx) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "find";
     this->d->doc_bson_ptr = new_from_query(query, is_idx);
 }
@@ -126,7 +112,7 @@ FindMongoCmd::FindMongoCmd(const std::initializer_list<MongoKeyValueCmp> &query_
                            const std::initializer_list<std::string> &include_fields,
                            const std::initializer_list<std::string> &except_fields)
 {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "find";
     this->d->doc_bson_ptr = new_from_json("");
     bson_append(this->d->doc_bson_ptr, query_fields);
@@ -144,7 +130,7 @@ FindMongoCmd::FindMongoCmd(const std::initializer_list<MongoKeyValueCmp> &query_
                            const std::initializer_list<MongoKeyValue> &sort_fiels,
                            uint32_t limit)
 {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "find_opts";
     this->d->doc_bson_ptr = new_from_json("");
     bson_append(this->d->doc_bson_ptr, query_fields);
@@ -163,14 +149,14 @@ FindMongoCmd::FindMongoCmd(const std::initializer_list<MongoKeyValueCmp> &query_
 ///////////////////////////////////////////////////////////////
 
 DeleteOneMongoCmd::DeleteOneMongoCmd(const std::string& query, bool is_idx) {
-    this->d =  new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "deleteone";
     this->d->doc_bson_ptr = new_from_query(query, is_idx);
 }
 
 DeleteOneMongoCmd::DeleteOneMongoCmd(const std::initializer_list<MongoKeyValueCmp> &option_fields)
 {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "deleteone";
     this->d->doc_bson_ptr = new_from_json("");
     bson_append(this->d->doc_bson_ptr, option_fields);
@@ -179,14 +165,14 @@ DeleteOneMongoCmd::DeleteOneMongoCmd(const std::initializer_list<MongoKeyValueCm
 ///////////////////////////////////////////////////////////////
 
 DeleteManyMongoCmd::DeleteManyMongoCmd(const std::string& query, bool is_idx) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "deletemany";
     this->d->doc_bson_ptr = new_from_query(query, is_idx);
 }
 
 DeleteManyMongoCmd::DeleteManyMongoCmd(const std::initializer_list<MongoKeyValueCmp> &option_fields)
 {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "deletemany";
     this->d->doc_bson_ptr = new_from_json("");
     bson_append(this->d->doc_bson_ptr, option_fields);
@@ -197,7 +183,7 @@ DeleteManyMongoCmd::DeleteManyMongoCmd(const std::initializer_list<MongoKeyValue
 UpdateOneMongoCmd::UpdateOneMongoCmd(const std::initializer_list<MongoKeyValueCmp> &option_fields,
                                      const std::initializer_list<MongoKeyValue> &update_fields,
                                      bool upsert) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "updateone";
     this->d->doc_bson_ptr = new_from_json("");
     bson_append(this->d->doc_bson_ptr, option_fields); 
@@ -215,7 +201,7 @@ UpdateManyMongoCmd::UpdateManyMongoCmd(const std::initializer_list<MongoKeyValue
                                        const std::initializer_list<MongoKeyValue> &update_fields,
                                        bool upsert)
 {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "updatemany";
     this->d->doc_bson_ptr = new_from_json("");
     bson_append(this->d->doc_bson_ptr, option_fields); 
@@ -230,7 +216,7 @@ UpdateManyMongoCmd::UpdateManyMongoCmd(const std::initializer_list<MongoKeyValue
 ///////////////////////////////////////////////////////////////
 
 CreateIndexMongoCmd::CreateIndexMongoCmd(const std::vector<std::string> &fields) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "createidx";
     this->d->doc_bson_ptr = new_from_json("");
     //bson_init((bson_t*)this->d->doc_bson_ptr);
@@ -240,7 +226,7 @@ CreateIndexMongoCmd::CreateIndexMongoCmd(const std::vector<std::string> &fields)
 }
 
 CreateIndexMongoCmd::CreateIndexMongoCmd(const std::initializer_list<std::string> &fields) {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "createidx";
     this->d->doc_bson_ptr = new_from_json("");
     //bson_init((bson_t*)this->d->doc_bson_ptr);
@@ -250,7 +236,7 @@ CreateIndexMongoCmd::CreateIndexMongoCmd(const std::initializer_list<std::string
 }
 
 CreateExpireIndexMongoCmd::CreateExpireIndexMongoCmd() {
-    this->d = new Data;
+    this->d = std::make_shared<Data>();
     this->d->cmd = "createexpireidx";
     this->d->doc_bson_ptr = new_from_json("");
 }

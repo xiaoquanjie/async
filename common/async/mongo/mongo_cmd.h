@@ -19,6 +19,8 @@ struct BaseMongoCmd {
         void* doc_bson_ptr = 0;
         void* update_bson_ptr = 0;
         void* opt_bson_ptr = 0;
+
+        ~Data();
     };
 
     BaseMongoCmd();
@@ -31,15 +33,9 @@ struct BaseMongoCmd {
 
     bool IsInsertCmd() const;
 
-    BaseMongoCmd& operator =(const BaseMongoCmd& cmd);
-
     std::string DebugString();
 
-    Data* d;
-    std::shared_ptr<int> ref = std::make_shared<int>(1);
-
-private:
-    void clear();
+    std::shared_ptr<Data> d;
 };
 
 /////////////////////////////////////////////////////////////////////////

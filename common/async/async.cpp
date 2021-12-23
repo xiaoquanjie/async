@@ -107,7 +107,7 @@ void parallel(done_cb done, const std::initializer_list<fn_cb>& fns) {
         return;
     }
 
-    parallel_result* result = new parallel_result;
+    auto result = std::make_shared<parallel_result>();
     result->fns = fns.size();
     
     next_cb next = [result, done](int err) {
@@ -117,7 +117,6 @@ void parallel(done_cb done, const std::initializer_list<fn_cb>& fns) {
         result->fns -= 1;
         if (result->fns == 0) {
             int e = result->err;
-            delete result;
             done(e);
         }
     };
@@ -140,7 +139,7 @@ void series(done_cb done, const std::initializer_list<fn_cb>& fns) {
         return;
     }
 
-    series_result* result = new series_result;
+    auto result = std::make_shared<series_result>();
     for (auto& f : fns) {
         result->fns.push_back(f);
     }
@@ -152,7 +151,6 @@ void series(done_cb done, const std::initializer_list<fn_cb>& fns) {
         result->idx++;
         if (result->idx == result->fns.size()) {
             int e = result->err;
-            delete result;
             done(e);
         }    
         else {

@@ -83,6 +83,8 @@ private:
     mongo_core(const mongo_core&) = delete;
 };
 
+typedef std::shared_ptr<mongo_core> mongo_core_ptr;
+
 struct mongo_custom_data {
     mongo_addr addr;
     BaseMongoCmd cmd;
@@ -100,7 +102,7 @@ struct mongo_respond_data {
 };
 
 struct mongo_core_uri_data {
-    std::map<std::string, mongo_core*> uri_map;
+    std::map<std::string, mongo_core_ptr> uri_map;
 };
 
 struct mongo_global_data {
@@ -143,11 +145,11 @@ void setLogFunc(std::function<void(const char*)> cb) {
 
 ///////////////////////////////////////////////////////////////////////
 
-mongo_core* thread_create_core(const mongo_addr& addr) {
+mongo_core_ptr thread_create_core(const mongo_addr& addr) {
     mongo_core_uri_data& uri_data = tlsdata<mongo_core_uri_data, 0>::data();
     auto iter = uri_data.uri_map.find(addr.addr);
     if (iter == uri_data.uri_map.end()) {
-        mongo_core* core = new mongo_core;
+        mongo_core_ptr core = std::make_shared<mongo_core>();
         core->addr = addr;
 
         do {
@@ -171,7 +173,6 @@ mongo_core* thread_create_core(const mongo_addr& addr) {
         } while (false);
         
         // release
-        delete core;
         return nullptr;
     }
 

@@ -196,7 +196,7 @@ void on_thread_redis_connect(const redisAsyncContext *c, int status) {
     bool flag = false;
     for (auto iter = g_redis_global_data.uri_map.begin(); iter != g_redis_global_data.uri_map.end(); ) {
         if (iter->second->ctxt == c) {
-            log("%s connection|%p|uri:%s\n", (status == REDIS_OK ? "a new" : "a fail"),
+            log("%s connection|%p|uri:%s\n", (status == REDIS_OK ? "a success" : "a fail"),
                                    c,
                                    iter->second->addr.uri.c_str());
             if (status == REDIS_OK) {

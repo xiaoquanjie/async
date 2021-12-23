@@ -41,7 +41,7 @@ int execute(const std::string& uri,
         return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    co_redis_result* result = new co_redis_result;
+    auto result = std::make_shared<co_redis_result>();
     int64_t unique_id = co_bridge::genUniqueId();
    
     int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
@@ -70,7 +70,6 @@ int execute(const std::string& uri,
         cb(result->parser);
     }
     
-    delete result;
     return ret;
 }
 

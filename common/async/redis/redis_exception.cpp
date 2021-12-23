@@ -14,11 +14,11 @@ RedisException::RedisException() {
 }
 
 RedisException::RedisException(const char* what) {
-	m_what.reset(new std::string(what));
+    m_what = std::make_shared<std::string>(what);
 }
 
 RedisException::RedisException(const std::string& what) {
-	m_what.reset(new std::string(what));
+	m_what = std::make_shared<std::string>(what);
 }
 
 const std::string& RedisException::What()const {

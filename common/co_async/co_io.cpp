@@ -31,7 +31,7 @@ int parallel(const std::initializer_list<fn_cb>& fns) {
         return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    co_parallel_result* result = new co_parallel_result;
+    auto result = std::make_shared<co_parallel_result>();
     result->fns = fns.size();
 
     int64_t unique_id = co_bridge::genUniqueId();
@@ -68,7 +68,6 @@ int parallel(const std::initializer_list<fn_cb>& fns) {
         ret = co_bridge::E_CO_RETURN_TIMEOUT;
     }
     
-    delete result;
     return ret;
 }
 
@@ -92,7 +91,7 @@ int series(const std::initializer_list<fn_cb>& fns) {
         return co_bridge::E_CO_RETURN_ERROR;
     }
 
-    co_series_result* result = new co_series_result;
+    auto result = std::make_shared<co_series_result>();
     for (auto& f : fns) {
         result->fns.push_back(f);
     }
@@ -133,7 +132,6 @@ int series(const std::initializer_list<fn_cb>& fns) {
         ret = co_bridge::E_CO_RETURN_TIMEOUT;
     }
     
-    delete result;
     return ret;
 }
 

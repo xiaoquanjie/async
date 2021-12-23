@@ -39,7 +39,7 @@ int execute(const std::string& uri, const async::mongo::BaseMongoCmd& cmd, async
     }
 
     int64_t unique_id = co_bridge::genUniqueId();
-    co_mongo_result* result = new co_mongo_result;
+    auto result = std::make_shared<co_mongo_result>();
 
     int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
@@ -67,7 +67,6 @@ int execute(const std::string& uri, const async::mongo::BaseMongoCmd& cmd, async
         cb(result->parser);
     }
     
-    delete result;
     return ret;
 }
 

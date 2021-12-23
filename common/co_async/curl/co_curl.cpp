@@ -46,7 +46,7 @@ int get(const std::string &url, const std::map<std::string, std::string>& header
     }
 
     int64_t unique_id = co_bridge::genUniqueId();
-    co_curl_result* result = new co_curl_result;
+    auto result = std::make_shared<co_curl_result>();
 
     int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
@@ -76,7 +76,6 @@ int get(const std::string &url, const std::map<std::string, std::string>& header
         cb(result->curl_code, result->rsp_code, result->body);
     }
 
-    delete result;
     return ret;
 }
 
@@ -101,7 +100,7 @@ int post(const std::string& url, const std::string& content, const std::map<std:
         Coroutine::resume(co_id);
     });
 
-    co_curl_result* result = new co_curl_result;
+    auto result = std::make_shared<co_curl_result>();
     async::curl::post(url, content, headers, [result, timer_id, co_id, unique_id](int curl_code, int rsp_code, std::string& body) {
         if (!co_bridge::rmUniqueId(unique_id)) {
             return;
@@ -121,7 +120,6 @@ int post(const std::string& url, const std::string& content, const std::map<std:
     }
 
     cb(result->curl_code, result->rsp_code, result->body);
-    delete result;
     return co_bridge::E_CO_RETURN_OK;
 }
 

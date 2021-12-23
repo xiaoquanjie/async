@@ -41,7 +41,7 @@ int execute(const std::string& uri, const std::string& sql, async::mysql::async_
     }
 
     int64_t unique_id = co_bridge::genUniqueId();
-    co_mysql_result* result = new co_mysql_result;
+    auto result = std::make_shared<co_mysql_result>();
 
     int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
@@ -91,7 +91,7 @@ int execute(const std::string& uri, const std::string& sql, async::mysql::async_
     if (result->res) {
         mysql_free_result(result->res);
     }
-    delete result;
+    
     return ret;
 }
 
@@ -103,7 +103,7 @@ int execute(const std::string& uri, const std::string& sql, async::mysql::async_
     }
 
     int64_t unique_id = co_bridge::genUniqueId();
-    co_mysql_result* result = new co_mysql_result;
+    auto result = std::make_shared<co_mysql_result>();
 
     int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
@@ -132,7 +132,6 @@ int execute(const std::string& uri, const std::string& sql, async::mysql::async_
         cb(result->err, result->affected_row);
     }
 
-    delete result;
     return ret;
 }
 

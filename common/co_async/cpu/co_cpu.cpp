@@ -38,7 +38,7 @@ int execute(async::cpu::async_cpu_op op, void* user_data, async::cpu::async_cpu_
     }
 
     int64_t unique_id = co_bridge::genUniqueId();
-    co_cpu_result* result = new co_cpu_result;
+    auto result = std::make_shared<co_cpu_result>();
 
     int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
         result->timeout_flag = true;
@@ -66,7 +66,6 @@ int execute(async::cpu::async_cpu_op op, void* user_data, async::cpu::async_cpu_
         cb(result->result, user_data);
     }
     
-    delete result;
     return ret;
 }
 

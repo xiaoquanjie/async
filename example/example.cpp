@@ -622,12 +622,14 @@ protected:
         return true;
     }
 
-    virtual void BeforeOnRequest() override {
+    virtual bool BeforeOnRequest() override {
         std::cout << "before" << std::endl;
+        return true;
     }
 
-    virtual void AfterOnRequest() override {
+    virtual bool AfterOnRequest() override {
         std::cout << "after, 回复数据" << std::endl;
+        return true;
     }
 };
 

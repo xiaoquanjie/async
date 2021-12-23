@@ -28,12 +28,12 @@ public:
 
     bool listen(const std::string& ip, uint32_t port);
 
-    void send(void* request, const char* buf, uint32_t len);
+    static void send(void* request, const char* buf, uint32_t len);
 
-    void send(void *request,
-              std::unordered_map<std::string, std::string> &header,
-              const char *buf,
-              uint32_t len);
+    static void send(void* request,
+                     const std::unordered_map<std::string, std::string>& header,
+                     const char* buf,
+                     uint32_t len);
 
     // 设置接受数据的回调
     void setDataCb(std::function<void(HttpListener*, void*, const char*, uint32_t)> cb);

@@ -10,64 +10,90 @@
 
 namespace async {
 
-// 内置的循环
-std::vector<std::function<bool(uint32_t)>> g_loop_array = {
+struct funcItem {
+    std::function<bool(uint32_t)> loopFunc;
+    std::function<void(std::function<void(const char*)>)> logFunc;
+    std::function<void(std::function<void(std::function<void()>)>)> thrFunc;
+};
+
+std::vector<funcItem> g_func_item_array = {
 #ifdef USE_ASYNC_REDIS
-    std::bind(async::redis::loop, std::placeholders::_1),
+    {
+        std::bind(async::redis::loop, std::placeholders::_1),
+        std::bind(async::redis::setLogFunc, std::placeholders::_1),
+        std::bind(async::redis::setThreadFunc, std::placeholders::_1)
+    },
 #endif
 
 #ifdef USE_ASYNC_MONGO
-    std::bind(async::mongo::loop, std::placeholders::_1),
+    {
+        std::bind(async::mongo::loop, std::placeholders::_1),
+        std::bind(async::mongo::setLogFunc, std::placeholders::_1),
+        std::bind(async::mongo::setThreadFunc, std::placeholders::_1)
+    },
 #endif
 
 #ifdef USE_ASYNC_CURL
-    std::bind(async::curl::loop, std::placeholders::_1),
+    {
+        std::bind(async::curl::loop, std::placeholders::_1),
+        std::bind(async::curl::setLogFunc, std::placeholders::_1),
+        std::bind(async::curl::setThreadFunc, std::placeholders::_1)
+    },
 #endif
 
 #ifdef USE_ASYNC_MYSQL
-    std::bind(async::mysql::loop, std::placeholders::_1),
+    {
+        std::bind(async::mysql::loop, std::placeholders::_1),
+        std::bind(async::mysql::setLogFunc, std::placeholders::_1),
+        std::bind(async::mysql::setThreadFunc, std::placeholders::_1)
+    },
 #endif
 
-    std::bind(async::cpu::loop, std::placeholders::_1)
+    {
+        std::bind(async::cpu::loop, std::placeholders::_1),
+        std::bind(async::cpu::setLogFunc, std::placeholders::_1),
+        std::bind(async::cpu::setThreadFunc, std::placeholders::_1)
+    }
 };
+
+////////////////////////////////////////////////////////////////////////////////////
 
 bool loop(uint32_t cur_time) {
     if (cur_time == 0) {
        // time(&cur_time);
     }
+
     bool is_busy = false;
-    for (auto& f : g_loop_array) {
-        if (f(cur_time)) {
-            is_busy = true;
+    for (auto& item : g_func_item_array) {
+        if (item.loopFunc) {
+            if (item.loopFunc(cur_time)) {
+                is_busy = true;
+            }
         }
     }
-
+    
     return is_busy;
 }
 
 void addToLoop(std::function<bool(uint32_t)> f) {
-    g_loop_array.push_back(f);
+   g_func_item_array.push_back({f, nullptr, nullptr});
 }
 
 void setLogFunc(std::function<void(const char*)> cb) {
-#ifdef USE_ASYNC_REDIS
-    async::redis::setLogFunc(cb);
-#endif
-
-#ifdef USE_ASYNC_MONGO
-    async::mongo::setLogFunc(cb);
-#endif
-
-#ifdef USE_ASYNC_CURL
-    async::curl::setLogFunc(cb);
-#endif
-
-#ifdef USE_ASYNC_MYSQL
-    async::mysql::setLogFunc(cb);
-#endif
-
-    async::cpu::setLogFunc(cb);
+    for (auto& item : g_func_item_array) {
+        if (item.logFunc) {
+            item.logFunc(cb);
+        }
+    }
 }
+
+void setThreadFunc(std::function<void(std::function<void()>)> cb) {
+    for (auto& item : g_func_item_array) {
+        if (item.thrFunc) {
+            item.thrFunc(cb);
+        }
+    }
+}   
 
 /////////////////////////////////////////////////
 

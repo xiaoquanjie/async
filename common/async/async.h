@@ -22,7 +22,11 @@ bool loop(uint32_t cur_time = 0);
 // 添加入主循环中
 void addToLoop(std::function<bool(uint32_t)> f);
 
+// 设置日志的输出接口
 void setLogFunc(std::function<void(const char*)> cb);
+
+// 设置io线程
+void setThreadFunc(std::function<void(std::function<void()>)> cb);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 

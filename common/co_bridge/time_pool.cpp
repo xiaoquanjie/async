@@ -25,7 +25,7 @@ static const int big_bucket_cnt = 24 * 3600;
 // 小桶的精度是1/10秒
 static const int small_bucket_cnt = 10;
 
-typedef std::multimap<unsigned long long, TimerPool::TimeNode*> TimeNodeMap;
+typedef std::multimap<unsigned long long, TimerPool::TimeNodePtr> TimeNodeMap;
 
 clock_t get_mil_clock() {
 #ifndef WIN32
@@ -91,7 +91,7 @@ void TimerPool::Update() {
 	}
 
 	// 桶轮循
-	std::list<TimeNode*> nodelist;
+	std::list<TimeNodePtr> nodelist;
 	int s_idx = _big_bucket * 10 + _small_bucket;
 	int e_idx = big_bucket * 10 + small_bucket;
 	for (; s_idx <= e_idx; ++s_idx) {
@@ -114,8 +114,6 @@ void TimerPool::Update() {
 		for (auto iter = nodelist.begin(); iter != nodelist.end(); ++iter) {
 			// callback
 			(*iter)->cb();
-			// recycle memory
-			delete (*iter);
 		}
 		nodelist.clear();
 		if (pmap->empty()) {
@@ -161,7 +159,7 @@ unsigned long long TimerPool::AddTimer(int interval, std::function<void()>func) 
 	timer_id = timer_id << 32;
 	timer_id += _cur_timer_id++;
 
-	TimeNode* node = new TimeNode;
+	auto node = std::make_shared<TimeNode>();
 	node->expire = now_mil + interval;
 	node->cb = func;
 	node->timer_id = timer_id;
@@ -191,7 +189,6 @@ int TimerPool::CancelTimer(unsigned long long id) {
 	}
 	for (auto iter = pmap->begin(); iter != pmap->end();) {
 		if (iter->second->timer_id == id) {
-			delete iter->second;
 			pmap->erase(iter);
 			if (pmap->empty()) {
 				delete pmap;

@@ -9,6 +9,7 @@
 
 #include <time.h>
 #include <functional>
+#include <memory>
 
 namespace co_bridge {
 
@@ -19,6 +20,8 @@ public:
 		unsigned long long expire;
 		std::function<void()> cb;
 	};
+
+	typedef std::shared_ptr<TimeNode> TimeNodePtr;
 
 	// @max_interval_day 最大不能超过7天，默认是7天
 	TimerPool();

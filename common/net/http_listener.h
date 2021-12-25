@@ -39,13 +39,13 @@ public:
     void setDataCb(std::function<void(HttpListener*, void*, const char*, uint32_t)> cb);
 
     // 获取对方host
-    const char* getRemoteHost(const void* request);
+    static const char* getRemoteHost(const void* request);
 
     // 获取路径
-    const char* getUrlPath(const void* request);
+    static const char* getUrlPath(const void* request);
 
     // 获取参数
-    const char* getUrlParam(const void* request);
+    static const char* getUrlParam(const void* request);
 
 private:
     bool  m_created_base;

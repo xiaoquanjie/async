@@ -67,4 +67,8 @@ bool loop(uint32_t cur_time = 0);
 
 void setLogFunc(std::function<void(const char*)> cb);
 
+// 打开io线程
+void openIoThread(uint32_t thr_cnt = 0);
+
+
 }

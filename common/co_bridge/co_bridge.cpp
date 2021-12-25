@@ -2,6 +2,7 @@
 #include "common/co_bridge/time_pool.h"
 #include "common/coroutine/coroutine.hpp"
 #include "common/async/async.h"
+#include "common/threads/thread_pool.h"
 #include <unordered_set>
 #include <unordered_map>
 #include <assert.h>
@@ -18,6 +19,7 @@ int64_t g_unique_id = 1;
 std::unordered_set<int64_t> g_unique_id_set;
 std::unordered_map<int64_t, sequence_info> g_sequence_map;
 TimerPool g_time_pool;
+std::shared_ptr<ThreadPool> g_thread_pool;
 
 int wait(uint32_t interval) {
     unsigned int co_id = Coroutine::curid();
@@ -101,6 +103,21 @@ bool loop(uint32_t cur_time) {
 
 void setLogFunc(std::function<void(const char*)> cb) {
     async::setLogFunc(cb);
+}
+
+void openIoThread(uint32_t cnt) {
+    if (!g_thread_pool) {
+        if (cnt == 0) {
+            g_thread_pool = std::make_shared<ThreadPool>();
+        }
+        else {
+            g_thread_pool = std::make_shared<ThreadPool>(cnt);
+        }
+
+        async::setThreadFunc([](std::function<void()> f) {
+            g_thread_pool->enqueue(f);
+        });
+    }
 }
 
 }

@@ -26,7 +26,6 @@ bool ZeromqHandler::update(unsigned int) {
 	}
 
     zmq_pollitem_t items[512];
-	//zmq_pollitem_t* items = (zmq_pollitem_t*)malloc(sizeof(zmq_pollitem_t) * size);
 	for (size_t idx = 0; idx < size; ++idx) {
 		items[idx].socket = m_unit_vec[idx]->getSock();
 		items[idx].events = ZMQ_POLLIN;

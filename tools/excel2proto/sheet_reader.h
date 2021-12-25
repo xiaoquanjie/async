@@ -1,6 +1,7 @@
 #pragma once
 
 #include <google/protobuf/text_format.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <fstream>
 
 template<typename KEY1 = int, typename KEY2 = int, typename KEY3 = int, typename KEY4 = int>
@@ -113,22 +114,12 @@ public:
         m_array = std::make_shared<ITEM_ARRAY_TYPE>();
         m_item_map = std::make_shared<std::map<KEY, std::shared_ptr<NEW_ITEM_TYPE>>>();
 
-        ifs.seekg(0, std::ios::end);
-        int len = ifs.tellg();
-
-        ifs.seekg(0, std::ios::beg);
-
-        char* buff = (char*)malloc(len + 1);
-        ifs.read(buff, len);
-        buff[len] = '\0';
-
-        if (!google::protobuf::TextFormat::ParseFromString(buff, m_array.get())) {
-            printf("failed to parser proto file:%s\n", file_path);
+		google::protobuf::io::IstreamInputStream inputStream(&ifs);
+		if (!google::protobuf::TextFormat::Parse(&inputStream, m_array.get())) {
+			printf("failed to parser proto file:%s\n", file_path);
             assert(false);
             return false;
-        }
-
-        free(buff);
+		}
 
         for (size_t idx = 0; idx < m_array->items_size(); ++idx) {
             std::shared_ptr<NEW_ITEM_TYPE> ptr = std::make_shared<NEW_ITEM_TYPE>();

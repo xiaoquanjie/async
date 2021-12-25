@@ -16,7 +16,7 @@ void mongo_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
 
             // 执行mongo访问并等待协程返回
             std::string value;
-            int ret = co_async::mongo::execute(url, async::mongo::FindMongoCmd({}), value);
+            int ret = co_async::mongo::execute(url, async::mongo::FindMongoCmd({{"user_id", 400024, "$gt"}}), value);
             if (ret == co_bridge::E_CO_RETURN_TIMEOUT) {
                 timeout_count++;
             }
@@ -58,6 +58,20 @@ void mongo_test(bool use_co, int& count, TimeElapsed& te, const char* url) {
                 std::cout << "mongo elapsed: " << te.end() << std::endl;
             }
         });
+    }
+}
+
+void mongo_test() {
+    TimeElapsed te;
+    te.begin();
+
+    int count = 1;
+    const char* mongo_url = "mongodb://192.168.0.31:27017|test|cash_coupon_whitelist||";
+    mongo_test(true, count, te, mongo_url);
+
+    while (true) {
+        co_bridge::loop(time(0));
+        usleep(10);
     }
 }
 

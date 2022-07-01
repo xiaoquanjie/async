@@ -11,7 +11,7 @@ c++异步io库
     libcurl模块依赖: libcurl库
 
 4、 如需使用mysql模块，则cmake时需定义宏USE_ASYNC_MYSQL。如：cmake .. -DUSE_ASYNC_MYSQL=1
-    mysql模块依赖：mariadb库
+    mysql模块依赖：mariadb库, 安装命令:yum install -y mariadb-devel.x86_64
 
 5、 如需使用ipc模块，则cmake时需定义宏USE_IPC。如：cmake .. -DUSE_IPC=1
     ipc模块依赖：zeromq库

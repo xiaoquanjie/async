@@ -15,12 +15,12 @@ namespace curl {
 
 /////////////////////////////////////////////////////////////////
 
-std::pair<int, std::shared_ptr<CurlResult>> get(const std::string& url, int timeOut) {
+std::pair<int, std::shared_ptr<CurlResult>> get(const std::string& url, const TimeOut& t) {
     std::map<std::string, std::string> header;
-    return get(url, header, timeOut);
+    return get(url, header, t);
 }
 
-std::pair<int, std::shared_ptr<CurlResult>> get(const std::string& url, const std::map<std::string, std::string>& headers, int timeOut) {
+std::pair<int, std::shared_ptr<CurlResult>> get(const std::string& url, const std::map<std::string, std::string>& headers, const TimeOut& t) {
     auto res = co_async::promise([&url, &headers](co_async::Resolve resolve, co_async::Reject reject) {
         async::curl::get(url, headers, [resolve](int curl_code, int rsp_code, std::string& body) {
             auto p = std::make_shared<CurlResult>();
@@ -29,7 +29,7 @@ std::pair<int, std::shared_ptr<CurlResult>> get(const std::string& url, const st
             p->body.swap(body);
             resolve(p);
         });
-    }, timeOut);
+    }, t());
 
     std::pair<int, std::shared_ptr<CurlResult>> ret = std::make_pair(res.first, nullptr);
     if (co_async::checkOk(res)) {
@@ -39,13 +39,13 @@ std::pair<int, std::shared_ptr<CurlResult>> get(const std::string& url, const st
     return ret;
 }
 
-int get(const std::string& url, std::string& body, int timeOut) {
+int get(const std::string& url, std::string& body, const TimeOut& t) {
     std::map<std::string, std::string> header;
-    return get(url, header, body, timeOut);
+    return get(url, header, body, t);
 }
 
-int get(const std::string& url, const std::map<std::string, std::string>& headers, std::string& body, int timeOut) {
-    auto ret = get(url, headers, timeOut);
+int get(const std::string& url, const std::map<std::string, std::string>& headers, std::string& body, const TimeOut& t) {
+    auto ret = get(url, headers, t);
     if (co_async::checkOk(ret)) {
         ret.second->body.swap(body);
     }
@@ -53,12 +53,12 @@ int get(const std::string& url, const std::map<std::string, std::string>& header
     return ret.first;
 }
 
-std::pair<int, std::shared_ptr<CurlResult>> post(const std::string& url, const std::string& content, int timeOut) {
+std::pair<int, std::shared_ptr<CurlResult>> post(const std::string& url, const std::string& content, const TimeOut& t) {
     std::map<std::string, std::string> header;
-    return post(url, content, header, timeOut);
+    return post(url, content, header, t);
 }
 
-std::pair<int, std::shared_ptr<CurlResult>> post(const std::string& url, const std::string& content, const std::map<std::string, std::string>& headers, int timeOut) {
+std::pair<int, std::shared_ptr<CurlResult>> post(const std::string& url, const std::string& content, const std::map<std::string, std::string>& headers, const TimeOut& t) {
     auto res = co_async::promise([&url, &content, &headers](co_async::Resolve resolve, co_async::Reject reject) {
         async::curl::post(url, content, headers, [resolve](int curl_code, int rsp_code, std::string& body) {
             auto p = std::make_shared<CurlResult>();
@@ -67,7 +67,7 @@ std::pair<int, std::shared_ptr<CurlResult>> post(const std::string& url, const s
             p->body.swap(body);
             resolve(p);
         });
-    }, timeOut);
+    }, t());
 
     std::pair<int, std::shared_ptr<CurlResult>> ret = std::make_pair(res.first, nullptr);
     if (co_async::checkOk(res)) {
@@ -77,13 +77,13 @@ std::pair<int, std::shared_ptr<CurlResult>> post(const std::string& url, const s
     return ret;
 }
 
-int post(const std::string& url, const std::string& content, std::string& rspBody, int timeOut) {
+int post(const std::string& url, const std::string& content, std::string& rspBody, const TimeOut& t) {
     std::map<std::string, std::string> headers;
-    return post(url, content, headers, rspBody, timeOut);
+    return post(url, content, headers, rspBody, t);
 }
 
-int post(const std::string& url, const std::string& content, const std::map<std::string, std::string>& headers, std::string& rspBody, int timeOut) {
-    auto ret = post(url, content, headers, timeOut);
+int post(const std::string& url, const std::string& content, const std::map<std::string, std::string>& headers, std::string& rspBody, const TimeOut& t) {
+    auto ret = post(url, content, headers, t);
     if (co_async::checkOk(ret)) {
         ret.second->body.swap(rspBody);
     }

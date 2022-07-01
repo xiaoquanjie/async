@@ -15,12 +15,12 @@ namespace mongo {
 
 ////////////////////////////////////////////////////////////////////
 
-std::pair<int, async::mongo::MongoReplyParserPtr> execute(const std::string &uri, const async::mongo::BaseMongoCmd &cmd, int timeOut) {
+std::pair<int, async::mongo::MongoReplyParserPtr> execute(const std::string &uri, const async::mongo::BaseMongoCmd &cmd, const TimeOut& t) {
     auto res = co_async::promise([&uri, &cmd](co_async::Resolve resolve, co_async::Reject reject) {
         async::mongo::execute(uri, cmd, [resolve](async::mongo::MongoReplyParserPtr parser) {
             resolve(parser);
         });
-    }, timeOut);
+    }, t());
 
     std::pair<int, async::mongo::MongoReplyParserPtr> ret = std::make_pair(res.first, nullptr);
     if (co_async::checkOk(res)) {
@@ -30,8 +30,8 @@ std::pair<int, async::mongo::MongoReplyParserPtr> execute(const std::string &uri
     return ret;
 }
 
-std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMongoCmd &cmd, std::string* jsonResult, int timeOut) {
-    auto res = execute(uri, cmd, (int)timeOut);
+std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMongoCmd &cmd, std::string* jsonResult, const TimeOut& t) {
+    auto res = execute(uri, cmd, t);
     std::pair<int, bool> ret = std::make_pair(res.first, false);
 
     if (co_async::checkOk(res)) {
@@ -65,8 +65,8 @@ std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMon
     return ret;
 }
 
-std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMongoCmd &cmd, int* deletedCount, int timeOut) {
-    auto res = execute(uri, cmd, (int)timeOut);
+std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMongoCmd &cmd, int* deletedCount, const TimeOut& t) {
+    auto res = execute(uri, cmd, t);
     std::pair<int, bool> ret = std::make_pair(res.first, false);
 
     if (co_async::checkOk(res)) {
@@ -85,8 +85,8 @@ std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMon
     return ret;
 }
 
-std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMongoCmd &cmd, int* modifiedCount, int* matchedCount, int* upsertedCount, int timeOut) {
-    auto res = execute(uri, cmd, (int)timeOut);
+std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMongoCmd &cmd, int* modifiedCount, int* matchedCount, int* upsertedCount, const TimeOut& t) {
+    auto res = execute(uri, cmd, t);
     std::pair<int, bool> ret = std::make_pair(res.first, false);
 
     if (co_async::checkOk(res)) {

@@ -8,19 +8,21 @@
 #pragma once
 
 #include "common/async/mysql/async_mysql.h"
+#include "common/co_async/comm.hpp"
 
 namespace co_async {
 namespace mysql {
 
-int getWaitTime();
+// 不支持查询多结果集，如果执行了返回多结果集的sql语句，行为是未可知的
+std::pair<int, async::mysql::MysqlReplyParserPtr> query(const std::string& uri, const std::string& sql, const TimeOut& t = TimeOut()); 
 
-void setWaitTime(int wait_time);
+std::pair<int, async::mysql::MysqlReplyParserPtr> execute(const std::string& uri, const std::string& sql, const TimeOut& t = TimeOut()); 
 
 // 不支持查询多结果集，如果执行了返回多结果集的sql语句，行为是未可知的
-int execute(const std::string& uri, const std::string& sql, async::mysql::async_mysql_query_cb cb);
+std::pair<int, int> query(const std::string& uri, const std::string& sql, async::mysql::async_mysql_query_cb cb, const TimeOut& t = TimeOut());
 
-int execute(const std::string& uri, const std::string& sql, async::mysql::async_mysql_exec_cb cb);
-
+// pair.second表示错误码
+std::pair<int, int> execute(const std::string& uri, const std::string& sql, int& effectRow, const TimeOut& t = TimeOut());
 
 }
 }

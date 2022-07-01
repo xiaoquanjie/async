@@ -9,9 +9,9 @@
 
 #include "common/async/mysql/async_mysql.h"
 #include <vector>
-#include <mariadb/mysql.h>
-#include <mariadb/mysqld_error.h>
-#include <mariadb/errmsg.h>
+#include <mysql/mysql.h>
+#include <mysql/mysqld_error.h>
+#include <mysql/errmsg.h>
 #include <assert.h>
 #include <list>
 #include <mutex>

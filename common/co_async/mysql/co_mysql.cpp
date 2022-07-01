@@ -10,130 +10,81 @@
 
 #include "common/co_async/mysql/co_mysql.h"
 #include "common/coroutine/coroutine.hpp"
-#include <mariadb/mysql.h>
-#include "common/co_bridge/co_bridge.h"
+#include "common/co_async/promise.h"
+#include <mysql/mysql.h>
+
 
 namespace co_async {
 namespace mysql {
 
-int g_wait_time = co_bridge::E_WAIT_THIRTY_SECOND;;
+std::pair<int, async::mysql::MysqlReplyParserPtr> query(const std::string& uri, const std::string& sql, const TimeOut& t) {
+    auto res = co_async::promise([&uri, &sql](co_async::Resolve resolve, co_async::Reject reject) {
+        async::mysql::execute(uri, sql, [resolve](int err, const void* mysqlRes) {
+            auto ptr = std::make_shared<async::mysql::MysqlReplyParser>(mysqlRes, 0, err);
+            resolve(ptr);
+        });
+    }, t());
 
-int getWaitTime() {
-    return g_wait_time;
-}
-
-void setWaitTime(int wait_time) {
-    g_wait_time = wait_time;
-}
-
-struct co_mysql_result {
-    bool timeout_flag = false;
-    int err = 0;
-    int affected_row = 0;
-    MYSQL_RES* res = 0;
-};
-
-int execute(const std::string& uri, const std::string& sql, async::mysql::async_mysql_query_cb cb) {
-    unsigned int co_id = Coroutine::curid();
-    if (co_id == M_MAIN_COROUTINE_ID) {
-        assert(false);
-        return co_bridge::E_CO_RETURN_ERROR;
+    std::pair<int, async::mysql::MysqlReplyParserPtr> ret = std::make_pair(res.first, nullptr);
+    if (co_async::checkOk(res)) {
+        ret.second = co_async::getOk<async::mysql::MysqlReplyParser>(res);
     }
 
-    int64_t unique_id = co_bridge::genUniqueId();
-    auto result = std::make_shared<co_mysql_result>();
+    return ret;
+}
 
-    int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
-        result->timeout_flag = true;
-        co_bridge::rmUniqueId(unique_id);
-        Coroutine::resume(co_id);
-    });
+std::pair<int, async::mysql::MysqlReplyParserPtr> execute(const std::string& uri, const std::string& sql, const TimeOut& t) {
+    auto res = co_async::promise([&uri, &sql](co_async::Resolve resolve, co_async::Reject reject) {
+        async::mysql::execute(uri, sql, [resolve](int err, int affected_row) {
+            auto ptr = std::make_shared<async::mysql::MysqlReplyParser>((const void*)0, affected_row, err);
+            resolve(ptr);
+        });
+    }, t());
 
-    async::mysql::execute(uri, sql, [result, timer_id, co_id, unique_id](int err, void* res) {
-        if (!co_bridge::rmUniqueId(unique_id)) {
-            mysql_free_result((MYSQL_RES*)res);
-            return;
-        }
-        co_bridge::rmTimer(timer_id);
-        result->res = (MYSQL_RES*)res;
-        result->err = err;
-        Coroutine::resume(co_id);
-    });
-
-    co_bridge::addUniqueId(unique_id);
-    Coroutine::yield();
-
-    int ret = co_bridge::E_CO_RETURN_OK;
-    if (result->timeout_flag) {
-        ret = co_bridge::E_CO_RETURN_TIMEOUT;
+    std::pair<int, async::mysql::MysqlReplyParserPtr> ret = std::make_pair(res.first, nullptr);
+    if (co_async::checkOk(res)) {
+        ret.second = co_async::getOk<async::mysql::MysqlReplyParser>(res);
     }
-    else {
-        int affected_rows = 0;
-        int fields_cnt = 0;
-        if (result->res && result->err == 0) {
-            affected_rows = (int)mysql_num_rows(result->res);
-            fields_cnt = (int)mysql_num_fields(result->res);
-        }
-        if (affected_rows == 0) {
-            cb(result->err, 0, 0, fields_cnt, affected_rows);
-        }
-        else {
-            // 有结果
-            MYSQL_ROW row = 0;
-            int idx = 1;
-            while (0 != (row = mysql_fetch_row(result->res))) {
-                cb(result->err, (void*)row, idx, fields_cnt, affected_rows);
-                ++idx;
+
+    return ret;
+}
+
+std::pair<int, int> execute(const std::string& uri, const std::string& sql, int& effectRow, const TimeOut& t) {
+    auto res = execute(uri, sql, t);
+    std::pair<int, int> ret = std::make_pair(res.first, 0);
+
+    if (co_async::checkOk(res)) {
+        auto parser = res.second;
+        ret.second = parser->GetError();
+        effectRow = parser->GetAffectedRow();
+    }
+
+    return ret;
+}
+
+std::pair<int, int> query(const std::string& uri, const std::string& sql, async::mysql::async_mysql_query_cb cb, const TimeOut& t) {
+    auto res = query(uri, sql, t);
+    std::pair<int, int> ret = std::make_pair(res.first, 0);
+
+    if (co_async::checkOk(res)) {
+        auto parser = res.second;
+        ret.second = parser->GetError();
+
+        int idx = 1;
+        int affectedRow = parser->GetAffectedRow();
+        int fields = parser->GetField();
+
+        while (true) {
+            auto row = parser->Next();
+            if (row) {
+                cb(ret.second, row, idx, fields, affectedRow);
             }
         }
     }
-    
-    if (result->res) {
-        mysql_free_result(result->res);
-    }
-    
-    return ret;
-}
-
-int execute(const std::string& uri, const std::string& sql, async::mysql::async_mysql_exec_cb cb) {
-    unsigned int co_id = Coroutine::curid();
-    if (co_id == M_MAIN_COROUTINE_ID) {
-        assert(false);
-        return co_bridge::E_CO_RETURN_ERROR;
-    }
-
-    int64_t unique_id = co_bridge::genUniqueId();
-    auto result = std::make_shared<co_mysql_result>();
-
-    int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
-        result->timeout_flag = true;
-        co_bridge::rmUniqueId(unique_id);
-        Coroutine::resume(co_id);
-    });
-
-    async::mysql::execute(uri, sql, [result, timer_id, co_id, unique_id](int err, int affected_row) {
-        if (!co_bridge::rmUniqueId(unique_id)) {
-            return;
-        }
-        co_bridge::rmTimer(timer_id);
-        result->affected_row = affected_row;
-        result->err = err;
-        Coroutine::resume(co_id);
-    });
-
-    co_bridge::addUniqueId(unique_id);
-    Coroutine::yield();
-
-    int ret = co_bridge::E_CO_RETURN_OK;
-    if (result->timeout_flag) {
-        ret = co_bridge::E_CO_RETURN_TIMEOUT;
-    }
-    else {
-        cb(result->err, result->affected_row);
-    }
 
     return ret;
 }
+
 
 
 }

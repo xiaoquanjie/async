@@ -26,8 +26,6 @@ enum {
     E_ERROR = 2
 };
 
-struct PromiseNull {};
-
 struct PromiseReject {
     int err = 0;
     std::string msg;
@@ -58,10 +56,10 @@ bool loop(uint32_t cur_time = 0);
 // 毫秒
 int wait(uint32_t interval);
 
-// 返回值是pair: first=[E_OK/E_TIMEOUT/E_ERROR], second=[std::shared_ptr<PromiseNull>, other]
+// 返回值是pair: first=[E_OK/E_TIMEOUT/E_ERROR], second=[std::shared_ptr<void>/nullptr/other]
 // 1、first=E_OK时, second=目标
-// 2、first=E_TIMEOUT时，second=std::shared_ptr<PromiseNull>
-// 3、first=E_ERROR时，second=std::shared_ptr<PromiseReject>
+// 2、first=E_TIMEOUT时，second=nullptr
+// 3、first=E_ERROR时，second=[std::shared_ptr<PromiseReject>/nullptr]
 std::pair<int, std::shared_ptr<void>> promise(std::function<void(Resolve, Reject)> fn, int timeOut = 3000);
 
 void setTimeout(std::function<void()> fn, int timeOut);

@@ -87,12 +87,11 @@ void Reject::operator()(int err, const std::string& msg) const {
 }
 
 std::pair<int, std::shared_ptr<void>> promise(std::function<void(Resolve, Reject)> fn, int timeOut) {
-    auto promiseNull = std::make_shared<PromiseNull>();
-    std::pair<int, std::shared_ptr<void>> ret = std::make_pair(E_ERROR, promiseNull);
+    std::pair<int, std::shared_ptr<void>> ret = std::make_pair(E_ERROR, nullptr);
     
     unsigned int coId = Coroutine::curid();
     if (coId == M_MAIN_COROUTINE_ID) {
-        //assert(false);
+        assert(false);
         return ret;
     }
 

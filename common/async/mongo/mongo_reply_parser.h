@@ -15,7 +15,7 @@ namespace async {
 
 namespace mongo {
 
-// 如果是返回的结果集，必须先调用完NextCursor才知道IsOk()函数的正确性
+// 如果是返回的结果集，必须先调用完NextJson才知道IsOk()函数的正确性
 struct MongoReplyParser {
     MongoReplyParser();
 
@@ -35,6 +35,16 @@ struct MongoReplyParser {
     void FreeJson(void* json);
 
     void ResetNextBson();
+
+    bool GetDeletedCount(int& cnt);
+
+    bool GetModifiedCount(int& cnt);
+
+    bool GetKeyValue(const char* key, int& v);
+
+    bool GetMatchedCount(int& cnt);
+
+    bool GetUpsertedCount(int& cnt);
 
     int op_result = -1;  // 0表示成功
     void* error;

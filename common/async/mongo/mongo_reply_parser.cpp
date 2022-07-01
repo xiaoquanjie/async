@@ -50,6 +50,42 @@ void MongoReplyParser::ResetNextBson() {
     this->bson_idx = 0;
 }
 
+bool MongoReplyParser::GetDeletedCount(int& cnt) {
+    return GetKeyValue("deletedCount", cnt);
+}
+
+bool MongoReplyParser::GetModifiedCount(int& cnt) {
+    return GetKeyValue("modifiedCount", cnt);
+}
+
+bool MongoReplyParser::GetMatchedCount(int& cnt) {
+    return GetKeyValue("matchedCount", cnt);
+}
+
+bool MongoReplyParser::GetUpsertedCount(int& cnt) {
+    return GetKeyValue("upsertedCount", cnt);
+}
+
+bool MongoReplyParser::GetKeyValue(const char* key, int& v) {
+    if (this->bsons.empty()) {
+        return false;
+    }
+
+    bson_t* b = (bson_t*)this->bsons[0];
+    bson_iter_t iter;
+    if (!bson_iter_init(&iter, (const bson_t*)b)) {
+        return false;
+    }
+
+    bson_iter_t desc;
+    if (!bson_iter_find_descendant(&iter, key, &desc)) {
+        return false;
+    }
+
+    v = (int)bson_iter_as_int64(&desc);
+    return true;
+}
+
 char* MongoReplyParser::NextJson() {
     const bson_t* doc = (const bson_t*)this->NextBson();
     if (doc) {

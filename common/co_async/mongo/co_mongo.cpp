@@ -8,119 +8,108 @@
 #ifdef USE_ASYNC_MONGO
 
 #include "common/co_async/mongo/co_mongo.h"
-#include "common/coroutine/coroutine.hpp"
-#include "common/co_bridge/co_bridge.h"
+#include "common/co_async/promise.h"
 
 namespace co_async {
 namespace mongo {
 
-int g_wait_time = co_bridge::E_WAIT_THIRTY_SECOND;
-
-int getWaitTime() {
-    return g_wait_time;
-}
-
-void setWaitTime(int wait_time) {
-    g_wait_time = wait_time;
-}
-
-struct co_mongo_result {
-    bool timeout_flag = false;
-    async::mongo::MongoReplyParserPtr parser;
-};
-
 ////////////////////////////////////////////////////////////////////
 
-int execute(const std::string& uri, const async::mongo::BaseMongoCmd& cmd, async::mongo::async_mongo_cb cb) {
-    unsigned int co_id = Coroutine::curid();
-    if (co_id == M_MAIN_COROUTINE_ID) {
-        assert(false);
-        return co_bridge::E_CO_RETURN_ERROR;
+std::pair<int, async::mongo::MongoReplyParserPtr> execute(const std::string &uri, const async::mongo::BaseMongoCmd &cmd, int timeOut) {
+    auto res = co_async::promise([&uri, &cmd](co_async::Resolve resolve, co_async::Reject reject) {
+        async::mongo::execute(uri, cmd, [resolve](async::mongo::MongoReplyParserPtr parser) {
+            resolve(parser);
+        });
+    }, timeOut);
+
+    std::pair<int, async::mongo::MongoReplyParserPtr> ret = std::make_pair(res.first, nullptr);
+    if (co_async::checkOk(res)) {
+        ret.second = co_async::getOk<async::mongo::MongoReplyParser>(res);
     }
 
-    int64_t unique_id = co_bridge::genUniqueId();
-    auto result = std::make_shared<co_mongo_result>();
+    return ret;
+}
 
-    int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
-        result->timeout_flag = true;
-        co_bridge::rmUniqueId(unique_id);
-        Coroutine::resume(co_id);
-    });
+std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMongoCmd &cmd, std::string* jsonResult, int timeOut) {
+    auto res = execute(uri, cmd, (int)timeOut);
+    std::pair<int, bool> ret = std::make_pair(res.first, false);
 
-    async::mongo::execute(uri, cmd, [result, timer_id, co_id, unique_id](async::mongo::MongoReplyParserPtr parser) {
-        if (!co_bridge::rmUniqueId(unique_id)) {
-            return;
+    if (co_async::checkOk(res)) {
+        auto parser = res.second;
+        ret.second = parser->IsOk();
+
+        if (jsonResult) {
+            jsonResult->clear();
+            jsonResult->append("[");
+            int idx = 0;
+            while (true) {
+                char *json = parser->NextJson();
+                if (!json) {
+                    break;
+                }
+                if (idx != 0) {
+                    jsonResult->append(",");
+                }
+                ++idx;
+                jsonResult->append(json);
+                parser->FreeJson(json);
+            }
+            jsonResult->append("]");
         }
-        co_bridge::rmTimer(timer_id);
-        result->parser = parser;
-        Coroutine::resume(co_id);
-    });
-
-    co_bridge::addUniqueId(unique_id);
-    Coroutine::yield();
-
-    int ret = co_bridge::E_CO_RETURN_OK;
-    if (result->timeout_flag) {
-        ret = co_bridge::E_CO_RETURN_TIMEOUT;
     }
     else {
-        cb(result->parser);
+        auto parser = res.second;
+        async::mongo::log("[error] failed to execute mongo:%s\n", parser->What());
     }
-    
+
     return ret;
 }
 
-int execute(const std::string& uri, const async::mongo::BaseMongoCmd& cmd) {
-    bool ok = true;
-    int ret = co_async::mongo::execute(uri, cmd, [&ok](async::mongo::MongoReplyParserPtr parser) {
-        if (!parser->IsOk()) {
-            async::mongo::log("[error] failed to execute mongo:%s\n", parser->What());
-            ok = false;
+std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMongoCmd &cmd, int* deletedCount, int timeOut) {
+    auto res = execute(uri, cmd, (int)timeOut);
+    std::pair<int, bool> ret = std::make_pair(res.first, false);
+
+    if (co_async::checkOk(res)) {
+        auto parser = res.second;
+        ret.second = parser->IsOk();
+
+        if (deletedCount) {
+            parser->GetDeletedCount(*deletedCount);
         }
-    });
-
-    if (!ok) {
-        return co_bridge::E_CO_RETURN_ERROR;
     }
+    else {
+        auto parser = res.second;
+        async::mongo::log("[error] failed to execute mongo:%s\n", parser->What());
+    }
+
     return ret;
 }
 
-int execute(const std::string& uri, const async::mongo::BaseMongoCmd& cmd, std::string& json_result) {
-    bool ok = true;
-    int ret = co_async::mongo::execute(uri, cmd, [&ok, &json_result](async::mongo::MongoReplyParserPtr parser) {
-        if (!parser->IsOk()) {
-            ok = false;
-            async::mongo::log("[error] failed to execute mongo:%s\n", parser->What());
-            return;
+std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMongoCmd &cmd, int* modifiedCount, int* matchedCount, int* upsertedCount, int timeOut) {
+    auto res = execute(uri, cmd, (int)timeOut);
+    std::pair<int, bool> ret = std::make_pair(res.first, false);
+
+    if (co_async::checkOk(res)) {
+        auto parser = res.second;
+        ret.second = parser->IsOk();
+
+        if (modifiedCount) {
+            parser->GetModifiedCount(*modifiedCount);
         }
-        
-        json_result.clear();
-		json_result.append("[");
-		int idx = 0;
-		while (true) {
-			char* json = parser->NextJson();
-			if (!json) {
-				break;
-			}
-			if (idx != 0) {
-				json_result.append(",");
-			} 
-			++idx;
-			json_result.append(json);
-			parser->FreeJson(json);
-		}
-        json_result.append("]");
-    });
-
-    if (!ok) {
-        return co_bridge::E_CO_RETURN_ERROR;
+        if (matchedCount) {
+            parser->GetMatchedCount(*matchedCount);
+        }
+        if (upsertedCount) {
+            parser->GetUpsertedCount(*upsertedCount);
+        }
     }
+    else {
+        auto parser = res.second;
+        async::mongo::log("[error] failed to execute mongo:%s\n", parser->What());
+    }
+
     return ret;
 }
-
-//int execute(const std::string& uri, const async::mongo::BaseMongoCmd& cmd, int& modifiedOrInsertCount);
-
-//int execute(const std::string& uri, const async::mongo::BaseMongoCmd& cmd, int& modifiedCount, int& upsertedCount);
 
 }
 }

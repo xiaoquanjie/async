@@ -12,6 +12,7 @@ void co_parallel_test();
 void net_test();
 void cpu_test(bool use_co);
 void curl_test(bool use_co);
+void mongo_test(bool use_co);
 
 void promise_test() {
     CoroutineTask::doTask([](void*){
@@ -27,7 +28,8 @@ int main() {
     //promise_test();
     //cpu_test(true);
     //co_parallel_test();
-    curl_test(true);
+    //curl_test(true);
+    mongo_test(true);
 
     while (true) {
         co_async::loop();

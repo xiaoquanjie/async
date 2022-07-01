@@ -32,28 +32,13 @@ int64_t addTimer(int interval, std::function<void()> func) {
     return g_time_pool.AddTimer(interval, func);
 }
 
-void rmTimer(int64_t timer_id) {
-    g_time_pool.CancelTimer(timer_id);
+void rmTimer(int64_t timerId) {
+    g_time_pool.CancelTimer(timerId);
 }
 
-bool loop(uint32_t cur_time) {
+bool loopPromise(uint32_t curTime) {
     g_time_pool.Update();
     return true;
-}
-
-int wait(uint32_t interval) {
-    unsigned int co_id = Coroutine::curid();
-    if (co_id == M_MAIN_COROUTINE_ID) {
-        assert(false);
-        return E_ERROR;
-    }
-
-    addTimer(interval, [co_id]() {
-        Coroutine::resume(co_id);
-    });
-
-    Coroutine::yield();
-    return E_OK;
 }
 
 void Resolve::operator()(std::shared_ptr<void> res) const {
@@ -124,7 +109,7 @@ std::pair<int, std::shared_ptr<void>> promise(std::function<void(Resolve, Reject
             result->timeOutFlag = true;
             Coroutine::resume(result->coId);
         });
-
+        
         result->timerId = timerId;
         // 挂起协程
         Coroutine::yield();

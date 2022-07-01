@@ -36,6 +36,7 @@ struct PromiseResult {
     int64_t timerId = 0;
     int64_t uniqueId = 0;
     uint32_t coId = 0;
+    uint32_t fns = 0;
     std::shared_ptr<void> resolveRes;
     std::shared_ptr<PromiseReject> rejectRes;
 };
@@ -51,10 +52,7 @@ struct Reject {
 };
 
 // 循环，内部调用异步循环
-bool loop(uint32_t cur_time = 0);
-
-// 毫秒
-int wait(uint32_t interval);
+bool loopPromise(uint32_t curTime = 0);
 
 // 返回值是pair: first=[E_OK/E_TIMEOUT/E_ERROR], second=[std::shared_ptr<void>/nullptr/other]
 // 1、first=E_OK时, second=目标

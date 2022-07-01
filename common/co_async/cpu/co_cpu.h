@@ -12,11 +12,7 @@
 namespace co_async {
 namespace cpu {
 
-int getWaitTime();
-
-void setWaitTime(int wait_time);
-
-int execute(async::cpu::async_cpu_op op, void* user_data, async::cpu::async_cpu_cb cb);
+std::pair<int, int64_t> execute(async::cpu::async_cpu_op op, void* userData, int timeOut = 30 * 1000);
 
 }
 }

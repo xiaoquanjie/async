@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "common/co_async/co_io.h"
+#include "common/co_async/async.h"
 #include "common/co_async/cpu/co_cpu.h"
 #include "common/co_async/curl/co_curl.h"
 #include "common/co_async/mongo/co_mongo.h"

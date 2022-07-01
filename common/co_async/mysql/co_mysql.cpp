@@ -19,8 +19,7 @@ namespace mysql {
 
 std::pair<int, async::mysql::MysqlReplyParserPtr> query(const std::string& uri, const std::string& sql, const TimeOut& t) {
     auto res = co_async::promise([&uri, &sql](co_async::Resolve resolve, co_async::Reject reject) {
-        async::mysql::execute(uri, sql, [resolve](int err, const void* mysqlRes) {
-            auto ptr = std::make_shared<async::mysql::MysqlReplyParser>(mysqlRes, 0, err);
+        async::mysql::query(uri, sql, [resolve](async::mysql::MysqlReplyParserPtr ptr) {
             resolve(ptr);
         });
     }, t());
@@ -35,8 +34,7 @@ std::pair<int, async::mysql::MysqlReplyParserPtr> query(const std::string& uri, 
 
 std::pair<int, async::mysql::MysqlReplyParserPtr> execute(const std::string& uri, const std::string& sql, const TimeOut& t) {
     auto res = co_async::promise([&uri, &sql](co_async::Resolve resolve, co_async::Reject reject) {
-        async::mysql::execute(uri, sql, [resolve](int err, int affected_row) {
-            auto ptr = std::make_shared<async::mysql::MysqlReplyParser>((const void*)0, affected_row, err);
+        async::mysql::execute(uri, sql, [resolve](async::mysql::MysqlReplyParserPtr ptr) {
             resolve(ptr);
         });
     }, t());
@@ -78,6 +76,9 @@ std::pair<int, int> query(const std::string& uri, const std::string& sql, async:
             auto row = parser->Next();
             if (row) {
                 cb(ret.second, row, idx, fields, affectedRow);
+            }
+            else {
+                break;
             }
         }
     }

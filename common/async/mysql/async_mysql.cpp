@@ -90,9 +90,8 @@ typedef std::shared_ptr<mysql_core> mysql_core_ptr;
 
 struct mysql_custom_data {
     mysql_core_ptr core;
-    async_mysql_query_cb q_cb;
-    async_mysql_query_cb2 q_cb2;
-    async_mysql_exec_cb e_cb;
+    async_mysql_cb cb;
+    bool is_query = false;
     mysql_addr addr;
     std::string sql;
     int status = 0;
@@ -186,16 +185,14 @@ mysql_core_ptr local_create_core(const mysql_addr& addr, uri_data& uri_map) {
 
 mysql_custom_data_ptr local_create_mysql_custom_data(const std::string &uri,
                                                      const std::string &sql,
-                                                     async_mysql_query_cb q_cb,
-                                                     async_mysql_query_cb2 q_cb2,
-                                                     async_mysql_exec_cb e_cb)
+                                                     async_mysql_cb cb,
+                                                     bool is_query)
 {
     mysql_custom_data_ptr req = std::make_shared<mysql_custom_data>();
     req->addr.Parse(uri);
     req->sql = sql;
-    req->q_cb = q_cb;
-    req->q_cb2 = q_cb2;
-    req->e_cb = e_cb;
+    req->cb = cb;
+    req->is_query = is_query;
     
     g_mysql_global_data.prepare_queue.push_back(req);
     g_mysql_global_data.req_task_cnt++;
@@ -449,16 +446,12 @@ inline std::function<void()> get_thread_func() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void execute(const std::string& uri, const std::string& sql, async_mysql_query_cb cb) {
-    local_create_mysql_custom_data(uri, sql, cb, nullptr, nullptr);
+void query(const std::string& uri, const std::string& sql, async_mysql_cb cb) {
+    local_create_mysql_custom_data(uri, sql, cb, true);
 }
 
-void execute(const std::string& uri, const std::string& sql, async_mysql_query_cb2 cb) {
-    local_create_mysql_custom_data(uri, sql, nullptr, cb, nullptr);
-}
-
-void execute(const std::string& uri, const std::string& sql, async_mysql_exec_cb cb) {
-    local_create_mysql_custom_data(uri, sql, nullptr, nullptr, cb);
+void execute(const std::string& uri, const std::string& sql, async_mysql_cb cb) {
+    local_create_mysql_custom_data(uri, sql, cb, false);
 }
 
 void setMaxConnection(unsigned int cnt) {
@@ -551,40 +544,13 @@ bool loop(uint32_t cur_time) {
             }
 
             int affected_rows = 0;
-            int fields_cnt = 0;
-
-            if (err == 0) {
-                if (item.data->q_cb != nullptr && item.res != 0) {
-                    affected_rows = (int)mysql_num_rows(item.res);
-                    fields_cnt = (int)mysql_num_fields(item.res);
-                }
-                if (item.data->e_cb) {
-                    affected_rows = (int)mysql_affected_rows(&item.data->core->mysql);
-                }
+            if (!item.data->is_query) {
+                affected_rows = (int)mysql_affected_rows(&item.data->core->mysql);
             }
-
+            
             // 执行回调
-            if (item.data->e_cb) {
-                item.data->e_cb(err, affected_rows);
-            }
-            if (item.data->q_cb) {
-                if (affected_rows == 0) {
-                    // 没有结果
-                    item.data->q_cb(err, 0, 0, fields_cnt, affected_rows);
-                }
-                else {
-                    // 有结果
-                    MYSQL_ROW row = 0;
-                    int idx = 1;
-                    while (0 != (row = mysql_fetch_row(item.res))) {
-                        item.data->q_cb(err, (void*)row, idx, fields_cnt, affected_rows);
-                        ++idx;
-                    }
-                }
-            }
-            if (item.data->q_cb2) {
-                item.data->q_cb2(err, item.res);
-            }
+            auto reply = std::make_shared<MysqlReplyParser>(item.res, affected_rows, err);
+            item.data->cb(reply);
 
             // 归还连接
             if (err == CR_SERVER_GONE_ERROR 
@@ -597,11 +563,6 @@ bool loop(uint32_t cur_time) {
             else {
                 item.data->core->state = enum_connected_state;
                 uri_map.core_list.push_back(item.data->core);
-            }
-
-            if (item.res && item.data->q_cb) {
-                // 释放资源
-                mysql_free_result(item.res);
             }
         }
     }

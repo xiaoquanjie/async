@@ -8,119 +8,87 @@
 #ifdef USE_ASYNC_CURL
 
 #include "common/co_async/curl/co_curl.h"
-#include "common/coroutine/coroutine.hpp"
-#include "common/co_bridge/co_bridge.h"
+#include "common/co_async/promise.h"
 
 namespace co_async {
 namespace curl {
 
-int g_wait_time = co_bridge::E_WAIT_TEN_SECOND;
-
-int getWaitTime() {
-    return g_wait_time;
-}
-
-void setWaitTime(int wait_time) {
-    g_wait_time = wait_time;
-}
-
-struct co_curl_result {
-    bool timeout_flag = false;
-    int curl_code;
-    int rsp_code;
-    std::string body; 
-};
-
 /////////////////////////////////////////////////////////////////
 
-int get(const std::string& url, async::curl::async_curl_cb cb) {
+std::pair<int, std::shared_ptr<CurlResult>> get(const std::string& url, int timeOut) {
     std::map<std::string, std::string> header;
-    return co_async::curl::get(url, header, cb);
+    return get(url, header, timeOut);
 }
 
-int get(const std::string &url, const std::map<std::string, std::string>& headers, async::curl::async_curl_cb cb) {
-    unsigned int co_id = Coroutine::curid();
-    if (co_id == M_MAIN_COROUTINE_ID) {
-        assert(false);
-        return co_bridge::E_CO_RETURN_ERROR;
-    }
+std::pair<int, std::shared_ptr<CurlResult>> get(const std::string& url, const std::map<std::string, std::string>& headers, int timeOut) {
+    auto res = co_async::promise([&url, &headers](co_async::Resolve resolve, co_async::Reject reject) {
+        async::curl::get(url, headers, [resolve](int curl_code, int rsp_code, std::string& body) {
+            auto p = std::make_shared<CurlResult>();
+            p->curlCode = curl_code;
+            p->resCode = rsp_code;
+            p->body.swap(body);
+            resolve(p);
+        });
+    }, timeOut);
 
-    int64_t unique_id = co_bridge::genUniqueId();
-    auto result = std::make_shared<co_curl_result>();
-
-    int64_t timer_id = co_bridge::addTimer(g_wait_time, [result, co_id, unique_id]() {
-        result->timeout_flag = true;
-        co_bridge::rmUniqueId(unique_id);
-        Coroutine::resume(co_id);
-    });
-
-    async::curl::get(url, headers, [result, timer_id, co_id, unique_id](int curl_code, int rsp_code, std::string& body) {
-        if (!co_bridge::rmUniqueId(unique_id)) {
-            return;
-        }
-        co_bridge::rmTimer(timer_id);
-        result->curl_code = curl_code;
-        result->rsp_code = rsp_code;
-        result->body.swap(body);
-        Coroutine::resume(co_id);
-    });
-
-    co_bridge::addUniqueId(unique_id);
-    Coroutine::yield();
-
-    int ret = co_bridge::E_CO_RETURN_OK;
-    if (result->timeout_flag) {
-        ret = co_bridge::E_CO_RETURN_TIMEOUT;
-    }
-    else {
-        cb(result->curl_code, result->rsp_code, result->body);
+    std::pair<int, std::shared_ptr<CurlResult>> ret = std::make_pair(res.first, nullptr);
+    if (co_async::checkOk(res)) {
+        ret.second = co_async::getOk<CurlResult>(res);
     }
 
     return ret;
 }
 
-int post(const std::string& url, const std::string& content, async::curl::async_curl_cb cb) {
+int get(const std::string& url, std::string& body, int timeOut) {
     std::map<std::string, std::string> header;
-    return co_async::curl::post(url, content, header, cb);
+    return get(url, header, body, timeOut);
 }
 
-int post(const std::string& url, const std::string& content, const std::map<std::string, std::string>& headers, async::curl::async_curl_cb cb) {
-    unsigned int co_id = Coroutine::curid();
-    if (co_id == M_MAIN_COROUTINE_ID) {
-        assert(false);
-        return co_bridge::E_CO_RETURN_ERROR;
+int get(const std::string& url, const std::map<std::string, std::string>& headers, std::string& body, int timeOut) {
+    auto ret = get(url, headers, timeOut);
+    if (co_async::checkOk(ret)) {
+        ret.second->body.swap(body);
     }
 
-    int64_t unique_id = co_bridge::genUniqueId();
-    bool timeout_flag = false;
+    return ret.first;
+}
 
-    int64_t timer_id = co_bridge::addTimer(g_wait_time, [&timeout_flag, co_id, unique_id]() {
-        timeout_flag = true;
-        co_bridge::rmUniqueId(unique_id);
-        Coroutine::resume(co_id);
-    });
+std::pair<int, std::shared_ptr<CurlResult>> post(const std::string& url, const std::string& content, int timeOut) {
+    std::map<std::string, std::string> header;
+    return post(url, content, header, timeOut);
+}
 
-    auto result = std::make_shared<co_curl_result>();
-    async::curl::post(url, content, headers, [result, timer_id, co_id, unique_id](int curl_code, int rsp_code, std::string& body) {
-        if (!co_bridge::rmUniqueId(unique_id)) {
-            return;
-        }
-        co_bridge::rmTimer(timer_id);
-        result->curl_code = curl_code;
-        result->rsp_code = rsp_code;
-        result->body.swap(body);
-        Coroutine::resume(co_id);
-    });
+std::pair<int, std::shared_ptr<CurlResult>> post(const std::string& url, const std::string& content, const std::map<std::string, std::string>& headers, int timeOut) {
+    auto res = co_async::promise([&url, &content, &headers](co_async::Resolve resolve, co_async::Reject reject) {
+        async::curl::post(url, content, headers, [resolve](int curl_code, int rsp_code, std::string& body) {
+            auto p = std::make_shared<CurlResult>();
+            p->curlCode = curl_code;
+            p->resCode = rsp_code;
+            p->body.swap(body);
+            resolve(p);
+        });
+    }, timeOut);
 
-    co_bridge::addUniqueId(unique_id);
-    Coroutine::yield();
-
-    if (timeout_flag) {
-        return co_bridge::E_CO_RETURN_TIMEOUT;
+    std::pair<int, std::shared_ptr<CurlResult>> ret = std::make_pair(res.first, nullptr);
+    if (co_async::checkOk(res)) {
+        ret.second = co_async::getOk<CurlResult>(res);
     }
 
-    cb(result->curl_code, result->rsp_code, result->body);
-    return co_bridge::E_CO_RETURN_OK;
+    return ret;
+}
+
+int post(const std::string& url, const std::string& content, std::string& rspBody, int timeOut) {
+    std::map<std::string, std::string> headers;
+    return post(url, content, headers, rspBody, timeOut);
+}
+
+int post(const std::string& url, const std::string& content, const std::map<std::string, std::string>& headers, std::string& rspBody, int timeOut) {
+    auto ret = post(url, content, headers, timeOut);
+    if (co_async::checkOk(ret)) {
+        ret.second->body.swap(rspBody);
+    }
+
+    return ret.first;
 }
 
 }

@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 #include <functional>
+#include "common/co_async/comm.hpp"
 
 namespace co_async {
 

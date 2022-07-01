@@ -8,99 +8,82 @@
 #pragma once
 
 #include "common/async/redis/async_redis.h"
+#include "common/co_async/promise.h"
 #include <map>
+
+/**
+ * notice：因为async::redis::execute内部有链接失败重试机制(10秒)，所以co_async::redis::execute的超时时间最好不要短于10秒
+*/
 
 namespace co_async {
 namespace redis {
 
-int getWaitTime();
+std::pair<int, async::redis::RedisReplyParserPtr> execute(const std::string& uri, const async::redis::BaseRedisCmd& cmd, const TimeOut& t = TimeOut());
 
-void setWaitTime(int wait_time);
+// @返回值pair.second表示redis语句操作是否成功
+std::pair<int, bool> execute(const std::string& uri, const async::redis::BaseRedisCmd& cmd, long long& result, const TimeOut& t = TimeOut());
 
-int execute(const std::string& uri, 
-    const async::redis::BaseRedisCmd& cmd, 
-    async::redis::async_redis_cb cb);
+std::pair<int, bool> execute(const std::string& uri, const async::redis::BaseRedisCmd& cmd, std::string& result, const TimeOut& t = TimeOut());
 
-// 无需返回值
-int execute(const std::string& uri, 
-    const async::redis::BaseRedisCmd& cmd);
-
-int execute(const std::string& uri, 
-    const async::redis::BaseRedisCmd& cmd, 
-    long long& result);
-
-int execute(const std::string& uri, 
-    const async::redis::BaseRedisCmd& cmd, 
-    std::string& result);
-
-int execute(const std::string& uri, 
-    const async::redis::BaseRedisCmd& cmd, 
-    bool& result);
+std::pair<int, bool> execute(const std::string& uri, const async::redis::BaseRedisCmd& cmd, bool& result, const TimeOut& t = TimeOut());
 
 // get array
 template<typename T>
-int execute(const std::string& uri, 
-    const async::redis::BaseRedisCmd& cmd, 
-    T& result) {
-    bool ok = true;
-    int ret = co_async::redis::execute(uri, cmd, [&result, &cmd, &ok](async::redis::RedisReplyParserPtr parser) {
+std::pair<int, bool> execute(const std::string& uri, const async::redis::BaseRedisCmd& cmd, T& result, const TimeOut& t = TimeOut()) {
+    auto res = execute(uri, cmd, t);
+    std::pair<int, bool> ret = std::make_pair(res.first, false);
+    
+    if (co_async::checkOk(res)) {
         try {
+            auto parser = res.second;
 			parser->GetArray(result);
+            ret.second = true;
 		}
 		catch (const async::redis::RedisException &exce) {
-            ok = false;
 			async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
-    });
-
-    if (!ok) {
-        return 2;
     }
+    
     return ret;    
 }
 
 // get map
 template<typename T1, typename T2>
-int execute(const std::string& uri, 
-    const async::redis::BaseRedisCmd& cmd, 
-    std::map<T1, T2>& result) {
-    bool ok = true;
-    int ret = co_async::redis::execute(uri, cmd, [&result, &cmd, &ok](async::redis::RedisReplyParserPtr parser) {
+std::pair<int, bool> execute(const std::string& uri, const async::redis::BaseRedisCmd& cmd, std::map<T1, T2>& result, const TimeOut& t = TimeOut()) {
+    auto res = execute(uri, cmd, t);
+    std::pair<int, bool> ret = std::make_pair(res.first, false);
+
+    if (co_async::checkOk(res)) {
         try {
+            auto parser = res.second;
 			parser->GetMap(result);
+            ret.second = true;
 		}
 		catch (const async::redis::RedisException &exce) {
-            ok = false;
 			async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
-    });
-
-    if (!ok) {
-        return 2;
     }
+
     return ret;
 }
 
 // get scan result
 template<typename T>
-int execute(const std::string& uri, 
-    const async::redis::BaseRedisCmd& cmd, 
-    long long& cursor, 
-    T& result) {
-    bool ok = true;
-    int ret = co_async::redis::execute(uri, cmd, [&result, &cmd, &ok, &cursor](async::redis::RedisReplyParserPtr parser) {
+std::pair<int, bool> execute(const std::string& uri, const async::redis::BaseRedisCmd& cmd, long long& cursor, T& result, const TimeOut& t = TimeOut()) {
+    auto res = execute(uri, cmd, t);
+    std::pair<int, bool> ret = std::make_pair(res.first, false);
+
+    if (co_async::checkOk(res)) {
         try {
+            auto parser = res.second;
 			parser->GetScan(cursor, result);
+            ret.second = true;
 		}
 		catch (const async::redis::RedisException &exce) {
-            ok = false;
 			async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
-    });
-
-    if (!ok) {
-        return 2;
     }
+    
     return ret;
 }
 

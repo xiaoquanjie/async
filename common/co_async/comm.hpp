@@ -53,6 +53,12 @@ struct Reject {
     void operator()(int err, const std::string& msg) const;
 };
 
+struct TimeOut {
+    int v;
+    explicit TimeOut(int t = 30 * 1000) : v(t) {}
+    int operator()() const { return v; }
+};
+
 //////////////////////// // 辅助获取promise的值 
 
 inline bool checkOk(std::pair<int, std::shared_ptr<void>> p) {

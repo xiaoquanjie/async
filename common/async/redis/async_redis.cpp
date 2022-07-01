@@ -39,7 +39,7 @@ enum {
 // redis地址结构
 struct redis_addr
 {
-    // @uri: [host:port:pwd:idx:cluster]
+    // @uri: [host|port|pwd|idx|cluster]
     redis_addr(const std::string &uri) {
         Parse(uri);
     }

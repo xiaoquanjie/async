@@ -86,7 +86,7 @@ void RedisReplyParser::GetInteger(long long& value) {
 
 	if (!error.Empty()) {
 		if (error.What() == M_ERR_NOT_DEFINED) {
-			assert(false);
+			//assert(false);
 		}
 		throw error;
 	}
@@ -116,7 +116,7 @@ void RedisReplyParser::GetString(std::string& value) {
 
 	if (!error.Empty()) {
 		if (error.What() == M_ERR_NOT_DEFINED) {
-			assert(false);
+			//assert(false);
 		}
 		throw error;
 	}
@@ -151,7 +151,7 @@ void RedisReplyParser::GetString(char* value, unsigned int len) {
 
 	if (!error.Empty()) {
 		if (error.What() == M_ERR_NOT_DEFINED) {
-			assert(false);
+			//assert(false);
 		}
 		throw error;
 	}
@@ -175,7 +175,7 @@ void RedisReplyParser::GetOk(bool& value) {
 
 	if (!error.Empty()) {
 		if (error.What() == M_ERR_NOT_DEFINED) {
-			assert(false);
+			//assert(false);
 		}
 		throw error;
 	}

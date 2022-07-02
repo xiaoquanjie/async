@@ -103,7 +103,7 @@ void promise_test() {
                 resolve(nullptr);
             }, 2*1000);
         });
-
+        // promise返回，往下继续走
         printf("promise over:%d\n", ret.first);
     }, 0);
 }

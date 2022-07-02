@@ -63,8 +63,7 @@ void recv(uint64_t seqId, const char* data, uint32_t dataLen) {
     }
 
     SequenceInfo info = iter->second;
-    g_sequence_map.erase(iter);
-
+    
     // 校验信息
     uint32_t coId = seqId & 0xffffffff;
     if (info.resolve.coId() != coId) {
@@ -72,6 +71,7 @@ void recv(uint64_t seqId, const char* data, uint32_t dataLen) {
     }
 
     // 取消超时
+    g_sequence_map.erase(iter);
     rmTimer(info.timerId);
 
     auto ptr = std::make_shared<IpcData>();

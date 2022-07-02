@@ -15,6 +15,7 @@ void curl_test(bool use_co);
 void mongo_test(bool use_co);
 void redis_test(bool use_co);
 void co_mysql_test();
+void ipc_test();
 
 void promise_test() {
     CoroutineTask::doTask([](void*){
@@ -33,7 +34,8 @@ int main() {
     //curl_test(true);
     //mongo_test(true);
     //redis_test(true);
-    co_mysql_test();
+    //co_mysql_test();
+    ipc_test();
 
     while (true) {
         co_async::loop();

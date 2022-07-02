@@ -40,7 +40,7 @@ std::pair<int, IpcDataPtr> send(std::function<void(uint64_t)> fn, const TimeOut&
         // 设置一个超时
         info.timerId = addTimer(t() + 1000, [seqId]() {
             // 删除序列信息
-            printf("timeout\n");
+            //printf("timeout\n");
             g_sequence_map.erase(seqId);
         });
 

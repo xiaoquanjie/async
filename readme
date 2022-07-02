@@ -92,6 +92,7 @@ promise begin
 promise over:0
 
 void promise_test() {
+    // 起一个协程任务，回调将在协程里运行
     CoroutineTask::doTask([](void*){
         printf("promise begin\n");
         auto ret = co_async::promise([](co_async::Resolve resolve, co_async::Reject reject) {

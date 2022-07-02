@@ -10,10 +10,19 @@
 #include <unordered_map>
 
 namespace co_async {
+
+int64_t addTimer(int interval, std::function<void()> func);
+void rmTimer(int64_t timerId);
+
 namespace ipc {
 
+struct SequenceInfo {
+    co_async::Resolve resolve;
+    int64_t timerId = 0;
+};
+
 uint32_t g_sequence_id = 1;
-std::unordered_map<int64_t, co_async::Resolve> g_sequence_map;
+std::unordered_map<int64_t, SequenceInfo> g_sequence_map;
 
 std::pair<int, IpcDataPtr> send(std::function<void(uint64_t)> fn, const TimeOut& t) {
     auto res = co_async::promise([fn, t](co_async::Resolve resolve, co_async::Reject) {
@@ -25,15 +34,18 @@ std::pair<int, IpcDataPtr> send(std::function<void(uint64_t)> fn, const TimeOut&
         // 执行真正的发送
         fn(seqId);
 
-        // 添加进序列
-        g_sequence_map[seqId] = resolve;
+        SequenceInfo info;
+        info.resolve = resolve;
 
         // 设置一个超时
-        co_async::setTimeout([seqId]() {
+        info.timerId = addTimer(t() + 1000, [seqId]() {
             // 删除序列信息
+            printf("timeout\n");
             g_sequence_map.erase(seqId);
-        }, t() + 1000);
+        });
 
+        // 添加进序列
+        g_sequence_map[seqId] = info;
     }, t());
 
     std::pair<int, IpcDataPtr> ret = std::make_pair(res.first, nullptr);
@@ -50,16 +62,24 @@ void recv(uint64_t seqId, const char* data, uint32_t dataLen) {
         return;
     }
 
+    SequenceInfo info = iter->second;
+    g_sequence_map.erase(iter);
+
     // 校验信息
     uint32_t coId = seqId & 0xffffffff;
-    if (iter->second.coId() != coId) {
+    if (info.resolve.coId() != coId) {
         return;
     }
+
+    // 取消超时
+    rmTimer(info.timerId);
 
     auto ptr = std::make_shared<IpcData>();
     ptr->data = data;
     ptr->dataLen = dataLen;
-    iter->second(ptr);
+
+    // 唤醒
+    info.resolve(ptr);
 }
 
 

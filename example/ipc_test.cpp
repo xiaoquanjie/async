@@ -4,7 +4,7 @@
 
 struct IpcHeader {
     int cmd = 0;
-    int seqId = 0;
+    uint64_t seqId = 0;
     int size = 0;
 };
 
@@ -30,6 +30,7 @@ struct IpcPacket {
     std::string msg() {
         const char* p = (char*)buf + sizeof(IpcHeader);
         std::string m(p, getHeader()->size);
+        return m;
     }
 
     bool encode(const std::string& input, std::string& output) {
@@ -37,6 +38,7 @@ struct IpcPacket {
         h->size = input.size();
         output.append((const char*)h, sizeof(IpcHeader));
         output.append(input);
+        return true;
     }
 };
 
@@ -47,7 +49,7 @@ protected:
     void onData(uint64_t unique_id, std::string& identify, const std::string& data)  {
         IpcPacket recv;
         recv.decode(data);
-        std::cout << "router recv:" << recv.msg() << std::endl;
+        std::cout << "router recv:" << recv.msg() << "|" << recv.getHeader()->seqId << std::endl;
 
         IpcPacket send;
         send.getHeader()->cmd = 2;
@@ -65,8 +67,8 @@ public:
 protected:
     void onData(uint64_t unique_id, std::string& identify, const std::string& data)  {
         const IpcHeader* h = (const IpcHeader*)data.c_str();
-        const char* d = data.c_str() + sizeof(IpcHeader);
-        co_async::recv(h->seqId, d, h->size);
+        //std::cout << "dealer:" << h->seqId << std::endl;
+        co_async::ipc::recv(h->seqId, data.c_str(), data.size());
     }
 };
 
@@ -88,6 +90,7 @@ void ipc_send() {
             send.getHeader()->seqId = seqId;
             send.getHeader()->cmd = 1;
             
+            //std::cout << "dealer seqid:" << seqId << std::endl;
             std::string sendMsg;
             send.encode("hello, this is dealer", sendMsg);
             dealerHandler.sendData(dealerId, sendMsg);
@@ -116,7 +119,7 @@ void ipc_test() {
         routerHandler.update(0);
         dealerHandler.update(0);
         co_async::loop();
-        usleep(100);
+        usleep(1000);
     }
 }
 

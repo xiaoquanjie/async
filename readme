@@ -95,6 +95,7 @@ void promise_test() {
     CoroutineTask::doTask([](void*){
         printf("promise begin\n");
         auto ret = co_async::promise([](co_async::Resolve resolve, co_async::Reject reject) {
+            // 两秒后执行下面的回调
             co_async::setTimeout([resolve]() {
                 printf("异步执行结束\n");
                 resolve(nullptr);

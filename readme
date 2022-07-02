@@ -99,6 +99,7 @@ void promise_test() {
             // 两秒后执行下面的回调
             co_async::setTimeout([resolve]() {
                 printf("异步执行结束\n");
+                // 报告promise异步执行结束，并传递结果集，这里传nullptr
                 resolve(nullptr);
             }, 2*1000);
         });

@@ -46,6 +46,7 @@ struct PromiseResult {
 struct Resolve {
     std::shared_ptr<PromiseResult> result;
     void operator()(std::shared_ptr<void> res) const;
+    uint32_t coId() { return result->coId; }
 };
 
 struct Reject {

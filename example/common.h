@@ -4,7 +4,12 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include "common/coroutine/coroutine.hpp"
-#include "common/co_bridge/co_bridge.h"
+#include "common/co_async/async.h"
+#include "common/co_async/cpu/co_cpu.h"
+#include "common/co_async/curl/co_curl.h"
+#include "common/co_async/mongo/co_mongo.h"
+#include "common/co_async/redis/co_redis.h"
+#include "common/co_async/mysql/co_mysql.h"
 #include "common/ipc/zero_mq_handler.h"
 #include "common/async/async.h"
 #include "common/net/tcp_client.h"

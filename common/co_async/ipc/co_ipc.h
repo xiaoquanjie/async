@@ -27,4 +27,4 @@ std::pair<int, IpcDataPtr> send(std::function<void(int64_t)> fn, const TimeOut& 
 void recv(int64_t seqId, const char* data, uint32_t dataLen);
 
 }
-｝
+}

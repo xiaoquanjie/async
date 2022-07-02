@@ -9,7 +9,7 @@
 #include "common/co_async/promise.h"
 #include <unordered_map>
 
-namespace co_async
+namespace co_async {
 namespace ipc {
 
 uint32_t g_sequence_id = 1;
@@ -20,7 +20,7 @@ std::pair<int, IpcDataPtr> send(std::function<void(uint64_t)> fn, const TimeOut&
         //  生成序列号id
         uint32_t coId = resolve.coId();
         uint32_t id = g_sequence_id++;
-        uint64_t seqId = ((uint64_t)(id << 32)) | coId;
+        uint64_t seqId = ((uint64_t)id << 32) | coId;
 
         // 执行真正的发送
         fn(seqId);

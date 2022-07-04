@@ -6,55 +6,21 @@
 //----------------------------------------------------------------*/
 
 #include "common/async/async.h"
+#include "common/async/comm.hpp"
 #include <vector>
 
 namespace async {
 
-struct funcItem {
-    std::function<bool(uint32_t)> loopFunc;
-    std::function<void(std::function<void(const char*)>)> logFunc;
-    std::function<void(std::function<void(std::function<void()>)>)> thrFunc;
-};
+std::vector<AsyncModule>& getModuleVec() {
+    static std::vector<AsyncModule> s_mod_vec;
+    return s_mod_vec;
+}
 
-std::vector<funcItem> g_func_item_array = {
-#ifdef USE_ASYNC_REDIS
-    {
-        std::bind(async::redis::loop, std::placeholders::_1),
-        std::bind(async::redis::setLogFunc, std::placeholders::_1),
-        std::bind(async::redis::setThreadFunc, std::placeholders::_1)
-    },
-#endif
-
-#ifdef USE_ASYNC_MONGO
-    {
-        std::bind(async::mongo::loop, std::placeholders::_1),
-        std::bind(async::mongo::setLogFunc, std::placeholders::_1),
-        std::bind(async::mongo::setThreadFunc, std::placeholders::_1)
-    },
-#endif
-
-#ifdef USE_ASYNC_CURL
-    {
-        std::bind(async::curl::loop, std::placeholders::_1),
-        std::bind(async::curl::setLogFunc, std::placeholders::_1),
-        std::bind(async::curl::setThreadFunc, std::placeholders::_1)
-    },
-#endif
-
-#ifdef USE_ASYNC_MYSQL
-    {
-        std::bind(async::mysql::loop, std::placeholders::_1),
-        std::bind(async::mysql::setLogFunc, std::placeholders::_1),
-        std::bind(async::mysql::setThreadFunc, std::placeholders::_1)
-    },
-#endif
-
-    {
-        std::bind(async::cpu::loop, std::placeholders::_1),
-        std::bind(async::cpu::setLogFunc, std::placeholders::_1),
-        std::bind(async::cpu::setThreadFunc, std::placeholders::_1)
-    }
-};
+bool regModule(const AsyncModule& mod) {
+    printf("reg async module:%s\n", mod.name.c_str());
+    getModuleVec().push_back(mod);
+    return true;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -63,8 +29,9 @@ bool loop(uint32_t cur_time) {
        // time(&cur_time);
     }
 
+    auto& modVec = getModuleVec();
     bool is_busy = false;
-    for (auto& item : g_func_item_array) {
+    for (auto& item : modVec) {
         if (item.loopFunc) {
             if (item.loopFunc(cur_time)) {
                 is_busy = true;
@@ -75,12 +42,9 @@ bool loop(uint32_t cur_time) {
     return is_busy;
 }
 
-void addToLoop(std::function<bool(uint32_t)> f) {
-   g_func_item_array.push_back({f, nullptr, nullptr});
-}
-
 void setLogFunc(std::function<void(const char*)> cb) {
-    for (auto& item : g_func_item_array) {
+    auto& modVec = getModuleVec();
+    for (auto& item : modVec) {
         if (item.logFunc) {
             item.logFunc(cb);
         }
@@ -88,7 +52,8 @@ void setLogFunc(std::function<void(const char*)> cb) {
 }
 
 void setThreadFunc(std::function<void(std::function<void()>)> cb) {
-    for (auto& item : g_func_item_array) {
+    auto& modVec = getModuleVec();
+    for (auto& item : modVec) {
         if (item.thrFunc) {
             item.thrFunc(cb);
         }

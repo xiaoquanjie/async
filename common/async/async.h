@@ -30,8 +30,8 @@ void setThreadFunc(std::function<void(std::function<void()>)> cb);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-typedef std::function<void(int err)> done_cb;
-typedef std::function<void(int err)> next_cb;
+typedef std::function<void(int64_t)> done_cb;
+typedef std::function<void(int64_t)> next_cb;
 typedef std::function<void(next_cb)> fn_cb;
 
 void parallel(done_cb done, const std::initializer_list<fn_cb>& fns);

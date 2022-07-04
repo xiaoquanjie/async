@@ -13,11 +13,11 @@
 
 namespace co_async {
 
-typedef std::function<void()> next_cb;
+typedef std::function<void(int64_t)> next_cb;
 typedef std::function<void(next_cb)> fn_cb;
 
 // 并行执行里面的所有异步操作
-int parallel(const std::initializer_list<fn_cb>& fns, int timeOut = 10 * 1000);
+std::pair<int, int64_t> parallel(const std::initializer_list<fn_cb>& fns, int timeOut = 10 * 1000);
 
 bool loop(uint32_t curTime = 0);
 

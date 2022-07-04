@@ -99,7 +99,7 @@ void setThreadFunc(std::function<void(std::function<void()>)> cb) {
 
 struct parallel_result {
     int fns = 0;
-    int err = 0;
+    int64_t result = 0;
 };
 
 void parallel(done_cb done, const std::initializer_list<fn_cb>& fns) {
@@ -110,14 +110,13 @@ void parallel(done_cb done, const std::initializer_list<fn_cb>& fns) {
     auto result = std::make_shared<parallel_result>();
     result->fns = fns.size();
     
-    next_cb next = [result, done](int err) {
+    next_cb next = [result, done](int64_t err) {
         if (err != 0) {
-            result->err |= err;
+            result->result |= err;
         }
         result->fns -= 1;
         if (result->fns == 0) {
-            int e = result->err;
-            done(e);
+            done(result->result);
         }
     };
 

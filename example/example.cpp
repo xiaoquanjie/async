@@ -32,9 +32,9 @@ void promise_test() {
 }
 
 int main() {
-    promise_test();
+    //promise_test();
     //cpu_test(true);
-    //co_parallel_test();
+    co_parallel_test();
     //curl_test(true);
     //mongo_test(true);
     //redis_test(true);

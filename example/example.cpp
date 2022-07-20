@@ -24,8 +24,8 @@ void promise_test() {
             co_async::setTimeout([resolve]() {
                 printf("异步执行结束\n");
                 resolve(nullptr);
-            }, 2*1000);
-        });
+            }, 4*1000);
+        }, 3 * 1000);
 
         printf("promise over:%d\n", ret.first);
     }, 0);
@@ -34,12 +34,12 @@ void promise_test() {
 int main() {
     //promise_test();
     //cpu_test(true);
-    co_parallel_test();
+    //co_parallel_test();
     //curl_test(true);
     //mongo_test(true);
     //redis_test(true);
     //co_mysql_test();
-    //ipc_test();
+    ipc_test();
 
     while (true) {
         co_async::loop();

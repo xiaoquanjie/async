@@ -36,7 +36,7 @@ struct PromiseReject {
 struct PromiseResult {
     bool timeOutFlag = false;
     int64_t timerId = 0;
-    int64_t uniqueId = 0;
+    uint64_t uniqueId = 0;
     uint32_t coId = 0;
     uint32_t fns = 0;
     std::shared_ptr<void> resolveRes;
@@ -52,6 +52,11 @@ struct Resolve {
 struct Reject {
     std::shared_ptr<PromiseResult> result;
     void operator()(int err, const std::string& msg) const;
+};
+
+struct UniqueInfo {
+    Resolve resolve;
+    Reject reject;
 };
 
 struct TimeOut {

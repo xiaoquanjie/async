@@ -3,29 +3,43 @@
 #include "common/coroutine/coroutine.hpp"
 #include <assert.h>
 #include <unordered_set>
+#include <unordered_map>
 
 namespace co_async {
 
 TimerPool g_time_pool;
-int64_t g_unique_id = 1;
-std::unordered_set<int64_t> g_unique_id_set;
+uint32_t g_unique_id = 1;
+std::unordered_map<uint64_t, std::shared_ptr<UniqueInfo>> g_unique_id_map;
 
-int64_t genUniqueId() {
-    return g_unique_id++;
+uint64_t genUniqueId(uint32_t coId) {
+    // 混合coid编码，是因为uniqId会发生轮回，避免“串包”
+    uint32_t id = g_unique_id++;
+    uint64_t uniqId = ((uint64_t)id << 32) | coId;
+    return uniqId;
 }
 
-void addUniqueId(int64_t id) {
-    assert(g_unique_id_set.find(id) == g_unique_id_set.end());
-    g_unique_id_set.insert(id);
+void addUniqueId(uint64_t id, std::shared_ptr<UniqueInfo> result) {
+    assert(g_unique_id_map.find(id) == g_unique_id_map.end());
+    g_unique_id_map[id] = result;
 }
 
-bool rmUniqueId(int64_t id) {
-    auto iter = g_unique_id_set.find(id);
-    if (iter != g_unique_id_set.end()) {
-        g_unique_id_set.erase(iter);
+bool rmUniqueId(uint64_t id) {
+    //printf("rm unique info:%ld\n", id);
+    auto iter = g_unique_id_map.find(id);
+    if (iter != g_unique_id_map.end()) {
+        g_unique_id_map.erase(iter);
         return true;
     }
     return false;
+}
+
+std::shared_ptr<UniqueInfo> getByUniqueId(uint64_t id) {
+    auto iter = g_unique_id_map.find(id);
+    if (iter == g_unique_id_map.end()) {
+        return nullptr;
+    }
+
+    return iter->second;
 }
 
 int64_t addTimer(int interval, std::function<void()> func) {
@@ -81,10 +95,7 @@ std::pair<int, std::shared_ptr<void>> promise(std::function<void(Resolve, Reject
     }
 
     // 生成一个唯一id
-    int64_t uniqueId = genUniqueId();
-
-    // 添加唯一值进去
-    addUniqueId(uniqueId);
+    uint64_t uniqueId = genUniqueId(coId);
 
     auto result = std::make_shared<PromiseResult>();
     result->coId = coId;
@@ -94,6 +105,12 @@ std::pair<int, std::shared_ptr<void>> promise(std::function<void(Resolve, Reject
     resolve.result= result;
     Reject reject;
     reject.result = result;
+
+    // 添加唯一值进去
+    auto infoPtr = std::make_shared<UniqueInfo>();
+    infoPtr->resolve = resolve;
+    infoPtr->reject = reject;
+    addUniqueId(uniqueId, infoPtr);
 
     // 执行异步
     fn(resolve, reject);

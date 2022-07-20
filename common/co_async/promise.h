@@ -23,7 +23,7 @@ bool loopPromise(uint32_t curTime = 0);
 // 1、first=E_OK时, second=目标
 // 2、first=E_TIMEOUT时，second=nullptr
 // 3、first=E_ERROR时，second=[std::shared_ptr<PromiseReject>/nullptr]
-std::pair<int, std::shared_ptr<void>> promise(std::function<void(Resolve, Reject)> fn, int timeOut = 3000);
+std::pair<int, std::shared_ptr<void>> promise(std::function<void(Resolve, Reject)> fn, int timeOut);
 
 void setTimeout(std::function<void()> fn, int timeOut);
 

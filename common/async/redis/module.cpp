@@ -13,7 +13,7 @@
 // 注册模块
 static async::AsyncModule mod = {
     // 名字
-    "async_cpu",
+    "async_redis",
     // 主循环钩子
     std::bind(async::redis::loop, std::placeholders::_1),
     // 日志钩子

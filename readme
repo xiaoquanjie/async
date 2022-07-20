@@ -64,13 +64,18 @@ common                  ----> 库目录
 
 层次结构：co表示coroutine协程
 
-                              co_async, promise
+                              co_async
             ________________________________________________
             |      |        |        |         |          |
         ____|      |        |        |         |          |_
        |           |        |        |         |           |
      co_redis   co_mongo   co_curl  co_cpu   co_mysql   parallel接口
        |           |        |        |         |           |
+       |           |        |        |         |           |
+       |           |        |        |         |           |
+       -----------------------------------------------------
+       |                      promise                      |
+       -----------------------------------------------------
        |           |        |        |         |           |
 async_redis  async_mongo async_curl async_cpu async_mysql  |
        |           |        |        |         |           |

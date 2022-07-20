@@ -52,8 +52,13 @@ common                  ----> 库目录
         redis           ----> 异步redis实现
 
     co_async            ----> 协程与异步io的结合
-        co_promise          ----> 支持将异步操作变成同步操作，有点类似于js中的promise
-        co_ipc              ----> 用以提供进程间通信时协程式的send接口
+        promise         ----> 支持将异步操作变成同步操作，有点类似于js中的promise
+        cpu             ----> async::cpu与promise的结合
+        curl            ----> async::curl与promise的结合
+        mongo           ----> async::mongo与promise的结合
+        mysql           ----> async::mysql与promise的结合
+        redis           ----> async::redis与promise的结合
+        ipc              ----> 用以提供进程间通信时协程式的send接口
 
     ipc                 ----> 提供进程间的通信，适合用于后端服务之间的通信。使用zeromq库作为实现者
 

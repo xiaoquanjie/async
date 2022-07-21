@@ -22,10 +22,10 @@ protected:
     bool addUnit(ZeromqUnitPtr ptr);
 
     // 数据回调
-    // @unique_id代表一个ZeromqUnit的唯一id
+    // @uniqueId代表一个ZeromqUnit的唯一id
     // @identify表示的是对方连接的标识符
     // @data是数据包
-    virtual void onData(uint64_t /*unique_id*/, std::string& /*identify*/, const std::string& /*data*/) {}
+    virtual void onData(uint64_t /*uniqueId*/, uint32_t& /*otherIdentify*/, const std::string& /*data*/) {}
 
 protected:
     std::vector<ZeromqUnitPtr> m_unit_vec;
@@ -37,14 +37,12 @@ protected:
 class ZeromqRouterHandler : public ZeromqHandler {
 public:
     // 返回唯一id, 失败返回0
-    uint64_t listen(uint32_t id, const std::string& addr);
+    uint64_t listen(const std::string& addr);
 
-    // @unique_id代表一个ZeromqUnit的唯一id
-    // @other_id对方的id
+    // @uniqueId代表一个ZeromqUnit的唯一id
+    // @otherIdentify对方的id
     // @data数据
-    int sendData(uint64_t unique_id, uint32_t other_id, const std::string& data);
-
-    int sendData(uint64_t unique_id, const std::string& identify, const std::string& data);
+    int sendData(uint64_t uniqueId, uint32_t otherIdentify, const std::string& data);
 };
 
 /////////////////////////////////////////////////////

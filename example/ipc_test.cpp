@@ -46,7 +46,7 @@ class RouterHandler : public ZeromqRouterHandler {
 public:
 
 protected:
-    void onData(uint64_t unique_id, std::string& identify, const std::string& data)  {
+    void onData(uint64_t unique_id, uint32_t& identify, const std::string& data)  {
         IpcPacket recv;
         recv.decode(data);
         std::cout << "router recv:" << recv.msg() << "|" << recv.getHeader()->seqId << std::endl;
@@ -65,7 +65,7 @@ class DealerHandler : public ZeromqDealerHandler {
 public:
 
 protected:
-    void onData(uint64_t unique_id, std::string& identify, const std::string& data)  {
+    void onData(uint64_t unique_id, uint32_t&, const std::string& data)  {
         const IpcHeader* h = (const IpcHeader*)data.c_str();
         //std::cout << "dealer:" << h->seqId << std::endl;
         co_async::ipc::recv(h->seqId, data.c_str(), data.size());
@@ -77,8 +77,9 @@ DealerHandler dealerHandler;
 int dealerId = 0;
 
 void ipc_init() {
-    routerHandler.listen(1, "tcp://0.0.0.0:1000");
-    dealerId = dealerHandler.connect(1, "tcp://127.0.0.1:1000"); 
+    routerHandler.listen("tcp://0.0.0.0:1000");
+    routerHandler.listen("tcp://0.0.0.0:1001");
+    dealerId = dealerHandler.connect(2, "tcp://127.0.0.1:1001"); 
 }
 
 void ipc_send() {

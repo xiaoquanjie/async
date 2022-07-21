@@ -37,7 +37,7 @@ bool ZeromqHandler::update(unsigned int) {
 		for (size_t idx = 0; idx < size; ++idx) {
 			if (items[idx].revents & ZMQ_POLLIN) {
 				do {
-                    std::string identify;
+                    uint32_t identify;
 					std::string data;
 					if (m_unit_vec[idx]->recvData(identify, data) <= 0) {
 						break;
@@ -54,16 +54,13 @@ bool ZeromqHandler::update(unsigned int) {
 bool ZeromqHandler::addUnit(ZeromqUnitPtr ptr) {
     // 按id进行排序
     m_unit_vec.push_back(ptr);
-    // std::sort(m_unit_vec.begin(), m_unit_vec.end(), [](ZeromqUnitPtr ptr1, ZeromqUnitPtr ptr2) {
-    //     return ptr1->zeromqId() < ptr2->zeromqId();
-    // });
     return true;
 }
 
 /////////////////////////////////////////////////////
 
-uint64_t ZeromqRouterHandler::listen(uint32_t id, const std::string& addr) {
-    auto ptr = std::make_shared<ZeromqRouter>(id, addr);
+uint64_t ZeromqRouterHandler::listen(const std::string& addr) {
+    auto ptr = std::make_shared<ZeromqRouter>(addr);
     if (!ptr->listen()) {
         assert(false);
         return 0;
@@ -73,30 +70,17 @@ uint64_t ZeromqRouterHandler::listen(uint32_t id, const std::string& addr) {
     return ptr->uniqueId();
 }
 
-int ZeromqRouterHandler::sendData(uint64_t unique_id, uint32_t other_id, const std::string& data) {
+int ZeromqRouterHandler::sendData(uint64_t uniqueId, uint32_t otherIdentify, const std::string& data) {
     for (auto& item : m_unit_vec) {
-        if (item->uniqueId() == unique_id) {
+        if (item->uniqueId() == uniqueId) {
             typedef std::shared_ptr<ZeromqRouter> ZeromqRouterPtr;
             ZeromqRouterPtr ptr = std::dynamic_pointer_cast<ZeromqRouter>(item);
-            return ptr->sendData(other_id, data);
+            return ptr->sendData(otherIdentify, data);
         }
     }
 
     assert(false);
     return 0;
-}
-
-int ZeromqRouterHandler::sendData(uint64_t unique_id, const std::string& identify, const std::string& data) {
-    for (auto& item : m_unit_vec) {
-        if (item->uniqueId() == unique_id) {
-            typedef std::shared_ptr<ZeromqRouter> ZeromqRouterPtr;
-            ZeromqRouterPtr ptr = std::dynamic_pointer_cast<ZeromqRouter>(item);
-            return ptr->sendData(identify, data);
-        }
-    }
-
-    assert(false);
-    return 0; 
 }
 
 /////////////////////////////////////////////////////

@@ -60,7 +60,11 @@ ZeromqUnit::Context::~Context() {
 ///////////////////////////////////////////
 
 ZeromqUnit::ZeromqUnit(uint32_t identify, const std::string& addr) {
-    m_zeromq_id = identify;
+    if (identify == 0) {
+        throw "identify can't be zero";
+    }
+
+    m_identify = identify;
     m_unique_id = m_ctx.m_gen_id++;
     m_addr = addr;
     m_sock = 0;
@@ -97,8 +101,44 @@ bool ZeromqUnit::isPollIn() {
 	return false;    
 }
 
-uint32_t ZeromqUnit::zeromqId() {
-    return m_zeromq_id;
+std::string ZeromqUnit::encodeIdentify(bool isRouter) {
+    return encodeIdentify(isRouter, m_identify);
+}
+
+std::string ZeromqUnit::encodeIdentify(bool isRouter, uint32_t id) {
+    std::string idStr;
+    if (isRouter) {
+        idStr = "listen_";
+    } 
+    else {
+        idStr = "connect_";
+    }
+
+    idStr += std::to_string(id);
+    return idStr;
+}
+
+uint32_t ZeromqUnit::decodeIdentify(const std::string &id)
+{
+    std::string separator = "listen_";
+    std::string::size_type pos = id.find(separator);
+    if (pos == std::string::npos) {
+        separator = "connect_";
+        pos = id.find(separator);
+        if (pos == std::string::npos) {
+            return 0;
+        }
+    }
+
+    try {
+        auto start = pos + separator.size();
+        std::string sub = id.substr(start, id.size() - separator.size());
+        auto u = std::stoul(sub);
+        return u;
+    }
+    catch (...) {
+        return 0;
+    }
 }
 
 uint64_t ZeromqUnit::uniqueId() {
@@ -166,14 +206,14 @@ void ZeromqUnit::printError() {
 
 //////////////////////////////////////////////////////////
 
-ZeromqRouter::ZeromqRouter(uint32_t identify, const std::string& addr) 
-    : ZeromqUnit(identify, addr) {
+ZeromqRouter::ZeromqRouter(const std::string& addr) 
+    : ZeromqUnit(1, addr) {
 }
 
 bool ZeromqRouter::listen() {
     reInit(true);
 
-    std::string id = identify();
+    std::string id = encodeIdentify(true);
     if(zmq_setsockopt(m_sock, ZMQ_IDENTITY, id.c_str(), id.length()) < 0) {
         printError();
         assert(false);
@@ -191,7 +231,7 @@ bool ZeromqRouter::listen() {
     return true;
 }
 
-int ZeromqRouter::recvData(std::string& identify, std::string& data) {
+int ZeromqRouter::recvData(uint32_t& identify, std::string& data) {
     do {
         // 第一帧是来源地址
         zmq_msg_t addr_msg;
@@ -199,8 +239,12 @@ int ZeromqRouter::recvData(std::string& identify, std::string& data) {
         int len = zmq_msg_recv(&addr_msg, m_sock, ZMQ_DONTWAIT);
         logZeroMsg(&addr_msg, true, "recv");
         // 拷贝addr
-        copyFromZmqMsg(&addr_msg, identify);
+        std::string identifyStr;
+        copyFromZmqMsg(&addr_msg, identifyStr);
         zmq_msg_close(&addr_msg);
+
+        // 解析出来
+        identify = decodeIdentify(identifyStr);
 
         if (len == -1) {
             if (errno != EAGAIN) {
@@ -236,19 +280,9 @@ int ZeromqRouter::recvData(std::string& identify, std::string& data) {
     return 0;
 }
 
-std::string ZeromqRouter::identify() {
-    std::string id = "listen_";
-    id += std::to_string(m_zeromq_id);
-    return id;
-}
-
-int ZeromqRouter::sendData(const std::string& identify, const std::string& data) {
-    return this->send(true, identify, data);
-}
-
 int ZeromqRouter::sendData(uint32_t identify, const std::string& data) {
-    std::string id = "connect_" + std::to_string(identify);
-    return sendData(id, data);
+    auto id = encodeIdentify(false, identify);
+    return this->send(true, id, data);
 }
 
 //////////////////////////////////////////////////////////
@@ -260,7 +294,7 @@ ZeromqDealer::ZeromqDealer(uint32_t identify, const std::string& addr)
 bool ZeromqDealer::connect() {
     reInit(false);
 
-    std::string id = identify();
+    std::string id = encodeIdentify(false);
     if(zmq_setsockopt(m_sock, ZMQ_IDENTITY, id.c_str(), id.length()) < 0) {
         printError();
         assert(false);
@@ -278,7 +312,7 @@ bool ZeromqDealer::connect() {
     return true;
 }
 
-int ZeromqDealer::recvData(std::string&, std::string& data) {
+int ZeromqDealer::recvData(uint32_t&, std::string& data) {
     do {
         // 最后一帧是数据
         zmq_msg_t recv_msg;
@@ -305,12 +339,6 @@ int ZeromqDealer::recvData(std::string&, std::string& data) {
     } while (false);
     
     return 0;
-}
-
-std::string ZeromqDealer::identify() {
-    std::string id = "connect_";
-    id += std::to_string(m_zeromq_id);
-    return id;
 }
 
 int ZeromqDealer::sendData(const std::string& data) {

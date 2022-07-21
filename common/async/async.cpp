@@ -135,7 +135,7 @@ void split(const std::string source,
     array.clear();
     std::string::size_type start = 0;
     while (true) {
-        std::string::size_type pos = source.find_first_of(separator, start);
+        std::string::size_type pos = source.find(separator, start);
         if (pos == std::string::npos) {
             std::string sub = source.substr(start, source.size());
             array.push_back(sub);

@@ -34,7 +34,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 file(GLOB_RECURSE ALL_CPP *.cpp *.cc)
 
 include_directories(./)
-include_directories(./sheet_reader)
 include_directories(../)
 
 link_directories(/usr/local/lib64 /usr/local/lib)
@@ -43,4 +42,4 @@ add_executable(${TARGET_NAME} ${ALL_CPP})
 
 add_dependencies(${TARGET_NAME} ${PROJECT_LIB_TARGETS})
 
-target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_LIB_TARGETS} protobuf)
+target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_LIB_TARGETS})

@@ -14,6 +14,8 @@
 // ZeromqUnit管理器
 class ZeromqHandler {
 public:
+    virtual ~ZeromqHandler() {}
+    
     typedef std::shared_ptr<ZeromqUnit> ZeromqUnitPtr;
 
     bool update(unsigned int);
@@ -25,7 +27,7 @@ protected:
     // @uniqueId代表一个ZeromqUnit的唯一id
     // @identify表示的是对方连接的标识符
     // @data是数据包
-    virtual void onData(uint64_t /*uniqueId*/, uint32_t& /*otherIdentify*/, const std::string& /*data*/) {}
+    virtual void onData(uint64_t /*uniqueId*/, uint32_t /*otherIdentify*/, const std::string& /*data*/) {}
 
 protected:
     std::vector<ZeromqUnitPtr> m_unit_vec;

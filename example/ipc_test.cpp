@@ -46,7 +46,7 @@ class RouterHandler : public ZeromqRouterHandler {
 public:
 
 protected:
-    void onData(uint64_t unique_id, uint32_t& identify, const std::string& data)  {
+    void onData(uint64_t unique_id, uint32_t identify, const std::string& data)  {
         IpcPacket recv;
         recv.decode(data);
         std::cout << "router recv:" << recv.msg() << "|" << recv.getHeader()->seqId << std::endl;
@@ -65,7 +65,7 @@ class DealerHandler : public ZeromqDealerHandler {
 public:
 
 protected:
-    void onData(uint64_t unique_id, uint32_t&, const std::string& data)  {
+    void onData(uint64_t unique_id, uint32_t, const std::string& data)  {
         const IpcHeader* h = (const IpcHeader*)data.c_str();
         //std::cout << "dealer:" << h->seqId << std::endl;
         co_async::ipc::recv(h->seqId, data.c_str(), data.size());

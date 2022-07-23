@@ -33,6 +33,13 @@ bool World::operator <(const World& w) const {
     return false;
 }
 
+uint32_t World::identify() const {
+    char ipBuf[50] = {0};
+    sprintf(ipBuf, "%d.%d.%d.%d", 0, this->world, this->type, this->id);
+    auto id = ntohl(inet_addr(ipBuf));
+    return id;
+}
+
 bool LinkInfo::Item::isTcp() const {
     return (this->protocol == "tcp");
 }
@@ -48,15 +55,8 @@ std::string LinkInfo::Item::addr() const {
     return addr;
 }
 
-uint32_t LinkInfo::Item::identify() const {
-    char ipBuf[50] = {0};
-    sprintf(ipBuf, "%d.%d.%d.%d", 0, this->w.world, this->w.type, this->w.id);
-    auto id = ntohl(inet_addr(ipBuf));
-    return id;
-}
-
 #ifdef USE_IPC
-World* Serve::CommonRouter::getWorld(uint64_t id) {
+World* DefaultCommZq::getWorld(uint64_t id) {
     auto iter = idMap.find(id);
     if (iter == idMap.end()) {
         return nullptr;
@@ -64,7 +64,7 @@ World* Serve::CommonRouter::getWorld(uint64_t id) {
     return &iter->second;
 }
 
-uint64_t Serve::CommonRouter::getId(const World& w) {
+uint64_t DefaultCommZq::getId(const World& w) {
     auto iter = worldMap.find(w);
     if (iter == worldMap.end()) {
         return 0;
@@ -72,27 +72,27 @@ uint64_t Serve::CommonRouter::getId(const World& w) {
     return iter->second;
 }
 
-void Serve::CommonRouter::setIdWorld(uint64_t id, const World& w) {
+void DefaultCommZq::setIdWorld(uint64_t id, const World& w) {
     worldMap[w] = id;
     idMap[id] = w;
 }
 
-void Serve::RouterHandler::onData(uint32_t uniqueId, uint32_t identify, const std::string& data) {
-
+void DefaultZqRouter::onData(uint64_t uniqueId, uint32_t identify, const std::string& data) {
+    // 默认处理：解析出消息包，将消息头的数据填充好后调用trans_mgr::handle
 }
 
-void Serve::DealerHandler::onData(uint32_t uniqueId, uint32_t identify, const std::string& data) {
-    
+void DefaultZqDealer::onData(uint64_t uniqueId, uint32_t identify, const std::string& data) {
+    // 默认处理：解析出消息包，将消息头的数据填充好后调用trans_mgr::handle
 }
 #endif
 
 Serve::~Serve() {
 #ifdef USE_IPC
-    if (mRouterHandler) {
-        delete mRouterHandler;
+    if (mZqRouter) {
+        delete mZqRouter;
     }
-    if (mDealerHandler) {
-        delete mDealerHandler;
+    if (mZqDealer) {
+        delete mZqDealer;
     }
 #endif
 }
@@ -110,17 +110,21 @@ bool Serve::Init(int argc, char** argv) {
 #ifdef USE_IPC
         // 建立zm_listen
         if (!mZmListen.itemVec.empty()) {
-            mRouterHandler = new RouterHandler;
+            if (!mZqRouter) {
+                mZqRouter = new DefaultZqRouter;
+            }
             for (auto& item : mZmListen.itemVec) {
-                uint64_t id = mRouterHandler->listen(item.addr());
-                mRouterHandler->setIdWorld(id, item.w);
+                uint64_t id = mZqRouter->listen(item.addr());
+                mZqRouter->setIdWorld(id, item.w);
             }
         }
         if (!mZmConnect.itemVec.empty()) {
-            mDealerHandler = new DealerHandler;
+            if (!mZqDealer) {
+                mZqDealer = new DefaultZqDealer;
+            }
             for (auto& item : mZmConnect.itemVec) {
-                uint64_t id = mDealerHandler->connect(item.identify(), item.addr());
-                mDealerHandler->setIdWorld(id, item.w);
+                uint64_t id = mZqDealer->connect(item.w.identify(), item.addr());
+                mZqDealer->setIdWorld(id, item.w);
             }
         }
 #endif
@@ -151,13 +155,13 @@ void Serve::Start() {
         isIdle = true;
 
 #ifdef USE_IPC
-        if (mRouterHandler) {
-            if (mRouterHandler->update(now)) {
+        if (mZqRouter) {
+            if (mZqRouter->update(now)) {
                 isIdle = false;
             }
         }
-        if (mDealerHandler) {
-            if (mDealerHandler->update(now)) {
+        if (mZqDealer) {
+            if (mZqDealer->update(now)) {
                 isIdle = false;
             }
         }

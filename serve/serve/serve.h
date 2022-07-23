@@ -31,6 +31,7 @@ struct World {
     uint32_t id = 0;    // 可用来对应服务id
 
     bool operator <(const World&) const;
+    uint32_t identify() const;
 };
 
 struct LinkInfo {
@@ -42,41 +43,47 @@ struct LinkInfo {
         bool isTcp() const;
         bool isUdp() const;
         std::string addr() const;
-        uint32_t identify() const;
     };
 
     std::vector<Item> itemVec;
     std::map<World, Item> itemMap;    
 };
 
+struct BackendMsgHeader {
+    uint32_t srcWorldId = 0;     // 消息从哪来
+    uint32_t dstWorldId = 0;     // 消息到哪去
+    uint64_t targetId = 0;       // 发给哪个目标
+    uint32_t cmd = 0;            // 消息id
+    uint32_t fd = 0;             // zeromq通信用不上
+    uint64_t seqId = 0;          // 消息编号
+    uint32_t broadcast = 0;      // 是否广播，在没有路由的情况下，此字段不生效
+    uint32_t result = 0;         // 消息返回时的结果
+    uint32_t cmdLength = 0;      // 消息长度
+};
+
+#ifdef USE_IPC
+struct DefaultCommZq {
+    virtual ~DefaultCommZq() {}
+    World* getWorld(uint64_t id);
+    uint64_t getId(const World& w);
+    void setIdWorld(uint64_t id, const World& w);
+    std::map<World, uint64_t> worldMap;
+    std::map<uint64_t, World> idMap;
+};
+
+struct DefaultZqRouter : public ZeromqRouterHandler, public DefaultCommZq {
+    void onData(uint64_t uniqueId, uint32_t identify, const std::string& data) override;
+};
+
+struct DefaultZqDealer : public ZeromqDealerHandler, public DefaultCommZq {
+    void onData(uint64_t uniqueId, uint32_t identify, const std::string& data) override;
+};
+
+#endif
+
 // 服务基类
 class Serve {
 public:
-#ifdef USE_IPC
-    struct CommonRouter {
-        virtual ~CommonRouter() {}
-
-        World* getWorld(uint64_t id);
-
-        uint64_t getId(const World& w);
-
-        void setIdWorld(uint64_t id, const World& w);
-
-        std::map<World, uint64_t> worldMap;
-        std::map<uint64_t, World> idMap;
-    };
-
-    class RouterHandler : public ZeromqRouterHandler, public CommonRouter {
-    protected:
-        void onData(uint32_t uniqueId, uint32_t identify, const std::string& data);
-    };
-
-    class DealerHandler : public ZeromqDealerHandler, public CommonRouter {
-    protected:
-        void onData(uint32_t uniqueId, uint32_t identify, const std::string& data);
-    };
-#endif
-
     virtual ~Serve();
 
     bool Init(int argc, char** argv);
@@ -102,8 +109,9 @@ protected:
     LinkInfo mRoutes;
 
 #ifdef USE_IPC
-    RouterHandler* mRouterHandler = 0;
-    DealerHandler* mDealerHandler = 0;
+    // 想重写DefaultZqRouter/DefaultZqDealer，可以在onInit接口里实现
+    DefaultZqRouter* mZqRouter = 0;
+    DefaultZqDealer* mZqDealer = 0;
 #endif
 
 

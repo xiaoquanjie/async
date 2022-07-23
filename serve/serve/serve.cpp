@@ -55,6 +55,22 @@ std::string LinkInfo::Item::addr() const {
     return addr;
 }
 
+uint32_t BackendHeader::size() {
+    static uint32_t s = sizeof(BackendHeader);
+    return s;
+}
+
+void BackendMsg::encode(std::string& output) const {
+    output.assign(reinterpret_cast<const char*>(&header), header.size());
+	output.append(data);
+}
+
+void BackendMsg::decode(const std::string& input) {
+    auto p = reinterpret_cast<const BackendHeader*>(input.c_str());
+	this->header = *p;
+	data.assign(input.c_str() + this->header.size(), input.size() - this->header.size());
+}
+
 #ifdef USE_IPC
 World* DefaultCommZq::getWorld(uint64_t id) {
     auto iter = idMap.find(id);
@@ -81,8 +97,10 @@ void DefaultZqRouter::onData(uint64_t uniqueId, uint32_t identify, const std::st
     // 默认处理：解析出消息包，将消息头的数据填充好后调用trans_mgr::handle
 }
 
-void DefaultZqDealer::onData(uint64_t uniqueId, uint32_t identify, const std::string& data) {
+void DefaultZqDealer::onData(uint64_t uniqueId, uint32_t, const std::string& data) {
     // 默认处理：解析出消息包，将消息头的数据填充好后调用trans_mgr::handle
+    BackendMsg message;
+    message.decode(data);
 }
 #endif
 

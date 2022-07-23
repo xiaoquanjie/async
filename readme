@@ -66,6 +66,9 @@ common                  ----> 库目录
 
     net                 ----> 提供tcp server/client接口，udp server/client接口，http server接口
 
+serve                   ----> 目标是提供一个服务器进程脚手架，可以快速搭建后端服务，还提供一个通用的route进程。它会依赖common库。还在开发中。。。。。
+    serve           
+    route
 
 层次结构：co表示coroutine协程
 

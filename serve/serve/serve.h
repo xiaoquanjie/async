@@ -55,8 +55,10 @@ struct BackendHeader {
     uint32_t dstWorldId = 0;     // 消息到哪去
     uint64_t targetId = 0;       // 发给哪个目标
     uint32_t cmd = 0;            // 消息id
-    uint64_t fd = 0;             // 如果是zeromq,则fd表示为uniqueId。如果是net，则fd表示为fd
-    uint64_t seqId = 0;          // 消息编号
+    uint64_t localFd = 0;        // 如果是zeromq,则fd表示为uniqueId。如果是net，则fd表示为fd
+    uint64_t remoteFd = 0;
+    uint64_t reqSeqId = 0;       // 请求的消息编号
+    uint64_t rspSeqId = 0;       // 回复的消息编号
     uint32_t broadcast = 0;      // 是否广播，在没有路由的情况下，此字段不生效
     uint32_t result = 0;         // 消息返回时的结果
     uint32_t cmdLength = 0;      // 消息长度

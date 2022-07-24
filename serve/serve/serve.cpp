@@ -1,6 +1,8 @@
 #include "serve/serve/serve.h"
 #include "serve/serve/getopt.h"
 #include "serve/serve/json.hpp"
+#include "common/transaction/transaction_mgr.h"
+#include "common/co_async/ipc/co_ipc.h"
 #include <stdio.h>
 #include <fstream>
 #include <thread>
@@ -95,12 +97,33 @@ void DefaultCommZq::setIdWorld(uint64_t id, const World& w) {
 
 void DefaultZqRouter::onData(uint64_t uniqueId, uint32_t identify, const std::string& data) {
     // 默认处理：解析出消息包，将消息头的数据填充好后调用trans_mgr::handle
+    BackendMsg message;
+    message.decode(data);
+
+    message.header.localFd = uniqueId;
+    message.header.remoteFd = identify;
+
+    if (message.header.rspSeqId == 0) {
+        trans_mgr::handle(message.header.cmd, (char*)&message, 0, (void*)0);
+    }
+    else {
+        co_async::ipc::recv(message.header.rspSeqId, (char*)&message, 0);
+    }
 }
 
 void DefaultZqDealer::onData(uint64_t uniqueId, uint32_t, const std::string& data) {
     // 默认处理：解析出消息包，将消息头的数据填充好后调用trans_mgr::handle
     BackendMsg message;
     message.decode(data);
+
+    message.header.localFd = uniqueId;
+
+    if (message.header.rspSeqId == 0) {
+        trans_mgr::handle(message.header.cmd, (char*)&message, 0, (void*)0);
+    }
+    else {
+        co_async::ipc::recv(message.header.rspSeqId, (char*)&message, 0);
+    }
 }
 #endif
 

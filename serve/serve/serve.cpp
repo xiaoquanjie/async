@@ -7,72 +7,6 @@
 #include <fstream>
 #include <thread>
 
-#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
-#include <Winsock2.h>
-#else
-#include <arpa/inet.h>
-#endif
-
-bool World::operator <(const World& w) const {
-    if (this->world < w.world) {
-        return true;
-    }
-    if (this->world > w.world) {
-        return false;
-    }
-    if (this->type < w.type) {
-        return true;
-    }
-    if (this->type > w.type) {
-        return false;
-    }
-    if (this->id < w.id) {
-        return true;
-    }
-    if (this->id > w.id) {
-        return false;
-    }
-    return false;
-}
-
-uint32_t World::identify() const {
-    char ipBuf[50] = {0};
-    sprintf(ipBuf, "%d.%d.%d.%d", 0, this->world, this->type, this->id);
-    auto id = ntohl(inet_addr(ipBuf));
-    return id;
-}
-
-bool LinkInfo::Item::isTcp() const {
-    return (this->protocol == "tcp");
-}
-
-bool LinkInfo::Item::isUdp() const {
-    return (this->protocol == "udp");
-}
-
-std::string LinkInfo::Item::addr() const {
-    std::string addr = this->protocol + "://";
-    addr += this->ip + ":";
-    addr += std::to_string(this->port);
-    return addr;
-}
-
-uint32_t BackendHeader::size() {
-    static uint32_t s = sizeof(BackendHeader);
-    return s;
-}
-
-void BackendMsg::encode(std::string& output) const {
-    output.assign(reinterpret_cast<const char*>(&header), header.size());
-	output.append(data);
-}
-
-void BackendMsg::decode(const std::string& input) {
-    auto p = reinterpret_cast<const BackendHeader*>(input.c_str());
-	this->header = *p;
-	data.assign(input.c_str() + this->header.size(), input.size() - this->header.size());
-}
-
 #ifdef USE_IPC
 World* DefaultCommZq::getWorld(uint64_t id) {
     auto iter = idMap.find(id);
@@ -117,6 +51,7 @@ void DefaultZqDealer::onData(uint64_t uniqueId, uint32_t, const std::string& dat
     message.decode(data);
 
     message.header.localFd = uniqueId;
+    message.header.remoteFd = 0;
 
     if (message.header.rspSeqId == 0) {
         trans_mgr::handle(message.header.cmd, (char*)&message, 0, (void*)0);

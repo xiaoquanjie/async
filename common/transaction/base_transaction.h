@@ -78,18 +78,20 @@ public:
             return;
         }
 
-        if (BeforeOnRequest()) {
-            m_return_value = OnRequest();
+        if (!OnBefore()) {
+            return;
         }
-        AfterOnRequest();
+
+        m_return_value = OnRequest();
+        OnAfter();
     }
 
     // 在OnRequest之后调用
-    virtual bool BeforeOnRequest() { return false; }
+    virtual bool OnBefore() { return false; }
 
     virtual int OnRequest() = 0;
 
-    virtual bool AfterOnRequest() { return false; }
+    virtual bool OnAfter() { return false; }
 
 protected:
     int m_return_value;      // 返回值

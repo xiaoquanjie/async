@@ -67,10 +67,11 @@ common                  ----> 库目录
     net                 ----> 提供tcp server/client接口，udp server/client接口，http server接口
 
 serve                   ----> 目标是提供一个服务器进程脚手架，可以快速搭建后端服务，还提供一个通用的route进程。
-                              它会依赖common库。还在开发中。。。。。
+                              它会依赖common库，且common库需要使用-DUSE_TRANS编译。还在开发中。。。。。
     serve           
-    route
-
+    route               ----> ./router -c router.json 启动路由，不同世界的路由互不通信
+    test                ----> 测试案例，起两个进程，这两个进程使用router做转发相互通信。
+                              
 层次结构：co表示coroutine协程
 
                               co_async
@@ -137,3 +138,81 @@ int main() {
     }
     return 0;
 }
+
+
+serve模块的使用案例步骤：
+1、启动router进程： ./router -c router.json
+router.json的配置如下：
+{
+    "comment": "本配置文件描述的是进程监听及连接端口的信息",
+
+    "@zm_listen": "zeromq的监听信息列表, 一般是给路由使用",
+    "zm_listen": [
+        {
+            "world": 1,
+            "protocol": "tcp",
+            "ip": "0.0.0.0",
+            "port": 5001
+        }
+    ],
+
+    "@routes": "描述的是将会连接到本进程的连接信息，以便做路由选择使用",
+    "routes": [
+        {
+            "world": 1,
+            "type": 1,
+            "id": 1
+        },
+        {
+            "world": 1,
+            "type": 2,
+            "id": 1
+        }
+    ]
+}
+
+2、启动testServe1进程：./testServe -c serve1.json
+serve1.json的配置如下：
+{
+    "comment": "本配置文件描述的是进程监听及连接端口的信息",
+
+    "@self": "标识进程身份的信息",
+    "self": {
+        "world": 1,
+        "type": 1,
+        "id": 1
+    },
+
+    "@zm_connect": "zeromq的连接信息列表",
+    "zm_connect": [
+        {
+            "protocol": "tcp",
+            "ip": "0.0.0.0",
+            "port": 5001
+        }
+    ]
+}
+
+3、启动testServe2进程：./testServe -c serve2.json
+serve1.json的配置如下：
+{
+    "comment": "本配置文件描述的是进程监听及连接端口的信息",
+
+    "@self": "标识进程身份的信息",
+    "self": {
+        "world": 1,
+        "type": 2,
+        "id": 1
+    },
+
+    "@zm_connect": "zeromq的连接信息列表",
+    "zm_connect": [
+        {
+            "protocol": "tcp",
+            "ip": "0.0.0.0",
+            "port": 5001
+        }
+    ]
+}
+
+

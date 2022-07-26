@@ -51,6 +51,47 @@ protected:
 
 /////////////////////////////////////////////////////////////////////
 
+// http的事务
+class HttpTransaction : public BaseTransaction {
+public:
+    const std::string& Url() {
+        return m_url;
+    }
+
+    void SetUrl(const std::string& url) {
+        m_url = url;
+    }
+    
+    void InCoroutine() override {
+        if (!m_packet) {
+            return;
+        }
+
+        // 解包
+        if (!ParsePacket(m_packet, m_packet_size)) {
+            return;
+        }
+
+        if (!OnBefore()) {
+            return;
+        }
+
+        OnRequest();
+        OnAfter();
+    } 
+
+    virtual bool OnBefore() { return false; }
+
+    virtual int OnRequest() = 0;
+
+    virtual bool OnAfter() { return false; }
+
+protected:
+    std::string m_url;
+};
+
+/////////////////////////////////////////////////////////////////////
+
 // 空回复
 struct NullRespond {
     bool SerializeToString(std::string*) const {return false;}

@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "common/transaction/base_transaction.h"
+#include "common/transaction/transaction_mgr.h"
 #include "serve/serve/base.h"
 #include "serve/serve/backend.h"
 #include <assert.h>
 
 template<typename RequestType, typename RespondType=NullRespond>
-class ServeTransaction : public Transaction<RequestType, RespondType> {
+class BackendTransaction : public Transaction<RequestType, RespondType> {
 public:
     using BaseTrans = Transaction<RequestType, RespondType>;
 
@@ -33,11 +33,11 @@ public:
     }
 
     bool OnAfter() override {
-        sendBack(BaseTrans::m_respond);
+        if (BaseTrans::RspCmdId() != 0) {
+            sendBack(BaseTrans::m_respond);
+        }
         return true;
     }
-
-    void sendBack(NullRespond& data) {}
 
     void sendBack(RespondType &data) {
         backend::notifyBack(mHeader.srcWorldId,

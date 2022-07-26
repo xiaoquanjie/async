@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <string>
 #include <stdint.h>
 
 void _transaction_coroutine_enter_(void*);
@@ -51,7 +52,9 @@ protected:
 /////////////////////////////////////////////////////////////////////
 
 // 空回复
-struct NullRespond {};
+struct NullRespond {
+    bool SerializeToString(std::string*) const {return false;}
+};
 
 template<typename RequestType, typename RespondType=NullRespond>
 class Transaction : public BaseTransaction {

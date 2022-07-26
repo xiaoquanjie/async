@@ -6,8 +6,7 @@
 //----------------------------------------------------------------*/
 
 #include "serve/serve/serve.h"
-#include "common/transaction/transaction_mgr.h"
-#include "serve/serve/serve_transaction.h"
+#include "serve/serve/backend_transaction.h"
 
 // 定义服务类型
 #define SRV_TYPE1 (1)
@@ -16,6 +15,7 @@
 // 定义消息id
 #define CmdEchoReq (1)
 #define CmdEchoRsp (2)
+#define CmdOneEchoReq (3)
 
 uint32_t gSrvType = 0;
 
@@ -51,17 +51,27 @@ struct EchoRsp {
 };
 
 // 实现一个接受EchoReq消息的trans
-class EchoTransaction : public ServeTransaction<EchoReq, EchoRsp> {
+class EchoTransaction : public BackendTransaction<EchoReq, EchoRsp> {
 public:
     int OnRequest() {
         printf("msg: %s\n", m_request.data.c_str());
         m_respond.data = "hello this echo reply";
-        return 1;
+        return 0;
     }
 };
 
 // 注册
 REGIST_TRANSACTION_2(Echo);
+
+class EchoOneTransaction : public BackendTransaction<EchoReq> {
+public:
+    int OnRequest() {
+        printf("msg: %s\n", m_request.data.c_str());
+        return 0;
+    }
+};
+
+REAL_REGIST_TRANSACTION(EchoOneTransaction, CmdOneEchoReq, 0);
 
 // 实现一个tick
 class TickTransaction : public BaseTickTransaction {
@@ -70,30 +80,47 @@ public:
         static bool s = false;
         if (!s) {
             s = true;
-            // type为1给type为2的进程消息
-            if (gSrvType == SRV_TYPE1) {
-                EchoReq req;
-                req.data = "hello, calling echo";
-                EchoRsp rsp;
+            oneWay();
+            //twoWay();
+        }
+    }
 
+    void oneWay() {
+        // type为1给type为2的进程消息
+        if (gSrvType == SRV_TYPE1) {
+            EchoReq req;
+            req.data = "hello, calling echo";
+            backend::notifyMsg(SRV_TYPE2, 1, req, CmdOneEchoReq);
+        }
+    }
+
+    void twoWay()
+    {
+        // type为1给type为2的进程消息
+        if (gSrvType == SRV_TYPE1)
+        {
+            EchoReq req;
+            req.data = "hello, calling echo";
+            EchoRsp rsp;
+
+            {
+                // 发送请求
+                auto ret = backend::sendMsg(SRV_TYPE2, 1, req, CmdEchoReq, rsp);
+                if (ret.first == 0)
                 {
-                    // 发送请求
-                    auto ret = backend::sendMsg(SRV_TYPE2, 1, req, CmdEchoReq, rsp);
-                    if (ret.first == 0) {
-                        // 成功
-                        printf("successfully send msg:%d|%s\n", ret.second, rsp.data.c_str());
-                    }
-                    else {
-                        // 失败
-                        printf("failed to send msg:%d\n", ret.first);
-                    }
+                    // 成功
+                    printf("successfully send msg:%d|%s\n", ret.second, rsp.data.c_str());
                 }
+                else
                 {
-                    // 广播
-                    backend::broadcast(SRV_TYPE2, 1, req, CmdEchoReq);
+                    // 失败
+                    printf("failed to send msg:%d\n", ret.first);
                 }
+            }
 
-
+            {
+                // 广播
+                backend::broadcast(SRV_TYPE2, 1, req, CmdEchoReq);
             }
         }
     }

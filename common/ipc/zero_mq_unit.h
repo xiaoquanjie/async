@@ -14,6 +14,8 @@
 #include <string>
 #include <stdint.h>
 
+namespace ipc {
+
 // 使用的是router--dealer模式
 class ZeromqUnit {
 public:
@@ -93,3 +95,5 @@ public:
 
     int sendData(const std::string& data);
 };
+
+}

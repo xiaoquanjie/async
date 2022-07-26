@@ -477,11 +477,11 @@ void statistics(uint32_t cur_time) {
 
     // 没有输出连接池大小
     g_last_statistics_time = cur_time;
-    log("[statistics] cur_task:%d, req_task:%d, rsp_task:%d",
+    log("[mysql statistics] cur_task:%d, req_task:%d, rsp_task:%d",
         (g_mysql_global_data.req_task_cnt - g_mysql_global_data.rsp_task_cnt),
         g_mysql_global_data.req_task_cnt,
         g_mysql_global_data.rsp_task_cnt);
-    log("[statistics] cur_uri:%ld", g_mysql_global_data.uri_map.size());
+    log("[mysql statistics] cur_uri:%ld", g_mysql_global_data.uri_map.size());
 }
 
 bool loop(uint32_t cur_time) {

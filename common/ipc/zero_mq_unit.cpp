@@ -7,10 +7,14 @@
 
 #ifdef USE_IPC
 
-#include "common/ipc/zero_mq_unit.h"
+#include "common/ipc/ipc.h"
 #include <zmq.h>
 #include <assert.h>
 #include <string.h>
+#include <functional>
+
+namespace ipc {
+
 
 void copyZmqMsg(zmq_msg_t* msg, const std::string& data) {
     zmq_msg_init(msg);
@@ -29,10 +33,10 @@ void logZeroMsg(zmq_msg_t* msg, bool is_addr, const char* desc) {
             std::string data;
             void *d = zmq_msg_data(msg);
             data.assign(reinterpret_cast<char *>(d), data_len);
-            printf("zero_addr:%s|%s\n", data.c_str(), desc);
+            log("zero_addr:%s|%s\n", data.c_str(), desc);
         }
         else {
-            printf("zero_msg:(len):%ld|%s\n", data_len, desc);
+            log("zero_msg:(len):%ld|%s\n", data_len, desc);
         }
     }
 }
@@ -194,14 +198,14 @@ int ZeromqUnit::send(bool is_router, const std::string& identify, const std::str
     } while (false);
 
     if (len == -1) {
-        printf("failed to send data, data_size:%d, err:%s\n", (int)data.size(), zmq_strerror(errno));
+        log("failed to send data, data_size:%d, err:%s\n", (int)data.size(), zmq_strerror(errno));
     }
 
     return len; 
 }
 
 void ZeromqUnit::printError() {
-    printf("zeromq error:%s\n", zmq_strerror(errno));
+    log("zeromq error:%s\n", zmq_strerror(errno));
 }
 
 //////////////////////////////////////////////////////////
@@ -227,7 +231,7 @@ bool ZeromqRouter::listen() {
 		return false;
 	}
 
-    printf("zeromq listen:%s|%s\n", m_addr.c_str(), id.c_str());
+    log("zeromq listen:%s|%s\n", m_addr.c_str(), id.c_str());
     return true;
 }
 
@@ -308,7 +312,7 @@ bool ZeromqDealer::connect() {
 		return false;
 	}
 
-    printf("zeromq connect:%s|%s\n", m_addr.c_str(), id.c_str());
+    log("zeromq connect:%s|%s\n", m_addr.c_str(), id.c_str());
     return true;
 }
 
@@ -345,4 +349,5 @@ int ZeromqDealer::sendData(const std::string& data) {
     return this->send(false, "", data);
 }
 
+}
 #endif

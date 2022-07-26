@@ -11,11 +11,13 @@
 #include <vector>
 #include <memory>
 
+namespace ipc {
+
 // ZeromqUnit管理器
 class ZeromqHandler {
 public:
     virtual ~ZeromqHandler() {}
-    
+
     typedef std::shared_ptr<ZeromqUnit> ZeromqUnitPtr;
 
     bool update(unsigned int);
@@ -59,3 +61,5 @@ public:
     // @data数据
     int sendData(uint64_t unique_id, const std::string& data);
 };
+
+}

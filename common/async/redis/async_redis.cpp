@@ -464,11 +464,11 @@ void statistics(uint32_t cur_time) {
     }
 
     g_last_statistics_time = cur_time;
-    log("[statistics] cur_task:%d, req_task:%d, rsp_task:%d",
+    log("[redis statistics] cur_task:%d, req_task:%d, rsp_task:%d",
         (g_redis_global_data.req_task_cnt - g_redis_global_data.rsp_task_cnt),
         g_redis_global_data.req_task_cnt,
         g_redis_global_data.rsp_task_cnt);
-    log("[statistics] cur_uri:%ld", g_redis_global_data.uri_map.size());
+    log("[redis statistics] cur_uri:%ld", g_redis_global_data.uri_map.size());
 }
 
 void local_process_respond() {

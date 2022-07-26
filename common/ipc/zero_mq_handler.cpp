@@ -7,11 +7,12 @@
 
 #ifdef USE_IPC
 
-#include "common/ipc/zero_mq_handler.h"
-#include "common/ipc/zero_mq_unit.h"
+#include "common/ipc/ipc.h"
 #include <zmq.h>
 #include <assert.h>
 #include <algorithm>
+
+namespace ipc {
 
 bool ZeromqHandler::update(unsigned int) {
     if (m_unit_vec.empty()) {
@@ -109,4 +110,5 @@ int ZeromqDealerHandler::sendData(uint64_t unique_id, const std::string& data) {
     return 0; 
 }
 
+}
 #endif

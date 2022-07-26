@@ -117,7 +117,7 @@ void tick(uint32_t cur_time) {
     }
     if (cur_time - g_last_check_time >= 120) {
         g_last_check_time = cur_time;
-        log("[statistics] cur_trans:%d\n", g_cur_concurrent_trans);
+        log("[trans statistics] cur_trans:%d\n", g_cur_concurrent_trans);
     }
 }
 

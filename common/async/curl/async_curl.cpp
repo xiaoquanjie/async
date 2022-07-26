@@ -286,7 +286,7 @@ void statistics(uint32_t cur_time) {
 
     g_last_statistics_time = cur_time;
 
-    log("[statistics] cur_task:%d, req_task:%d, rsp_task:%d",
+    log("[curl statistics] cur_task:%d, req_task:%d, rsp_task:%d",
         (g_curl_global_data.req_task_cnt - g_curl_global_data.rsp_task_cnt),
         g_curl_global_data.req_task_cnt,
         g_curl_global_data.rsp_task_cnt);

@@ -8,7 +8,7 @@
 #ifdef USE_IPC
 
 #include "serve/serve/router.h"
-#include "common/ipc/zero_mq_handler.h"
+#include "common/ipc/ipc.h"
 #include <set>
 
 namespace router {
@@ -19,7 +19,7 @@ std::map<uint32_t, uint64_t> gUniqueMap;
 // worldid-->(type--->world)
 std::map<uint32_t, std::map<uint32_t, std::vector<World>>> gRoutesMap;
 
-struct ZqRouter : public ZeromqRouterHandler {
+struct ZqRouter : public ipc::ZeromqRouterHandler {
     void onData(uint64_t uniqueId, uint32_t identify, const std::string& data) override {
         const BackendMsg* msg = (const BackendMsg*)data.c_str();
         World w(msg->header.dstWorldId);

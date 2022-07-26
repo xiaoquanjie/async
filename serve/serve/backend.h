@@ -18,12 +18,14 @@ bool update(time_t now);
 
 uint32_t selfWorld();
 
+uint32_t selfWorldId();
+
 void send(BackendMsg& frame);
 
 template<typename MsgType>
 void notifyBack(uint32_t worldId, uint64_t targetId, const MsgType& msg, uint32_t cmdId, uint64_t rspSeqId, uint32_t result, uint32_t broadcast) {
     BackendMsg frame;
-    frame.header.srcWorldId = selfWorld();
+    frame.header.srcWorldId = selfWorldId();
     frame.header.dstWorldId = worldId;
     frame.header.targetId = targetId;
     frame.header.cmd = cmdId;
@@ -84,10 +86,10 @@ void broadcast(uint32_t type, uint64_t targetId, const MsgType& msg, uint32_t cm
    rspMsg: 回复的消息结构
    timeOut: 超时时间
 */
-template<typename MsgType>
-std::pair<int, uint32_t> sendMsg(World w, uint64_t targetId, const MsgType& reqMsg, uint32_t reqCmdId, MsgType& rspMsg, int timeOut = 5 * 1000) {
+template<typename ReqMsgType, typename RspMsgType>
+std::pair<int, uint32_t> sendMsg(World w, uint64_t targetId, const ReqMsgType& reqMsg, uint32_t reqCmdId, RspMsgType& rspMsg, int timeOut = 5 * 1000) {
     BackendMsg frame;
-    frame.header.srcWorldId = selfWorld(); // 默认是同一个世界的
+    frame.header.srcWorldId = selfWorldId(); // 默认是同一个世界的
     frame.header.dstWorldId = w.identify();
     frame.header.targetId = targetId;
     frame.header.cmd = reqCmdId;
@@ -117,8 +119,8 @@ std::pair<int, uint32_t> sendMsg(World w, uint64_t targetId, const MsgType& reqM
 /*
  * type发到哪个type上，如果有多个type实例，则由路由来决定具体的实例
 */
-template<typename MsgType>
-std::pair<int, uint32_t> sendMsg(uint32_t type, uint64_t targetId, const MsgType& reqMsg, uint32_t reqCmdId, MsgType& rspMsg, int timeOut = 5 * 1000) {
+template<typename ReqMsgType, typename RspMsgType>
+std::pair<int, uint32_t> sendMsg(uint32_t type, uint64_t targetId, const ReqMsgType& reqMsg, uint32_t reqCmdId, RspMsgType& rspMsg, int timeOut = 5 * 1000) {
     World w;
     w.world = selfWorld(); // 默认是同一个世界的
     w.type = type;

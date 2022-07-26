@@ -3,6 +3,10 @@
 #include "serve/serve/json.hpp"
 #include "serve/serve/router.h"
 #include "serve/serve/backend.h"
+#include "common/co_async/async.h"
+#include "common/async/async.h"
+#include "common/transaction/transaction_mgr.h"
+#include "common/ipc/ipc.h"
 #include <stdio.h>
 #include <fstream>
 #include <thread>
@@ -10,23 +14,27 @@
 Serve::~Serve() {
 }
 
-bool Serve::Init(int argc, char** argv) {
+bool Serve::init(int argc, char** argv) {
     do {
         if (!parseArgv(argc, argv)) {
             break;
         }
-        if (!onInit(argc, argv)) {
+        if (mOnInit && !mOnInit(argc, argv)) {
             printf("failed to onInit\n");
             break;
         }
-
+    
+#ifdef USE_IPC
         // 启动路由
-        if (mUseRouter) {
-            router::init(mZmListen, mRoutes);
+        if (mUseRouter && !router::init(mZmListen, mRoutes)) {
+            printf("failed to router::init\n");
+            return false;
         }
-        if (mUseDealer) {
-            backend::init(mSelf, mZmConnect);
+        if (mUseDealer && !backend::init(mSelf, mZmConnect)) {
+            printf("failed to backend::init\n");
+            return false;
         }
+#endif
 
         if (!mNetListen.itemVec.empty()) {
 
@@ -44,28 +52,33 @@ bool Serve::Init(int argc, char** argv) {
     return false;
 }
 
-void Serve::Start() {
+void Serve::start() {
     bool isIdle = true;
     uint32_t idleCnt = 0;
     time_t now = 0;
+    time_t tick = 0;
 
     while (!mStopped) {
         time(&now);
         isIdle = true;
 
-        if (mUseRouter) {
-            if (router::update(now)) {
-                isIdle = false;
-            }
-        }
-        if (mUseDealer) {
-            if (backend::update(now)) {
-                isIdle = false;
-            }
-        }
-
-        if (onLoop()) {
+#ifdef USE_IPC
+        if (mUseRouter && router::update(now)) {
             isIdle = false;
+        }
+        if (mUseDealer && backend::update(now)) {
+            isIdle = false;
+        }
+#endif
+        if (mUseAsyn && co_async::loop(now)) {
+            isIdle = false;
+        }
+        if (mOnLoop && mOnLoop()) {
+            isIdle = false;
+        }
+        if ((now - tick) >= 1) {
+            tick = now;
+            trans_mgr::tick(now);
         }
 
         if (isIdle) {
@@ -75,11 +88,49 @@ void Serve::Start() {
             idleCnt = 0;
         }
 
-        if (idleCnt >= 200) {
+        if (idleCnt >= mIdleCnt) {
             idleCnt = 0;
-            std::this_thread::sleep_for(std::chrono::milliseconds(15));
+            std::this_thread::sleep_for(std::chrono::milliseconds(mSleep));
         }
     }
+}
+
+void Serve::useRouter(bool u) {
+    mUseRouter = u;
+}
+
+void Serve::stop() {
+    mStopped = true;
+}
+
+void Serve::onInit(std::function<bool(int, char**)> init) {
+    mOnInit = init;
+}
+
+void Serve::onLoop(std::function<bool()> loop) {
+    mOnLoop = loop;
+}
+
+void Serve::idleCount(uint32_t cnt) {
+    mIdleCnt = cnt;
+}
+
+void Serve::sleep(uint32_t s) {
+    mSleep = s;
+}
+
+void Serve::useAsync(bool u) {
+    mUseAsyn = u;
+}
+
+const World& Serve::self() {
+    return mSelf;
+}
+
+void Serve::setLogFunc(std::function<void(const char*)> cb) {
+    trans_mgr::setLogFunc(cb);
+    async::setLogFunc(cb);
+    ipc::setLogFunc(cb);
 }
 
 bool Serve::parseArgv(int argc, char** argv) {
@@ -250,28 +301,12 @@ bool Serve::parseArgv(int argc, char** argv) {
         }
     }
 
-    if (mUseDealer) {
+    if (mUseDealer && !worldCheck(mSelf, 1 | 2 | 4)) {
         // self不能为空
-        if (!worldCheck(mSelf, 1 | 2 | 4)) {
-            return false;
-        }
+        return false;
     }
     
     return true;
 }
 
 ///////////////////////////////////////////////////////////////
-
-#ifdef TEST_MAIN
-
-int main(int argc, char** argv) {
-    Serve srv;
-    if (!srv.Init(argc, argv)) {
-        return -1;
-    }
-
-    srv.Start();
-    return 0;
-}
-
-#endif

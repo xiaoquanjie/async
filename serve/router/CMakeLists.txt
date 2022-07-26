@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.8)
 
-set(TARGET_NAME "serve")
+set(TARGET_NAME "router")
 
 project(${TARGET_NAME} CXX)
 
@@ -11,17 +11,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 aux_source_directory(. ALL_CPP)
 
 include_directories(../../)
-link_directories(/usr/local/lib64 /usr/local/lib)
 
-if(USE_IPC)
-    add_definitions(-DUSE_IPC)
-endif(USE_IPC)
+set(LINK_LIBRARYS ${LINK_LIBRARYS} serve)
 
-set(LINK_LIBRARYS ${LINK_LIBRARYS} common)
-
-add_library(${TARGET_NAME} SHARED ${ALL_CPP})
-
-add_dependencies(${TARGET_NAME} "common")
+add_executable(${TARGET_NAME} ${ALL_CPP})
 
 # 指定链接库
 target_link_libraries(${TARGET_NAME} PRIVATE ${LINK_LIBRARYS})

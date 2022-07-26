@@ -8,13 +8,13 @@
 #ifdef USE_IPC
 
 #include "serve/serve/backend.h"
-#include "common/ipc/zero_mq_handler.h"
+#include "common/ipc/ipc.h"
 #include "common/transaction/transaction_mgr.h"
-#include <google/protobuf/message.h>
+#include <assert.h>
 
 namespace backend {
 
-struct ZqDealer : public ZeromqDealerHandler {
+struct ZqDealer : public ipc::ZeromqDealerHandler {
     void onData(uint64_t uniqueId, uint32_t identify, const std::string& data) override {
         BackendMsg message;
         message.decode(data);
@@ -55,6 +55,10 @@ bool update(time_t now) {
 
 uint32_t selfWorld() {
     return gSelf.world;
+}
+
+uint32_t selfWorldId() {
+    return gSelf.identify();
 }
 
 void send(uint64_t uniqueId, const std::string& data) {

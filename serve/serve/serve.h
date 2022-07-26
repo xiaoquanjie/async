@@ -17,28 +17,49 @@
 #pragma once
 
 #include "serve/serve/base.h"
+#include <functional>
 
 // 服务基类
 class Serve {
 public:
     virtual ~Serve();
 
-    bool Init(int argc, char** argv);
+    bool init(int argc, char** argv);
 
-    void Start();
+    void start();
 
+    void useRouter(bool u);
+
+    void stop();
+
+    void onInit(std::function<bool(int, char**)> init);
+
+    void onLoop(std::function<bool()> loop);
+
+    void idleCount(uint32_t cnt);
+
+    void sleep(uint32_t s);
+
+    void useAsync(bool u);
+
+    const World& self();
+
+    void setLogFunc(std::function<void(const char*)> cb);
 protected:
     bool parseArgv(int argc, char** argv);
 
-    virtual bool onInit(int argc, char** argv) { return true; }
-
-    virtual bool onLoop() { return false; }
-
 protected:
     bool mStopped = false;
+    uint32_t mIdleCnt = 200;
+    uint32_t mSleep = 15;
 
     bool mUseRouter = false;
     bool mUseDealer = false;
+    bool mUseAsyn = true;
+
+    std::function<bool(int, char**)> mOnInit;
+    std::function<bool()> mOnLoop;
+
     std::string mConfFile;
     World mSelf;
     LinkInfo mZmListen;

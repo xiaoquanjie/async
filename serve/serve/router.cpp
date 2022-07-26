@@ -16,8 +16,6 @@ namespace router {
 // worldid-->uniqueId
 std::map<uint32_t, uint64_t> gUniqueMap;
 
-World gSelf;
-
 // worldid-->(type--->world)
 std::map<uint32_t, std::map<uint32_t, std::vector<World>>> gRoutesMap;
 
@@ -82,12 +80,10 @@ struct ZqRouter : public ZeromqRouterHandler {
 
 ZqRouter gZqRouter;
 
-bool init(const World& self, const LinkInfo& link, const std::vector<World>& routes) {
-    gSelf = self;
-
+bool init(const LinkInfo& link, const LinkInfo& routes) {
     std::set<World> routesSet;
-    for (auto w : routes) {
-        routesSet.insert(w);
+    for (auto item : routes.itemVec) {
+        routesSet.insert(item.w);
     }
     for (auto w : routesSet) {
         auto& tmp = gRoutesMap[w.world];
@@ -109,6 +105,10 @@ bool init(const World& self, const LinkInfo& link, const std::vector<World>& rou
     }
 
     return true;
+}
+
+bool update(time_t now) {
+    return gZqRouter.update(now);
 }
 
 }

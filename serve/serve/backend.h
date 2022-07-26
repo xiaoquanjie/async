@@ -21,6 +21,10 @@ bool init(const World& self, const LinkInfo& link);
 
 bool update(time_t now);
 
+void send(uint64_t uniqueId, const std::string& data);
+
+void send(BackendMsg& frame);
+
 /*
  * w: 发给哪个world进程
    targetId: 发给谁

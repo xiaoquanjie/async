@@ -12,8 +12,6 @@
     "zm_listen": [
         {
             "world": 1,
-            "type": 1,
-            "id": 1,
             "protocol": "tcp",
             "ip": "0.0.0.0",
             "port": 5001
@@ -23,9 +21,6 @@
     "@zm_connect": "zeromq的连接信息列表",
     "zm_connect": [
         {
-            "world": 1,
-            "type": 1,
-            "id": 1,
             "protocol": "tcp",
             "ip": "0.0.0.0",
             "port": 5001
@@ -35,9 +30,6 @@
     "@net_listen": "tcp/udp的监听信息列表, 一般是给gate使用",
     "net_listen": [
         {
-            "world": 1,
-            "type": 1,
-            "id": 1,
             "protocol": "tcp/udp",
             "ip": "0.0.0.0",
             "port": 5002
@@ -47,9 +39,6 @@
     "@net_connect": "tcp/udp的连接信息列表",
     "net_connect": [
         {
-            "world": 1,
-            "type": 1,
-            "id": 1,
             "protocol": "tcp/udp",
             "ip": "0.0.0.0",
             "port": 5002
@@ -59,9 +48,6 @@
     "@http_listen": "http协议的监听信息列表",
     "http_listen": [
         {
-            "world": 1,
-            "type": 1,
-            "id": 1,
             "ip": "0.0.0.0",
             "port": 5003
         }

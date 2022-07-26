@@ -54,6 +54,10 @@ bool update(time_t now) {
     return gDealer.update(now);
 }
 
+void send(uint64_t uniqueId, const std::string& data) {
+    gDealer.sendData(uniqueId, data);
+}
+
 void send(BackendMsg& frame) {
     // 挑选出一个路由
     if (gLinkInfo.itemVec.empty()) {
@@ -67,7 +71,7 @@ void send(BackendMsg& frame) {
     size_t idx = frame.header.targetId % gLinkInfo.itemVec.size();
     uint64_t uniqueId = gLinkInfo.itemVec[idx].uniqueId;
 
-    gDealer.sendData(uniqueId, output);
+    send(uniqueId, output);
 }
 
 void notifyMsg(World w, uint64_t targetId, const google::protobuf::Message& msg, uint32_t cmdId) {

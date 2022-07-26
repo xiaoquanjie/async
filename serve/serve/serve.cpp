@@ -1,76 +1,13 @@
 #include "serve/serve/serve.h"
 #include "serve/serve/getopt.h"
 #include "serve/serve/json.hpp"
-#include "common/transaction/transaction_mgr.h"
-#include "common/co_async/ipc/co_ipc.h"
+#include "serve/serve/router.h"
+#include "serve/serve/backend.h"
 #include <stdio.h>
 #include <fstream>
 #include <thread>
 
-#ifdef USE_IPC
-World* DefaultCommZq::getWorld(uint64_t id) {
-    auto iter = idMap.find(id);
-    if (iter == idMap.end()) {
-        return nullptr;
-    }
-    return &iter->second;
-}
-
-uint64_t DefaultCommZq::getId(const World& w) {
-    auto iter = worldMap.find(w);
-    if (iter == worldMap.end()) {
-        return 0;
-    }
-    return iter->second;
-}
-
-void DefaultCommZq::setIdWorld(uint64_t id, const World& w) {
-    worldMap[w] = id;
-    idMap[id] = w;
-}
-
-void DefaultZqRouter::onData(uint64_t uniqueId, uint32_t identify, const std::string& data) {
-    // 默认处理：解析出消息包，将消息头的数据填充好后调用trans_mgr::handle
-    BackendMsg message;
-    message.decode(data);
-
-    message.header.localFd = uniqueId;
-    message.header.remoteFd = identify;
-
-    if (message.header.rspSeqId == 0) {
-        trans_mgr::handle(message.header.cmd, (char*)&message, 0, (void*)0);
-    }
-    else {
-        co_async::ipc::recv(message.header.rspSeqId, (char*)&message, 0);
-    }
-}
-
-void DefaultZqDealer::onData(uint64_t uniqueId, uint32_t, const std::string& data) {
-    // 默认处理：解析出消息包，将消息头的数据填充好后调用trans_mgr::handle
-    BackendMsg message;
-    message.decode(data);
-
-    message.header.localFd = uniqueId;
-    message.header.remoteFd = 0;
-
-    if (message.header.rspSeqId == 0) {
-        trans_mgr::handle(message.header.cmd, (char*)&message, 0, (void*)0);
-    }
-    else {
-        co_async::ipc::recv(message.header.rspSeqId, (char*)&message, 0);
-    }
-}
-#endif
-
 Serve::~Serve() {
-#ifdef USE_IPC
-    if (mZqRouter) {
-        delete mZqRouter;
-    }
-    if (mZqDealer) {
-        delete mZqDealer;
-    }
-#endif
 }
 
 bool Serve::Init(int argc, char** argv) {
@@ -83,27 +20,13 @@ bool Serve::Init(int argc, char** argv) {
             break;
         }
 
-#ifdef USE_IPC
-        // 建立zm_listen
-        if (!mZmListen.itemVec.empty()) {
-            if (!mZqRouter) {
-                mZqRouter = new DefaultZqRouter;
-            }
-            for (auto& item : mZmListen.itemVec) {
-                uint64_t id = mZqRouter->listen(item.addr());
-                mZqRouter->setIdWorld(id, item.w);
-            }
+        // 启动路由
+        if (mUseRouter) {
+            router::init(mZmListen, mRoutes);
         }
-        if (!mZmConnect.itemVec.empty()) {
-            if (!mZqDealer) {
-                mZqDealer = new DefaultZqDealer;
-            }
-            for (auto& item : mZmConnect.itemVec) {
-                uint64_t id = mZqDealer->connect(item.w.identify(), item.addr());
-                mZqDealer->setIdWorld(id, item.w);
-            }
+        if (mUseDealer) {
+            backend::init(mSelf, mZmConnect);
         }
-#endif
 
         if (!mNetListen.itemVec.empty()) {
 
@@ -130,18 +53,16 @@ void Serve::Start() {
         time(&now);
         isIdle = true;
 
-#ifdef USE_IPC
-        if (mZqRouter) {
-            if (mZqRouter->update(now)) {
+        if (mUseRouter) {
+            if (router::update(now)) {
                 isIdle = false;
             }
         }
-        if (mZqDealer) {
-            if (mZqDealer->update(now)) {
+        if (mUseDealer) {
+            if (backend::update(now)) {
                 isIdle = false;
             }
         }
-#endif
 
         if (onLoop()) {
             isIdle = false;
@@ -183,7 +104,7 @@ bool Serve::parseArgv(int argc, char** argv) {
 
     while (true) {
         int optIdx = 0;
-        int c = getopt_long(argc, argv, ":HhCc:", opt, &optIdx);
+        int c = getopt_long(argc, argv, ":HhCc:Rr", opt, &optIdx);
         if (c == -1) {
             break;
         }
@@ -200,6 +121,12 @@ bool Serve::parseArgv(int argc, char** argv) {
             if (optarg) {
                 mConfFile = optarg;
             }
+            break;
+
+        case 'R':
+        case 'r':
+            // 启动路由功能
+            mUseRouter = true;
             break;
 
         case '?':
@@ -220,36 +147,51 @@ bool Serve::parseArgv(int argc, char** argv) {
         return false;
     }
 
-    auto parseLinkInfo = [](const nlohmann::json& j, LinkInfo& info, int type)-> bool {
+    auto parseWorld = [](const nlohmann::json& j, World& self) {
+        auto iter = j.find("world");
+        if (iter != j.end()) {
+            self.world = iter->get<uint32_t>();
+        }
+
+        iter = j.find("type");
+        if (iter != j.end()) {
+            self.type = iter->get<uint32_t>();
+        }
+
+        iter = j.find("id");
+        if (iter != j.end()) {
+            self.id = iter->get<uint32_t>();
+        }
+    };
+
+    auto parseLinkInfo = [parseWorld](const nlohmann::json& j, LinkInfo& info) {
         if (!j.is_array()) {
-            return false;
+            return;
         }
 
         for (size_t i = 0; i < j.size(); ++i) {
             const auto& subJ = j[i];
             LinkInfo::Item item;
-            if (type & 1) {
-                item.w.world = subJ["world"].get<uint32_t>();
-                item.w.type = subJ["type"].get<uint32_t>();
-                item.w.id = subJ["id"].get<uint32_t>();
-                if (item.w.world > 255 || item.w.type > 255 || item.w.id > 255) {
-                    printf("world/type/id is over limit 255\n");
-                    return false;
-                }
-            }
-            if (type & 2) {
-                item.protocol = subJ["protocol"].get<std::string>();
-            }
-            if (type & 4) {
-                item.ip = subJ["ip"].get<std::string>();
-                item.port = subJ["port"].get<uint32_t>();
-            }
-            
-            info.itemVec.push_back(item);
-            info.itemMap[item.w] = item;
-        }
 
-        return true;
+            parseWorld(subJ, item.w);
+
+            auto iter = subJ.find("protocol");
+            if (iter != subJ.end()) {
+                item.protocol = iter->get<std::string>();
+            }
+
+            iter = subJ.find("ip");
+            if (iter != subJ.end()) {
+                item.ip = iter->get<std::string>();
+            }
+
+            iter = subJ.find("port");
+            if (iter != subJ.end()) {
+                item.port = iter->get<uint32_t>();
+            }
+
+            info.itemVec.push_back(item);
+        }
     };
 
     try {
@@ -258,29 +200,61 @@ bool Serve::parseArgv(int argc, char** argv) {
         auto serveJson = nlohmann::json::parse(ifs, nullptr);
 
         // parse zm_listen
-        if (!parseLinkInfo(serveJson["zm_listen"], mZmListen, 1|2|4)) {
-            return false;
+        parseWorld(serveJson["self"], mSelf);
+        parseLinkInfo(serveJson["zm_listen"], mZmListen);
+        parseLinkInfo(serveJson["zm_connect"], mZmConnect);
+        parseLinkInfo(serveJson["net_listen"], mNetListen);
+        parseLinkInfo(serveJson["net_connect"], mNetConnect);
+        parseLinkInfo(serveJson["http_listen"], mHttpListen);
+        parseLinkInfo(serveJson["routes"], mRoutes);
+
+        if (!mZmConnect.itemVec.empty()) {
+            mUseDealer = true;
         }
-        if (!parseLinkInfo(serveJson["zm_connect"], mZmConnect, 1|2|4)) {
-            return false;
-        }
-        if (!parseLinkInfo(serveJson["net_listen"], mNetListen, 1|2|4)) {
-            return false;
-        }
-        if (!parseLinkInfo(serveJson["net_connect"], mNetConnect, 1|2|4)) {
-            return false;
-        }
-        if (!parseLinkInfo(serveJson["http_listen"], mHttpListen, 1|4)) {
-            return false;
-        }
-        if (!parseLinkInfo(serveJson["routes"], mRoutes, 1)) {
-            return false;
-        }
-        
     }
     catch(nlohmann::detail::exception& e) {
         printf("failed to parse %s|%s\n", mConfFile.c_str(), e.what());
         return false;
+    }
+
+    auto worldCheck = [](const World& w, int type)-> bool {
+        if (type & 1) {
+            if (w.world == 0 || w.world > 255) {
+                return false;
+            }
+        }
+        if (type & 2) {
+            if (w.type == 0 || w.type > 255) {
+                return false;
+            }
+        }
+        if (type & 4) {
+            if (w.id == 0 || w.id > 255) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    // 检查配置
+    if (mUseRouter) {
+        for (auto item : mZmListen.itemVec) {
+            if (!worldCheck(item.w, 1)) {
+                return false;
+            }
+        }
+        for (auto item : mRoutes.itemVec) {
+            if (!worldCheck(item.w, 1 | 2 | 4)) {
+                return false;
+            }
+        }
+    }
+
+    if (mUseDealer) {
+        // self不能为空
+        if (!worldCheck(mSelf, 1 | 2 | 4)) {
+            return false;
+        }
     }
     
     return true;

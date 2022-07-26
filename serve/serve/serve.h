@@ -18,31 +18,6 @@
 
 #include "serve/serve/base.h"
 
-#ifdef USE_IPC
-#include "common/ipc/zero_mq_handler.h"
-#endif
-
-
-#ifdef USE_IPC
-struct DefaultCommZq {
-    virtual ~DefaultCommZq() {}
-    World* getWorld(uint64_t id);
-    uint64_t getId(const World& w);
-    void setIdWorld(uint64_t id, const World& w);
-    std::map<World, uint64_t> worldMap;
-    std::map<uint64_t, World> idMap;
-};
-
-struct DefaultZqRouter : public ZeromqRouterHandler, public DefaultCommZq {
-    void onData(uint64_t uniqueId, uint32_t identify, const std::string& data) override;
-};
-
-struct DefaultZqDealer : public ZeromqDealerHandler, public DefaultCommZq {
-    void onData(uint64_t uniqueId, uint32_t identify, const std::string& data) override;
-};
-
-#endif
-
 // 服务基类
 class Serve {
 public:
@@ -62,19 +37,14 @@ protected:
 protected:
     bool mStopped = false;
 
+    bool mUseRouter = false;
+    bool mUseDealer = false;
     std::string mConfFile;
+    World mSelf;
     LinkInfo mZmListen;
     LinkInfo mZmConnect;
     LinkInfo mNetListen;
     LinkInfo mNetConnect;
     LinkInfo mHttpListen;
     LinkInfo mRoutes;
-
-#ifdef USE_IPC
-    // 想重写DefaultZqRouter/DefaultZqDealer，可以在onInit接口里实现
-    DefaultZqRouter* mZqRouter = 0;
-    DefaultZqDealer* mZqDealer = 0;
-#endif
-
-
 };

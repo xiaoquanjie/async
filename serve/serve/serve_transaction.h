@@ -9,6 +9,7 @@
 
 #include "common/transaction/base_transaction.h"
 #include "serve/serve/base.h"
+#include "serve/serve/backend.h"
 #include <assert.h>
 
 template<typename RequestType, typename RespondType=NullRespond>
@@ -32,8 +33,15 @@ public:
     }
 
     bool OnAfter() override {
-        return false;
+        // 如何判别是单向还是双向
+        // if (typeid(RespondType).name() != typeid(NullRespond).name()) {
+        //     // 回包
+
+        // }
+        return true;
     }
+
+
 
 protected:
     BackendHeader mheader;

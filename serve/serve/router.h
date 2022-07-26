@@ -11,6 +11,8 @@
 
 namespace router {
 
-bool init(const World& self, const LinkInfo& link, const std::vector<World>& routes);
+bool init(const LinkInfo& link, const LinkInfo& routes);
+
+bool update(time_t now);
 
 }

@@ -25,8 +25,8 @@ struct World {
 
 struct LinkInfo {
     struct Item {
-        World w;
         uint64_t uniqueId = 0;
+        World w;
         std::string protocol;
         std::string ip;
         uint32_t port = 0;
@@ -35,8 +35,7 @@ struct LinkInfo {
         std::string addr() const;
     };
 
-    std::vector<Item> itemVec;
-    std::map<World, Item> itemMap;    
+    std::vector<Item> itemVec; 
 };
 
 struct BackendHeader {

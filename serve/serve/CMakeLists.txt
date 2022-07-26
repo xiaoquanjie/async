@@ -13,6 +13,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 aux_source_directory(. ALL_CPP)
 
 include_directories(../../)
+link_directories(/usr/local/lib64 /usr/local/lib)
 
 if(USE_IPC)
     add_definitions(-DUSE_IPC)

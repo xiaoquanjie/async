@@ -19,7 +19,7 @@ if(USE_IPC)
     add_definitions(-DUSE_IPC)
 endif(USE_IPC)
 
-set(LINK_LIBRARYS ${LINK_LIBRARYS} common protobuf)
+set(LINK_LIBRARYS ${LINK_LIBRARYS} common)
 
 add_library(${TARGET_NAME} SHARED ${ALL_CPP})
 

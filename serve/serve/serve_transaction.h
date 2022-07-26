@@ -24,7 +24,7 @@ public:
             return false;
         }
 
-        this->mheader = msg->header;
+        this->mHeader = msg->header;
         return true;
     }
 
@@ -33,17 +33,23 @@ public:
     }
 
     bool OnAfter() override {
-        // 如何判别是单向还是双向
-        // if (typeid(RespondType).name() != typeid(NullRespond).name()) {
-        //     // 回包
-
-        // }
+        sendBack(BaseTrans::m_respond);
         return true;
     }
 
+    void sendBack(NullRespond& data) {}
 
+    void sendBack(RespondType &data) {
+        backend::notifyBack(mHeader.srcWorldId,
+                            mHeader.targetId,
+                            data, 
+                            BaseTrans::RspCmdId(),
+                            mHeader.reqSeqId,
+                            BaseTrans::m_return_value,
+                            0);
+    }
 
 protected:
-    BackendHeader mheader;
+    BackendHeader mHeader;
 };
 

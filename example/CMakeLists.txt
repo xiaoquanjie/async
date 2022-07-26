@@ -40,6 +40,6 @@ link_directories(/usr/local/lib64 /usr/local/lib)
 
 add_executable(${TARGET_NAME} ${ALL_CPP})
 
-add_dependencies(${TARGET_NAME} ${PROJECT_LIB_TARGETS})
+add_dependencies(${TARGET_NAME} "common")
 
-target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_LIB_TARGETS})
+target_link_libraries(${TARGET_NAME} PRIVATE "common")

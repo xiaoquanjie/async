@@ -39,7 +39,7 @@ int main() {
     //mongo_test(true);
     //redis_test(true);
     //co_mysql_test();
-    ipc_test();
+    //ipc_test();
 
     while (true) {
         co_async::loop();

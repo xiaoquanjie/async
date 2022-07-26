@@ -42,7 +42,7 @@ struct IpcPacket {
     }
 };
 
-class RouterHandler : public ZeromqRouterHandler {
+class RouterHandler : public ipc::ZeromqRouterHandler {
 public:
 
 protected:
@@ -61,7 +61,7 @@ protected:
     }
 };
 
-class DealerHandler : public ZeromqDealerHandler {
+class DealerHandler : public ipc::ZeromqDealerHandler {
 public:
 
 protected:

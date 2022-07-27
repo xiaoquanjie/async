@@ -7,14 +7,15 @@
 
 #include "serve/serve/serve.h"
 #include "serve/serve/http_transaction.h"
+#include "common/log.h"
 
 class GetNameTransaction : public HttpTransaction {
 public:
     int OnRequest() {
-        printf("url:%s\n", m_request.url.c_str());
-        printf("host:%s\n", m_request.host.c_str());
-        printf("query:%s\n", m_request.squery.c_str());
-        printf("body:%s\n", m_request.body.c_str());
+        log("url:%s", m_request.url.c_str());
+        log("host:%s", m_request.host.c_str());
+        log("query:%s", m_request.squery.c_str());
+        log("body:%s", m_request.body.c_str());
 
         // 回复
         m_respond.body = "hello";
@@ -30,6 +31,13 @@ int main(int argc, char** argv) {
     if (!srv.init(argc, argv)) {
         return -1;
     }
+
+    // 添加中间件
+    http::use(1, [](uint32_t, HttpMsg& msg) {
+        log("middle %s", msg.url.c_str());
+        // 消息往下传
+        return false;
+    });
 
     srv.start();
     return 0;

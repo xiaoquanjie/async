@@ -15,8 +15,10 @@
 namespace http {
 
 typedef std::shared_ptr<net::HttpListener> HttpListenerPtr;
-
 std::unordered_map<HttpListenerPtr, uint32_t> gHttpListener;
+
+typedef std::vector<std::function<bool(uint32_t, HttpMsg&)>> MiddleVecType;
+std::unordered_map<uint32_t, MiddleVecType> gMiddleMap;
 
 bool init(void* event_base, const LinkInfo& link) {
     for (auto item : link.itemVec) {
@@ -48,6 +50,11 @@ bool init(void* event_base, const LinkInfo& link) {
                 message.body.append(body, len);
             }
             
+            for (auto f : gMiddleMap[id]) {
+                if (f(id, message)) {
+                    return;
+                }
+            }
             trans_mgr::handle(id, message.url, (char*)&message, 0, 0);
         });
 
@@ -61,6 +68,10 @@ void update(uint32_t curTime) {
     for (auto& item : gHttpListener) {
         item.first->update(curTime);
     }
+}
+
+void use(uint32_t id, std::function<bool(uint32_t, HttpMsg&)> fn) {
+    gMiddleMap[id].push_back(fn);
 }
 
 void send(void* request, const char* buf, uint32_t len) {

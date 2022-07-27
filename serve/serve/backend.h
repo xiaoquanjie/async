@@ -16,6 +16,9 @@ bool init(const World& self, const LinkInfo& link);
 
 bool update(time_t now);
 
+// 添加消息中间件
+void use(std::function<bool(uint64_t, uint32_t, const std::string&)> fn);
+
 uint32_t selfWorld();
 
 uint32_t selfWorldId();

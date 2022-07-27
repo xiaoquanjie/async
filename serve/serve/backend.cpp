@@ -14,19 +14,23 @@
 
 namespace backend {
 
+std::function<bool(uint64_t, uint32_t, const std::string&)> gMiddle = nullptr;
+
 struct ZqDealer : public ipc::ZeromqDealerHandler {
     void onData(uint64_t uniqueId, uint32_t identify, const std::string& data) override {
-        BackendMsg message;
-        message.decode(data);
+        if (!(gMiddle && gMiddle(uniqueId, identify, data))) {
+            BackendMsg message;
+            message.decode(data);
 
-        message.header.localFd = uniqueId;
-        message.header.remoteFd = 0;
+            message.header.localFd = uniqueId;
+            message.header.remoteFd = 0;
 
-        if (message.header.rspSeqId == 0) {
-            trans_mgr::handle(message.header.cmd, (char*)&message, 0, (void*)0);
-        }
-        else {
-            co_async::ipc::recv(message.header.rspSeqId, (char*)&message, 0);
+            if (message.header.rspSeqId == 0) {
+                trans_mgr::handle(message.header.cmd, (char*)&message, 0, (void*)0);
+            }
+            else {
+                co_async::ipc::recv(message.header.rspSeqId, (char*)&message, 0);
+            }
         }
     }
 };
@@ -51,6 +55,10 @@ bool init(const World& self, const LinkInfo& link) {
 
 bool update(time_t now) {
     return gDealer.update(now);
+}
+
+void use(std::function<bool(uint64_t, uint32_t, const std::string&)> fn) {
+    gMiddle = fn;
 }
 
 uint32_t selfWorld() {

@@ -19,40 +19,46 @@ std::map<uint32_t, uint64_t> gUniqueMap;
 // worldid-->(type--->world)
 std::map<uint32_t, std::map<uint32_t, std::vector<World>>> gRoutesMap;
 
+std::function<bool(uint64_t, uint32_t, const std::string)> gMiddle = nullptr;
+
 struct ZqRouter : public ipc::ZeromqRouterHandler {
-    void onData(uint64_t uniqueId, uint32_t identify, const std::string& data) override {
-        const BackendMsg* msg = (const BackendMsg*)data.c_str();
-        World w(msg->header.dstWorldId);
+    void onData(uint64_t uniqueId, uint32_t identify, const std::string &data) override
+    {
+        if (!(gMiddle && gMiddle(uniqueId, identify, data))) {
+            const BackendMsg *msg = (const BackendMsg *)data.c_str();
+            World w(msg->header.dstWorldId);
 
-        if (w.type == 0) {
-            return;
-        }
+            if (w.type == 0) {
+                return;
+            }
 
-        auto iter = gRoutesMap.find(w.world);
-        if (iter == gRoutesMap.end()) {
-            return;
-        }
-        auto iterType = iter->second.find(w.type);
-        if (iterType == iter->second.end()) {
-            return;
-        }
+            auto iter = gRoutesMap.find(w.world);
+            if (iter == gRoutesMap.end()) {
+                return;
+            }
 
-        // 广播
-        if (msg->header.broadcast == 1) {
-            // 获取所有的type
-            for (auto w : iterType->second) {
+            auto iterType = iter->second.find(w.type);
+            if (iterType == iter->second.end()) {
+                return;
+            }
+
+            // 广播
+            if (msg->header.broadcast == 1) {
+                // 获取所有的type
+                for (auto w : iterType->second) {
+                    transfer(data, msg, w);
+                }
+            }
+            else {
+                if (w.id == 0) {
+                    // 查找一个合适的
+                    size_t idx = msg->header.targetId % iterType->second.size();
+                    w.world = iterType->second[idx].world;
+                    w.id = iterType->second[idx].id;
+                }
+
                 transfer(data, msg, w);
             }
-        }
-        else {
-            if (w.id == 0) {
-                // 查找一个合适的
-                size_t idx = msg->header.targetId % iterType->second.size();
-                w.world = iterType->second[idx].world;
-                w.id = iterType->second[idx].id;
-            }
-
-            transfer(data, msg, w);
         }
     }
 
@@ -109,6 +115,10 @@ bool init(const LinkInfo& link, const LinkInfo& routes) {
 
 bool update(time_t now) {
     return gZqRouter.update(now);
+}
+
+void use(std::function<bool(uint64_t, uint32_t, const std::string&)> fn) {
+    gMiddle = fn;
 }
 
 }

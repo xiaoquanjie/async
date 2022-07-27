@@ -68,4 +68,4 @@ static int ret_##t = trans_mgr::registTickTransaction(new trans_mgr::Transaction
 
 // 注册http事务宏
 #define REGIST_HTTP_TRANSACTION(id, url, t) \
-static int ret_##t_##__LINE__ = trans_mgr::registTickTransaction(new trans_mgr::TransactionBucketImpl<t>(0, 0));
+static int ret_##t_##__LINE__ = trans_mgr::registHttpTransaction(id, url, new trans_mgr::TransactionBucketImpl<t>(0, 0));

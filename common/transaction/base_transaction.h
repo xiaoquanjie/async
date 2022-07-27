@@ -52,7 +52,7 @@ protected:
 /////////////////////////////////////////////////////////////////////
 
 // http的事务
-class HttpTransaction : public BaseTransaction {
+class BaseHttpTransaction : public BaseTransaction {
 public:
     const std::string& Url() {
         return m_url;

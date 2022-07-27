@@ -136,7 +136,7 @@ int handle(uint32_t id, std::string url, const char* packet, uint32_t packet_siz
         return -1;
     }
 
-    auto ht = dynamic_cast<HttpTransaction*>(t);
+    auto ht = dynamic_cast<BaseHttpTransaction*>(t);
     if (!ht) {
         assert(false);
         return -1;
@@ -175,8 +175,8 @@ int registBucket(TransactionBucket* bucket) {
 
 void recycleTransaction(BaseTransaction* t) {
     do {
-        // 优先试图转成HttpTransaction
-        auto ht = dynamic_cast<HttpTransaction*>(t);
+        // 优先试图转成BaseHttpTransaction
+        auto ht = dynamic_cast<BaseHttpTransaction*>(t);
 
         if (ht) {
             auto iter = g_http_trans_bucket_map.find(t->ReqCmdId());

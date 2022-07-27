@@ -102,6 +102,10 @@ const char* HttpListener::getUrlParam(const void* request) {
 	return query;
 }
 
+const char* HttpListener::decodeUri(const char* s) {
+    return evhttp_decode_uri(s);
+}
+
 ///////////////////////////////////////////////////////////
 
 void on_request_cb_helper(void* r, void* ctx) {

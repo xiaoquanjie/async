@@ -47,6 +47,7 @@ public:
     // 获取参数
     static const char* getUrlParam(const void* request);
 
+    static const char* decodeUri(const char* s);
 private:
     bool  m_created_base;
     void* m_event_base;

@@ -28,3 +28,7 @@ void log(const char* format, ...) {
     vsprintf(buf, format, ap);
     gLogCb(buf);
 }
+
+void setSafeLogFunc(std::function<void(const char*)> cb) {
+    gLogCb = cb;
+}

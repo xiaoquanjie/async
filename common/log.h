@@ -12,4 +12,4 @@
 void log(const char* format, ...);
 
 // 设置日志接口, 要求是线程安全的
-void setLogFunc(std::function<void(const char*)> cb);
+void setSafeLogFunc(std::function<void(const char*)> cb);

@@ -39,8 +39,6 @@ int registTickTransaction(TransactionBucket* bucket);
 // 注册http事务
 int registHttpTransaction(uint32_t id, std::string url, TransactionBucket* bucket);
 
-void setLogFunc(std::function<void(const char*)> cb);
-
 // 设置事务的上下文环境
 void setTransContext(std::shared_ptr<void> ctx);
 

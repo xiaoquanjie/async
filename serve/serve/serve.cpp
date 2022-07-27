@@ -8,6 +8,7 @@
 #include "common/async/async.h"
 #include "common/transaction/transaction_mgr.h"
 #include "common/ipc/ipc.h"
+#include "common/log.h"
 #include <stdio.h>
 #include <fstream>
 #include <thread>
@@ -21,25 +22,25 @@ bool Serve::init(int argc, char** argv) {
             break;
         }
         if (mOnInit && !mOnInit(argc, argv)) {
-            printf("failed to onInit\n");
+            log("failed to onInit");
             break;
         }
     
 #ifdef USE_IPC
         // 启动路由
         if (mUseRouter && !router::init(mZmListen, mRoutes)) {
-            printf("failed to router::init\n");
+            log("failed to router::init");
             return false;
         }
         if (mUseDealer && !backend::init(mSelf, mZmConnect)) {
-            printf("failed to backend::init\n");
+            log("failed to backend::init");
             return false;
         }
 #endif
 
 #ifdef USE_NET
         if (mUseHttp && !http::init(0, mHttpListen)) {
-            printf("failed to http::init\n");
+            log("failed to http::init");
             return false;
         }
 #endif
@@ -138,9 +139,7 @@ const World& Serve::self() {
 }
 
 void Serve::setLogFunc(std::function<void(const char*)> cb) {
-    trans_mgr::setLogFunc(cb);
-    async::setLogFunc(cb);
-    ipc::setLogFunc(cb);
+    setSafeLogFunc(cb);
 }
 
 bool Serve::parseArgv(int argc, char** argv) {
@@ -154,12 +153,12 @@ bool Serve::parseArgv(int argc, char** argv) {
     };
 
     auto usage = [&opt, &descr]() {
-        printf("DESCRIPTION\n");
+        log("DESCRIPTION");
         for (size_t idx = 0; idx < sizeof(opt) / sizeof(struct option); ++idx) {
             if (opt[idx].val == 0) {
                 continue;
             }
-            printf("        -%c, --%s       %s\n", opt[idx].val, opt[idx].name, descr[idx]);
+            log("        -%c, --%s       %s", opt[idx].val, opt[idx].name, descr[idx]);
         }
     };
 
@@ -194,7 +193,7 @@ bool Serve::parseArgv(int argc, char** argv) {
             break;
 
         case ':':
-            printf("miss param\n");
+            log("miss param");
             usage();
             return false;
 
@@ -204,7 +203,7 @@ bool Serve::parseArgv(int argc, char** argv) {
     }
 
     if (mConfFile.empty()) {
-        printf("need '-c config'\n");
+        log("need '-c config'");
         return false;
     }
 
@@ -277,7 +276,7 @@ bool Serve::parseArgv(int argc, char** argv) {
         }
     }
     catch(nlohmann::detail::exception& e) {
-        printf("failed to parse %s|%s\n", mConfFile.c_str(), e.what());
+        log("failed to parse %s|%s", mConfFile.c_str(), e.what());
         return false;
     }
 
@@ -304,20 +303,20 @@ bool Serve::parseArgv(int argc, char** argv) {
     if (mUseRouter) {
         for (auto item : mZmListen.itemVec) {
             if (!worldCheck(item.w, 1)) {
-                printf("conf: zm_listen.world error\n");
+                log("conf: zm_listen.world error");
                 return false;
             }
         }
         for (auto item : mRoutes.itemVec) {
             if (!worldCheck(item.w, 1 | 2 | 4)) {
-                printf("conf: routes error\n");
+                log("conf: routes error");
                 return false;
             }
         }
     }
 
     if (mUseDealer && !worldCheck(mSelf, 1 | 2 | 4)) {
-        printf("conf: self error\n");
+        log("conf: self error");
         // self不能为空
         return false;
     }
@@ -325,7 +324,7 @@ bool Serve::parseArgv(int argc, char** argv) {
     if (mUseHttp) {
         for (auto item : mHttpListen.itemVec) {
             if (!worldCheck(item.w, 4)) {
-                printf("conf: http_listen.id error\n");
+                log("conf: http_listen.id error");
                 return false;
             }
         }

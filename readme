@@ -67,7 +67,7 @@ common                  ----> 库目录
     net                 ----> 提供tcp server/client接口，udp server/client接口，http server接口
 
 serve                   ----> 目标是提供一个服务器进程脚手架，可以快速搭建后端服务，还提供一个通用的route进程。
-                              它会依赖common库，且common库需要使用-DUSE_TRANS编译。还在开发中。。。。。
+                              它会依赖common库，且common库需要使用-DUSE_TRANS编译。已实现大部分功能
     serve               ----> 编译输出libserve.so库
     route               ----> ./router -c router.json 启动路由，不同世界的路由互不通信
     test                ----> 测试案例，起两个进程，这两个进程使用router做转发相互通信。

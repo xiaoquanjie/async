@@ -29,11 +29,6 @@ bool loop(uint32_t cur_time);
 
 void setThreadFunc(std::function<void(std::function<void()>)>);
 
-// 设置日志接口, 要求是线程安全的
-void setLogFunc(std::function<void(const char*)> cb);
-
-void log(const char* format, ...);
-
 }// curl
 }// async
 

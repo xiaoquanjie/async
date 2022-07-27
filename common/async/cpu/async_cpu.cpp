@@ -6,10 +6,10 @@
 //----------------------------------------------------------------*/
 
 #include "common/async/cpu/async_cpu.h"
+#include "common/log.h"
 #include <queue>
 #include <mutex>
 #include <assert.h>
-#include <stdarg.h>
 #include <memory>
 
 namespace async {
@@ -40,26 +40,6 @@ struct cpu_global_data {
 cpu_global_data g_cpu_global_data;
 
 time_t g_last_statistics_time = 0;
-
-// 日志输出接口
-std::function<void(const char*)> g_log_cb = [](const char* data) {
-    static std::mutex s_mutex;
-    s_mutex.lock();
-    printf("[async_cpu] %s\n", data);
-    s_mutex.unlock();
-};
-
-void log(const char* format, ...) {
-    if (!g_log_cb) {
-        return;
-    }
-
-    char buf[1024] = { 0 };
-    va_list ap;
-    va_start(ap, format);
-    vsprintf(buf, format, ap);
-    g_log_cb(buf);
-}
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -99,21 +79,13 @@ void setThreadFunc(std::function<void(std::function<void()>)> f) {
     g_cpu_global_data.thr_func = f;
 }
 
-void setLogFunc(std::function<void(const char*)> cb) {
-    g_log_cb = cb;
-}
-
 void statistics(uint32_t cur_time) {
-    if (!g_log_cb) {
-        return;
-    }
-
     if (cur_time - g_last_statistics_time <= 120) {
         return;
     }
 
     g_last_statistics_time = cur_time;
-    log("[cpu statistics] cur_task:%d, req_task:%d, rsp_task:%d",
+    log("[async_cpu] [statistics] cur_task:%d, req_task:%d, rsp_task:%d",
         (g_cpu_global_data.req_task_cnt - g_cpu_global_data.rsp_task_cnt),
         g_cpu_global_data.req_task_cnt,
         g_cpu_global_data.rsp_task_cnt);

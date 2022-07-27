@@ -9,12 +9,13 @@
 
 #include "common/async/mongo/async_mongo.h"
 #include "common/async/mongo/tls.hpp"
+#include "common/log.h"
 #include <queue>
 #include <mongoc.h>
 #include <list>
 #include <mutex>
-#include <assert.h>
 #include <memory>
+#include <assert.h>
 
 namespace async {
 
@@ -47,7 +48,7 @@ struct mongo_addr {
             }
         }
         else {
-            log("[error] uri error:%s\n", uri.c_str());
+            log("[async_mongo] [error] uri error:%s\n", uri.c_str());
             assert(false);
         }
     }
@@ -116,32 +117,7 @@ struct mongo_global_data {
 };
 
 mongo_global_data g_mongo_global_data;
-
 time_t g_last_statistics_time = 0;
-
-// 日志输出接口
-std::function<void(const char*)> g_log_cb = [](const char* data) {
-    static std::mutex s_mutex;
-    s_mutex.lock();
-    printf("[async_mongo] %s\n", data);
-    s_mutex.unlock();
-};
-
-void log(const char* format, ...) {
-    if (!g_log_cb) {
-        return;
-    }
-
-    char buf[1024] = { 0 };
-    va_list ap;
-    va_start(ap, format);
-    vsprintf(buf, format, ap);
-    g_log_cb(buf);
-}
-
-void setLogFunc(std::function<void(const char*)> cb) {
-    g_log_cb = cb;
-}
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -157,13 +133,13 @@ mongo_core_ptr thread_create_core(const mongo_addr& addr) {
             bson_error_t error;
             core->mongoc_uri = mongoc_uri_new_with_error(core->addr.addr.c_str(), &error);
             if (!core->mongoc_uri) {
-                log("[error] failed to call mongoc_uri_new_with_error:%s", core->addr.addr.c_str());
+                log("[async_mongo] [error] failed to call mongoc_uri_new_with_error:%s", core->addr.addr.c_str());
                 break;
             }
 
             core->mongoc_client = mongoc_client_new_from_uri(core->mongoc_uri);
             if (!core->mongoc_client) {
-                log("[error] failed to call mongoc_client_new_from_uri:%s", core->addr.addr.c_str());
+                log("[async_mongo] [error] failed to call mongoc_client_new_from_uri:%s", core->addr.addr.c_str());
                 break;
             }
 
@@ -375,7 +351,7 @@ void thread_mongo_process(mongo_custom_data_ptr req_data, mongo_global_data* glo
                                                                        req_data->addr.collection.c_str());
         if (!collection) {
             bson_set_error((bson_error_t*)rsp_data.parser->error, 0, 2, "failed to get mongo collection");
-            log("[error] failed to call mongoc_client_get_collection:%s|%s\n",
+            log("[async_mongo] [error] failed to call mongoc_client_get_collection:%s|%s\n",
                                    req_data->addr.db.c_str(),
                                    req_data->addr.collection.c_str());
             break;
@@ -459,17 +435,13 @@ void execute(std::string uri, const BaseMongoCmd& cmd, async_mongo_cb cb) {
 }
 
 void statistics(uint32_t cur_time) {
-    if (!g_log_cb) {
-        return;
-    }
-
     if (cur_time - g_last_statistics_time <= 120) {
         return;
     }
 
     // 没有输出连接池大小
     g_last_statistics_time = cur_time;
-    log("[mongo statistics] cur_task:%d, req_task:%d, rsp_task:%d",
+    log("[async_mongo] [statistics] cur_task:%d, req_task:%d, rsp_task:%d",
         (g_mongo_global_data.req_task_cnt - g_mongo_global_data.rsp_task_cnt),
         g_mongo_global_data.req_task_cnt,
         g_mongo_global_data.rsp_task_cnt);

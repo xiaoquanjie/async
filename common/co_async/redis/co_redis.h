@@ -9,6 +9,7 @@
 
 #include "common/async/redis/async_redis.h"
 #include "common/co_async/promise.h"
+#include "common/log.h"
 #include <map>
 
 /**
@@ -40,7 +41,7 @@ std::pair<int, bool> execute(const std::string& uri, const async::redis::BaseRed
             ret.second = true;
 		}
 		catch (const async::redis::RedisException &exce) {
-			async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
+			log("[co_async_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
     }
     
@@ -60,7 +61,7 @@ std::pair<int, bool> execute(const std::string& uri, const async::redis::BaseRed
             ret.second = true;
 		}
 		catch (const async::redis::RedisException &exce) {
-			async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
+			log("[co_async_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
     }
 
@@ -80,7 +81,7 @@ std::pair<int, bool> execute(const std::string& uri, const async::redis::BaseRed
             ret.second = true;
 		}
 		catch (const async::redis::RedisException &exce) {
-			async::redis::log("[co_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
+			log("[co_async_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
     }
     

@@ -33,7 +33,7 @@ struct BaseMongoCmd {
 
     bool IsInsertCmd() const;
 
-    std::string DebugString();
+    std::string DebugString() const;
 
     std::shared_ptr<Data> d;
 };

@@ -15,7 +15,7 @@ static async::AsyncModule mod = {
     // 主循环钩子
     std::bind(async::cpu::loop, std::placeholders::_1),
     // 日志钩子
-    std::bind(async::cpu::setLogFunc, std::placeholders::_1),
+    nullptr,
     // 线程钩子
     std::bind(async::cpu::setThreadFunc, std::placeholders::_1)
 };

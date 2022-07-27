@@ -56,6 +56,7 @@ protected:
     bool mUseRouter = false;
     bool mUseDealer = false;
     bool mUseAsyn = true;
+    bool mUseHttp = false;
 
     std::function<bool(int, char**)> mOnInit;
     std::function<bool()> mOnLoop;

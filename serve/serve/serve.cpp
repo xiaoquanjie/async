@@ -3,6 +3,7 @@
 #include "serve/serve/json.hpp"
 #include "serve/serve/router.h"
 #include "serve/serve/backend.h"
+#include "serve/serve/http.h"
 #include "common/co_async/async.h"
 #include "common/async/async.h"
 #include "common/transaction/transaction_mgr.h"
@@ -36,15 +37,19 @@ bool Serve::init(int argc, char** argv) {
         }
 #endif
 
+#ifdef USE_NET
+        if (mUseHttp && !http::init(0, mHttpListen)) {
+            printf("failed to http::init\n");
+            return false;
+        }
+#endif
         if (!mNetListen.itemVec.empty()) {
 
         }
         if (!mNetConnect.itemVec.empty()) {
 
         }
-        if (!mHttpListen.itemVec.empty()) {
-
-        }
+        
 
         return true;
     } while (false);
@@ -68,6 +73,11 @@ void Serve::start() {
         }
         if (mUseDealer && backend::update(now)) {
             isIdle = false;
+        }
+#endif
+#ifdef USE_NET
+        if (mUseHttp) {
+            http::update(now);
         }
 #endif
         if (mUseAsyn && co_async::loop(now)) {
@@ -262,6 +272,9 @@ bool Serve::parseArgv(int argc, char** argv) {
         if (!mZmConnect.itemVec.empty()) {
             mUseDealer = true;
         }
+        if (!mHttpListen.itemVec.empty()) {
+            mUseHttp = true;
+        }
     }
     catch(nlohmann::detail::exception& e) {
         printf("failed to parse %s|%s\n", mConfFile.c_str(), e.what());
@@ -291,19 +304,31 @@ bool Serve::parseArgv(int argc, char** argv) {
     if (mUseRouter) {
         for (auto item : mZmListen.itemVec) {
             if (!worldCheck(item.w, 1)) {
+                printf("conf: zm_listen.world error\n");
                 return false;
             }
         }
         for (auto item : mRoutes.itemVec) {
             if (!worldCheck(item.w, 1 | 2 | 4)) {
+                printf("conf: routes error\n");
                 return false;
             }
         }
     }
 
     if (mUseDealer && !worldCheck(mSelf, 1 | 2 | 4)) {
+        printf("conf: self error\n");
         // self不能为空
         return false;
+    }
+
+    if (mUseHttp) {
+        for (auto item : mHttpListen.itemVec) {
+            if (!worldCheck(item.w, 4)) {
+                printf("conf: http_listen.id error\n");
+                return false;
+            }
+        }
     }
     
     return true;

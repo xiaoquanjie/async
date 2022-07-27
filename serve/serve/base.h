@@ -62,10 +62,10 @@ struct BackendMsg {
 
 struct HttpMsg {
     void* request;
-    std::string m_url;
-    std::string m_host;
-    std::string m_query;
-    std::string m_body;
+    std::string url;
+    std::string host;
+    std::string query;
+    std::string body;
 };
 
 void split(const std::string source, const std::string &separator, std::vector<std::string> &array);

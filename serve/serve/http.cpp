@@ -25,15 +25,33 @@ bool init(void* event_base, const LinkInfo& link) {
             return false;
         }
 
-        // 设置回调
-        listener->setDataCb([](net::HttpListener* l, void*, const char*, uint32_t) {
-            //HttpListenerPtr ptr
-            HttpMsg msg;
+        uint32_t id = item.w.id;
 
-            trans_mgr::handle(id, "", &msg, 0, 0);
+        // 设置回调
+        listener->setDataCb([id](net::HttpListener*, void* r, const char* body, uint32_t len) {
+            // 解析数据
+            HttpMsg message;
+            message.request = r;
+            auto url = net::HttpListener::getUrlPath(r);
+            if (url) {
+                message.url = url;
+            }
+            auto host = net::HttpListener::getRemoteHost(r);
+            if (host) {
+                message.host = host;
+            }
+            auto query = net::HttpListener::getUrlParam(r);
+            if (query) {
+                message.query = query;
+            }
+            if (body) {
+                message.body.append(body, len);
+            }
+            
+            trans_mgr::handle(id, message.url, (char*)&message, 0, 0);
         });
 
-        gHttpListener[listener] = item.w.id;
+        gHttpListener[listener] = id;
     }
 
     return true;
@@ -51,6 +69,10 @@ void send(void* request, const char* buf, uint32_t len) {
 
 void send(void* request, const std::unordered_map<std::string, std::string>& header, const char* buf, uint32_t len) {
     net::HttpListener::send(request, header, buf, len);
+}
+
+const char* decodeUri(const char* s) {
+    return net::HttpListener::decodeUri(s);
 }
 
 }

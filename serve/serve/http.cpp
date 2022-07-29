@@ -60,8 +60,8 @@ bool init(void* event_base, const LinkInfo& link) {
                     if (pVec[1].empty()) {
                         continue;
                     }
-                std::string k = decodeUri(pVec[0].c_str());
-                msg.req.query[k] = decodeUri(pVec[1].c_str());
+                    std::string k = decodeUri(pVec[0].c_str());
+                    msg.req.query[k] = decodeUri(pVec[1].c_str());
                 }
             }
             if (body) {

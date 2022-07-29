@@ -8,6 +8,7 @@
 #ifdef USE_NET
 
 #include "common/net/http_listener.h"
+#include "common/log.h"
 #include <event.h>
 #include <evhttp.h>
 
@@ -59,6 +60,7 @@ bool HttpListener::listen(const std::string& ip, uint32_t port) {
         return false;
     }
 
+    log("[net] [http_listener] listen:%s|%d", ip.c_str(), port);
     return true;
 }
 

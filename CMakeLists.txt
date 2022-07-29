@@ -19,3 +19,4 @@ set(PROJECT_LIB_TARGETS "common")
 
 add_subdirectory(common)
 add_subdirectory(example)
+add_subdirectory(serve)

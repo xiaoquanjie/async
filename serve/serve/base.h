@@ -8,7 +8,7 @@
 #pragma once
 
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 // 这三个值，每个都不能大于255
@@ -60,12 +60,30 @@ struct BackendMsg {
     void decode(const std::string& input);
 };
 
-struct HttpMsg {
-    void* request;
+struct HttpRequest {
+    void* r;
     std::string url;
     std::string host;
-    std::string query;
+    std::string squery;
     std::string body;
+    std::unordered_map<std::string, std::string> query;
+
+    void swap(HttpRequest& req);
+};
+
+struct HttpRespond {
+    HttpRespond() {
+        header["Content-Type"] = "text/plain";
+    }
+    std::string body;
+    std::unordered_map<std::string, std::string> header;
+
+    void swap(HttpRespond& rsp);
+};
+
+struct HttpMsg {
+    HttpRequest req;
+    HttpRespond rsp;
 };
 
 void split(const std::string source, const std::string &separator, std::vector<std::string> &array);

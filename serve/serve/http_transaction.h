@@ -35,33 +35,8 @@ public:
 
     bool ParsePacket(const char* packet, uint32_t /*packet_size*/) override {
         HttpMsg* msg = const_cast<HttpMsg*>((const HttpMsg*)packet);
-        m_request.r = msg->request;
-        m_request.url.swap(msg->url);
-        m_request.host.swap(msg->host);
-        m_request.squery.swap(msg->query);
-        m_request.body.swap(msg->body);
-
-        std::vector<std::string> vec;
-        split(m_request.squery, "&", vec);
-        for (auto& p : vec) {
-            std::vector<std::string> pVec;
-            split(p, "=", pVec);
-            if (pVec.size() != 2) {
-                continue;
-            }
-            if (pVec[0].empty()) {
-                continue;
-            }
-            if (pVec[1].empty()) {
-                continue;
-            }
-            std::string k = http::decodeUri(pVec[0].c_str());
-            m_request.query[k] = http::decodeUri(pVec[1].c_str());
-        }
-        return true;
-    }
-
-    bool OnBefore() override {
+        m_request.swap(msg->req);
+        m_respond.swap(msg->rsp);
         return true;
     }
 
@@ -71,6 +46,6 @@ public:
     }
 
 protected:
-    Request m_request;
-    Respond m_respond;
+    HttpRequest m_request;
+    HttpRespond m_respond;
 };

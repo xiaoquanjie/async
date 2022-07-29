@@ -1,5 +1,6 @@
 #include "serve/serve/base.h"
 #include <string.h>
+#include <map>
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #include <Winsock2.h>
@@ -84,6 +85,22 @@ void BackendMsg::decode(const std::string& input) {
 	data.assign(input.c_str() + this->header.size(), input.size() - this->header.size());
 }
 
+void HttpRequest::swap(HttpRequest& req) {
+    void* tr = this->r;
+    this->r = req.r;
+    req.r = tr;
+
+    this->url.swap(req.url);
+    this->host.swap(req.host);
+    this->squery.swap(req.squery);
+    this->body.swap(req.body);
+    this->query.swap(req.query);
+}
+
+void HttpRespond::swap(HttpRespond& rsp) {
+    this->body.swap(rsp.body);
+    this->header.swap(rsp.header);
+}
 
 void split(const std::string source, const std::string &separator, std::vector<std::string> &array) {
     array.clear();

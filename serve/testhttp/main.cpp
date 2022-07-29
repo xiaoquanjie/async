@@ -33,8 +33,9 @@ int main(int argc, char** argv) {
     }
 
     // 添加中间件
-    http::use(1, [](uint32_t, HttpMsg& msg) {
-        log("middle %s", msg.url.c_str());
+    http::use(1, [](uint32_t, HttpRequest& req, HttpRespond&) {
+        log("middle %s", req.url.c_str());
+        req.squery += "&name=jack";
         // 消息往下传
         return false;
     });

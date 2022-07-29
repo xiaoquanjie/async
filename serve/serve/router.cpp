@@ -10,6 +10,7 @@
 #include "serve/serve/router.h"
 #include "common/ipc/ipc.h"
 #include <set>
+#include <map>
 
 namespace router {
 

@@ -40,6 +40,7 @@ public:
                             mHeader.targetId,
                             data, 
                             BaseTrans::RspCmdId(),
+                            mHeader.frontSeqNo,
                             mHeader.reqSeqId,
                             BaseTrans::m_return_value,
                             0);

@@ -1,0 +1,28 @@
+{
+    "comment": "本配置文件描述的是进程监听及连接端口的信息",
+
+    "@self": "标识进程身份的信息",
+    "self": {
+        "world": 1,
+        "type": 1,
+        "id": 1
+    },
+    
+    "@zm_connect": "zeromq的连接信息列表",
+    "zm_connect": [
+        {
+            "protocol": "tcp",
+            "ip": "0.0.0.0",
+            "port": 5001
+        }
+    ],
+
+    "@net_listen": "tcp/udp的监听信息列表, 一般是给gate使用",
+    "net_listen": [
+        {
+            "protocol": "tcp",
+            "ip": "0.0.0.0",
+            "port": 4001
+        }
+    ]
+}

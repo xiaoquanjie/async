@@ -4,6 +4,7 @@
 #include "serve/serve/router.h"
 #include "serve/serve/backend.h"
 #include "serve/serve/http.h"
+#include "serve/serve/gate.h"
 #include "common/co_async/async.h"
 #include "common/async/async.h"
 #include "common/transaction/transaction_mgr.h"
@@ -43,15 +44,15 @@ bool Serve::init(int argc, char** argv) {
             log("failed to http::init");
             return false;
         }
-#endif
-        if (!mNetListen.itemVec.empty()) {
-
+        if (mUseGate && !gate::init(0, mSelf, mNetListen)) {
+            log("failed to gate::init");
+            return false;
         }
+#endif
         if (!mNetConnect.itemVec.empty()) {
 
         }
         
-
         return true;
     } while (false);
 
@@ -79,6 +80,9 @@ void Serve::start() {
 #ifdef USE_NET
         if (mUseHttp) {
             http::update(now);
+        }
+        if (mUseGate) {
+            gate::update(now);
         }
 #endif
         if (mUseAsyn && co_async::loop(now)) {
@@ -132,6 +136,10 @@ void Serve::sleep(uint32_t s) {
 
 void Serve::useAsync(bool u) {
     mUseAsyn = u;
+}
+
+void Serve::useGate(bool u) {
+    mUseGate = u;
 }
 
 const World& Serve::self() {
@@ -327,6 +335,13 @@ bool Serve::parseArgv(int argc, char** argv) {
                 log("conf: http_listen.id error");
                 return false;
             }
+        }
+    }
+
+    for (auto item : mNetListen.itemVec) {
+        if (item.protocol != "tcp" && item.protocol != "udp") {
+            log("conf: net_listen.protocol error");
+            return false;
         }
     }
     

@@ -22,9 +22,6 @@ struct ZqDealer : public ipc::ZeromqDealerHandler {
             BackendMsg message;
             message.decode(data);
 
-            message.header.localFd = uniqueId;
-            message.header.remoteFd = 0;
-
             if (message.header.rspSeqId == 0) {
                 trans_mgr::handle(message.header.cmd, (char*)&message, 0, (void*)0);
             }
@@ -81,6 +78,7 @@ void send(BackendMsg& frame) {
     }
 
     std::string output;
+    frame.header.cmdLength = frame.data.size();
     frame.encode(output);
 
     size_t idx = frame.header.targetId % gLinkInfo.itemVec.size();

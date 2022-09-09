@@ -111,6 +111,7 @@ struct uri_data {
 };
 
 struct mysql_global_data {
+    bool init = false;
     std::function<void(std::function<void()>)> thr_func;
     unsigned int max_connections = 128;
     unsigned int keep_connections = 64;
@@ -164,6 +165,9 @@ mysql_custom_data_ptr local_create_mysql_custom_data(const std::string &uri,
                                                      async_mysql_cb cb,
                                                      bool is_query)
 {
+    if (!g_mysql_global_data.init) {
+        g_mysql_global_data.init = true;
+    }
     mysql_custom_data_ptr req = std::make_shared<mysql_custom_data>();
     req->addr.Parse(uri);
     req->sql = sql;
@@ -457,6 +461,10 @@ void statistics(uint32_t cur_time) {
 }
 
 bool loop(uint32_t cur_time) {
+    if (!g_mysql_global_data.init) {
+        return false;
+    }
+    
     bool has_task = false;
     
     statistics(cur_time);

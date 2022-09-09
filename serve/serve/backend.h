@@ -26,12 +26,13 @@ uint32_t selfWorldId();
 void send(BackendMsg& frame);
 
 template<typename MsgType>
-void notifyBack(uint32_t worldId, uint64_t targetId, const MsgType& msg, uint32_t cmdId, uint64_t rspSeqId, uint32_t result, uint32_t broadcast) {
+void notifyBack(uint32_t worldId, uint64_t targetId, const MsgType& msg, uint32_t cmdId, uint32_t frontSeqNo, uint64_t rspSeqId, uint32_t result, uint32_t broadcast) {
     BackendMsg frame;
     frame.header.srcWorldId = selfWorldId();
     frame.header.dstWorldId = worldId;
     frame.header.targetId = targetId;
     frame.header.cmd = cmdId;
+    frame.header.frontSeqNo = frontSeqNo;
     frame.header.rspSeqId = rspSeqId;
     frame.header.result = result;
     frame.header.broadcast = broadcast;
@@ -53,7 +54,7 @@ void notifyBack(uint32_t worldId, uint64_t targetId, const MsgType& msg, uint32_
 template<typename MsgType>
 void notifyMsg(World w, uint64_t targetId, const MsgType& msg, uint32_t cmdId) {
     uint32_t dstWorldId = w.identify();
-    notifyBack(dstWorldId, targetId, msg, cmdId, 0, 0, 0);
+    notifyBack(dstWorldId, targetId, msg, cmdId, 0, 0, 0, 0);
 }
 
 /*
@@ -77,7 +78,7 @@ void broadcast(uint32_t type, uint64_t targetId, const MsgType& msg, uint32_t cm
     w.world = selfWorld(); // 默认是同一个世界的
     w.type = type;
     w.id = 0;
-    notifyBack(w.identify(), targetId, msg, cmdId, 0, 0, 1);
+    notifyBack(w.identify(), targetId, msg, cmdId, 0, 0, 0, 1);
 }
 
 /*

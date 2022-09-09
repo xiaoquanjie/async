@@ -29,6 +29,7 @@ struct cpu_respond_data {
 };
 
 struct cpu_global_data {
+    bool init = false;
     std::function<void(std::function<void()>)> thr_func;
     std::queue<cpu_custom_data_ptr> request_queue;
     std::queue<cpu_respond_data> respond_queue;
@@ -67,6 +68,9 @@ inline std::function<void()> get_thread_func() {
 /////////////////////////////////////////////////////////////////////////////
 
 void execute(async_cpu_op op, void* user_data, async_cpu_cb cb) {
+    if (!g_cpu_global_data.init) {
+        g_cpu_global_data.init = true;
+    }
     cpu_custom_data_ptr req = std::make_shared<cpu_custom_data>();
     req->op = op;
     req->user_data = user_data;
@@ -123,6 +127,10 @@ void local_process_task() {
 }
 
 bool loop(uint32_t cur_time) {
+    if (!g_cpu_global_data.init) {
+        return false;
+    }
+
     local_process_respond();
     local_process_task();
     statistics(cur_time);

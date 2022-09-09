@@ -28,11 +28,11 @@ std::pair<int, async::mongo::MongoReplyParserPtr> execute(const std::string &uri
         ret.second = co_async::getOk<async::mongo::MongoReplyParser>(res);
         auto parser = ret.second;
         if (!parser->IsOk()) {
-            log("[co_async_mongo] failed to execute mongo|%s|%s\n", cmd.DebugString().c_str(), parser->What());
+            log("[co_async_mongo] failed to execute mongo|%s|%s", cmd.DebugString().c_str(), parser->What());
         }
     }
     else {
-        log("[co_async_mongo] [timeout] execute mongo|%s\n", cmd.DebugString().c_str());
+        log("[co_async_mongo] [timeout] execute mongo|%s", cmd.DebugString().c_str());
     }
 
     return ret;

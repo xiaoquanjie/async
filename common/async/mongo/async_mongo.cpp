@@ -48,7 +48,7 @@ struct mongo_addr {
             }
         }
         else {
-            log("[async_mongo] [error] uri error:%s\n", uri.c_str());
+            log("[async_mongo] [error] uri error:%s", uri.c_str());
             assert(false);
         }
     }
@@ -351,7 +351,7 @@ void thread_mongo_process(mongo_custom_data_ptr req_data, mongo_global_data* glo
                                                                        req_data->addr.collection.c_str());
         if (!collection) {
             bson_set_error((bson_error_t*)rsp_data.parser->error, 0, 2, "failed to get mongo collection");
-            log("[async_mongo] [error] failed to call mongoc_client_get_collection:%s|%s\n",
+            log("[async_mongo] [error] failed to call mongoc_client_get_collection:%s|%s",
                                    req_data->addr.db.c_str(),
                                    req_data->addr.collection.c_str());
             break;

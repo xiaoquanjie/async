@@ -33,10 +33,10 @@ void logZeroMsg(zmq_msg_t* msg, bool is_addr, const char* desc) {
             std::string data;
             void *d = zmq_msg_data(msg);
             data.assign(reinterpret_cast<char *>(d), data_len);
-            log("[zeromq] zero_addr:%s|%s\n", data.c_str(), desc);
+            log("[zeromq] zero_addr:%s|%s", data.c_str(), desc);
         }
         else {
-            log("[zeromq] zero_msg:(len):%ld|%s\n", data_len, desc);
+            log("[zeromq] zero_msg:(len):%ld|%s", data_len, desc);
         }
     }
 }
@@ -198,14 +198,14 @@ int ZeromqUnit::send(bool is_router, const std::string& identify, const std::str
     } while (false);
 
     if (len == -1) {
-        log("[zeromq] failed to send data, data_size:%d, err:%s\n", (int)data.size(), zmq_strerror(errno));
+        log("[zeromq] failed to send data, data_size:%d, err:%s", (int)data.size(), zmq_strerror(errno));
     }
 
     return len; 
 }
 
 void ZeromqUnit::printError() {
-    log("[zeromq] error:%s\n", zmq_strerror(errno));
+    log("[zeromq] error:%s", zmq_strerror(errno));
 }
 
 //////////////////////////////////////////////////////////
@@ -231,7 +231,7 @@ bool ZeromqRouter::listen() {
 		return false;
 	}
 
-    log("[zeromq] listen:%s|%s\n", m_addr.c_str(), id.c_str());
+    log("[zeromq] listen:%s|%s", m_addr.c_str(), id.c_str());
     return true;
 }
 
@@ -312,7 +312,7 @@ bool ZeromqDealer::connect() {
 		return false;
 	}
 
-    log("[zeromq] connect:%s|%s\n", m_addr.c_str(), id.c_str());
+    log("[zeromq] connect:%s|%s", m_addr.c_str(), id.c_str());
     return true;
 }
 

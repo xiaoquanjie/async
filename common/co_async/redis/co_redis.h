@@ -41,7 +41,7 @@ std::pair<int, bool> execute(const std::string& uri, const async::redis::BaseRed
             ret.second = true;
 		}
 		catch (const async::redis::RedisException &exce) {
-			log("[co_async_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
+			log("[co_async_redis] failed to execute redis|%s|%s", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
     }
     
@@ -61,7 +61,7 @@ std::pair<int, bool> execute(const std::string& uri, const async::redis::BaseRed
             ret.second = true;
 		}
 		catch (const async::redis::RedisException &exce) {
-			log("[co_async_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
+			log("[co_async_redis] failed to execute redis|%s|%s", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
     }
 
@@ -81,7 +81,7 @@ std::pair<int, bool> execute(const std::string& uri, const async::redis::BaseRed
             ret.second = true;
 		}
 		catch (const async::redis::RedisException &exce) {
-			log("[co_async_redis] failed to execute redis|%s|%s\n", cmd.GetCmd().c_str(), exce.What().c_str());
+			log("[co_async_redis] failed to execute redis|%s|%s", cmd.GetCmd().c_str(), exce.What().c_str());
 		}
     }
     

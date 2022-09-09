@@ -72,7 +72,7 @@ void clearTransContext() {
 
 int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size, void* ext) {
     if (g_cur_concurrent_trans >= g_max_concurrent_trans) {
-        log("[transaction] over max concurrent trans limit:%d\n", g_cur_concurrent_trans);
+        log("[transaction] over max concurrent trans limit:%d", g_cur_concurrent_trans);
         return -1;
     }
 
@@ -94,7 +94,7 @@ int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size, void* 
 
 int handle(uint32_t id, std::string url, const char* packet, uint32_t packet_size, void* ext) {
     if (g_cur_concurrent_trans >= g_max_concurrent_trans) {
-        log("[transaction] over max concurrent trans limit:%d\n", g_cur_concurrent_trans);
+        log("[transaction] over max concurrent trans limit:%d", g_cur_concurrent_trans);
         return -1;
     }
 
@@ -135,7 +135,7 @@ void tick(uint32_t cur_time) {
     }
     if (cur_time - g_last_check_time >= 120) {
         g_last_check_time = cur_time;
-        log("[transaction] [statistics] cur_trans:%d\n", g_cur_concurrent_trans);
+        log("[transaction] [statistics] cur_trans:%d", g_cur_concurrent_trans);
     }
 }
 

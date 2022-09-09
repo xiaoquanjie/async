@@ -173,7 +173,7 @@ void on_thread_redis_connect(const redisAsyncContext *c, int status) {
     bool flag = false;
     for (auto iter = g_redis_global_data.uri_map.begin(); iter != g_redis_global_data.uri_map.end(); ) {
         if (iter->second->ctxt == c) {
-            log("[async_redis] %s connection|%p|uri:%s\n", (status == REDIS_OK ? "a success" : "a fail"),
+            log("[async_redis] %s connection|%p|uri:%s", (status == REDIS_OK ? "a success" : "a fail"),
                                    c,
                                    iter->second->addr.uri.c_str());
             if (status == REDIS_OK) {
@@ -191,7 +191,7 @@ void on_thread_redis_connect(const redisAsyncContext *c, int status) {
     }
 
     if (!flag) {
-        log("[async_redis] [error] a connection error|%p\n", c);
+        log("[async_redis] [error] a connection error|%p", c);
     }
 }
 
@@ -199,7 +199,7 @@ void on_thread_redis_disconnect(const redisAsyncContext* c, int) {
     bool flag = false;
     for (auto iter = g_redis_global_data.uri_map.begin(); iter != g_redis_global_data.uri_map.end(); ) {
         if (iter->second->ctxt == c) {
-            log("[async_redis] a disconnection|%p|uri:%s\n", c, iter->second->addr.uri.c_str());
+            log("[async_redis] a disconnection|%p|uri:%s", c, iter->second->addr.uri.c_str());
             iter->second->state = enum_disconnected_state;
             // erase掉
             g_redis_global_data.uri_map.erase(iter++);
@@ -210,7 +210,7 @@ void on_thread_redis_disconnect(const redisAsyncContext* c, int) {
     }
 
     if (!flag) {
-        log("[async_redis] [error] a disconnection error|%p\n", c);
+        log("[async_redis] [error] a disconnection error|%p", c);
     }
 }
 
@@ -223,7 +223,7 @@ void on_thread_redis_selectdb(void*, void* r, void* user_data) {
     }
     else {
         data->core->state = enum_disconnected_state;
-        log("[async_redis] [error] failed to select db|%d\n", reply->type);
+        log("[async_redis] [error] failed to select db|%d", reply->type);
     }
 
     // delete redis_custom_data;
@@ -293,7 +293,7 @@ redis_core_ptr thread_create_core(const redis_addr& addr, bool new_create) {
         }
 
         if (!core->ctxt) {
-            log("[async_redis] [error] failed to call redisClusterAsyncConnect or redisAsyncConnect\n");
+            log("[async_redis] [error] failed to call redisClusterAsyncConnect or redisAsyncConnect");
             return nullptr;
         }
 
@@ -402,7 +402,7 @@ bool local_redis_init() {
 
     g_redis_global_data.evt_base = event_base_new();
     if (!g_redis_global_data.evt_base) {
-        log("[async_redis] [error] failed to call event_base_new\n");
+        log("[async_redis] [error] failed to call event_base_new");
         return false;
     }
 

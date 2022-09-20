@@ -77,7 +77,7 @@ def gen_mgr_f_file(class_infos, mgr_file):
 
     content += 'public:\n'
     for cls in class_infos:
-        content += '    std::shared_ptr<' + cls.class_name + '> m_' + cls.proto_name + '_reader;\n'
+        content += '    std::shared_ptr<' + cls.class_name + '> m' + cls.class_name + ';\n'
     content += '};\n'
     
     #delete old file
@@ -99,8 +99,8 @@ def gen_mgr_c_file(class_infos, mgr_file):
     content += '    bool ret = false;\n\n'
     for cls in class_infos:
         content += '    file_path = dir_path + "/' +  cls.proto_name + '.conf";\n'
-        content += '    m_' + cls.proto_name + '_reader = std::make_shared<' + cls.class_name + '>();\n'
-        content += '    assert(ret = m_' + cls.proto_name + '_reader->Load(file_path.c_str()));\n'
+        content += '    m' + cls.class_name + ' = std::make_shared<' + cls.class_name + '>();\n'
+        content += '    assert(ret = m' + cls.class_name + '>Load(file_path.c_str()));\n'
         content += '    if (ret == false) { return false; }\n' 
         content += '\n'
     
@@ -110,7 +110,7 @@ def gen_mgr_c_file(class_infos, mgr_file):
     content += 'bool SheetMgr::Check() {\n'
     content += '    bool ret = false;\n\n'
     for cls in class_infos:
-        content += '    assert(ret = m_' +  cls.proto_name + '_reader->check());\n'
+        content += '    assert(ret = m' +  cls.class_name + '->check());\n'
         content += '    if (ret == false) { return false; }\n' 
         content += '\n'
 

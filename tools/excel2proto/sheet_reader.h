@@ -111,31 +111,31 @@ public:
             return false;
         }
 
-        m_array = std::make_shared<ITEM_ARRAY_TYPE>();
-        m_item_map = std::make_shared<std::map<KEY, std::shared_ptr<NEW_ITEM_TYPE>>>();
+        mArray = std::make_shared<ITEM_ARRAY_TYPE>();
+        mItemMap = std::make_shared<std::map<KEY, std::shared_ptr<NEW_ITEM_TYPE>>>();
 
 		google::protobuf::io::IstreamInputStream inputStream(&ifs);
-		if (!google::protobuf::TextFormat::Parse(&inputStream, m_array.get())) {
+		if (!google::protobuf::TextFormat::Parse(&inputStream, mArray.get())) {
 			printf("failed to parser proto file:%s\n", file_path);
             assert(false);
             return false;
 		}
 
-        for (size_t idx = 0; idx < m_array->items_size(); ++idx) {
+        for (size_t idx = 0; idx < mArray->items_size(); ++idx) {
             std::shared_ptr<NEW_ITEM_TYPE> ptr = std::make_shared<NEW_ITEM_TYPE>();
             KEY key;
-            if (!parser(key, *ptr.get(), *(m_array->mutable_items(idx)))) {
-                printf("failed to parser item:%s|%s\n", file_path, m_array->mutable_items(idx)->ShortDebugString().c_str());
+            if (!parser(key, *ptr.get(), *(mArray->mutable_items(idx)))) {
+                printf("failed to parser item:%s|%s\n", file_path, mArray->mutable_items(idx)->ShortDebugString().c_str());
                 return false;
             }
-            (*m_item_map)[key] = ptr;
+            (*mItemMap)[key] = ptr;
         }
         return true;
     }
 
     std::shared_ptr<NEW_ITEM_TYPE> GetItem(const KEY& key) const {
-        auto iter = m_item_map->find(key);
-        if (iter == m_item_map->end()) {
+        auto iter = mItemMap->find(key);
+        if (iter == mItemMap->end()) {
             return nullptr;
         }
 
@@ -159,11 +159,11 @@ public:
     }
 
     std::shared_ptr<ITEM_ARRAY_TYPE> GetItemArray() const {
-        return m_array;
+        return mArray;
     }
 
     std::shared_ptr<std::map<KEY, std::shared_ptr<NEW_ITEM_TYPE>>> GetItemMap() const {
-        return m_item_map;
+        return mItemMap;
     }
 
     virtual bool check() const { return true; }
@@ -173,6 +173,6 @@ protected:
     virtual bool parser(KEY& key, NEW_ITEM_TYPE& new_item, ITEM_TYPE& item) = 0;
 
 protected:
-    std::shared_ptr<std::map<KEY, std::shared_ptr<NEW_ITEM_TYPE>>> m_item_map;
-    std::shared_ptr<ITEM_ARRAY_TYPE> m_array; 
+    std::shared_ptr<std::map<KEY, std::shared_ptr<NEW_ITEM_TYPE>>> mItemMap;
+    std::shared_ptr<ITEM_ARRAY_TYPE> mArray; 
 };

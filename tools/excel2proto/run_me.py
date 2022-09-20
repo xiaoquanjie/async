@@ -69,15 +69,15 @@ def protocFile(proto_path, pb_path):
             dirname = os.path.dirname(sys.argv[0])
             command = dirname
             command += "\\protoc.exe "
-            command += "--proto_path=" + proto_path + " "
-            command += "--cpp_out=" + pb_path + " "
-            command += f
+            command += "--proto_path=" + os.path.join(proto_path, " --cpp_out=")
+            name = " " + f
+            command += os.path.join(pb_path, name)
         else:
             command = 'protoc '
             command += '--proto_path=' + proto_path + ' '
             command += '--cpp_out=' + pb_path + ' ' 
             command += f
-        #print(command)
+        #print('command:', command)
         os.system(command)
 
 def parseWhiteBlackFile(files, file_path):
@@ -107,7 +107,7 @@ def clearDirectoryFile(dir_path, suffix):
     data_files = os.listdir(dir_path)
     for f in data_files:
         if f.endswith(suffix):
-            os.remove(dir_path + f)
+            os.remove(os.path.join(dir_path, f))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     clearDirectoryFile(args.pb, '.pb.h')
     clearDirectoryFile(args.pb, '.pb.cc')
     clearDirectoryFile(args.data, '.conf')
-    
+
     # 白名单
     if args.white:
         parseWhiteBlackFile(g_white_files, args.white)
@@ -148,7 +148,7 @@ if __name__ == '__main__':
             continue
         if not f.endswith('.xlsx') and not f.endswith('.xls'):
             continue
-        iteratorSheet(args.excel + f, f, args.proto, args.data, args.r2)
+        iteratorSheet(os.path.join(args.excel, f), f, args.proto, args.data, args.r2)
     
     # 生成c++版本的proto源文件
     if args.pb:
@@ -158,9 +158,9 @@ if __name__ == '__main__':
     pb_files = os.listdir(args.proto)
     for f in pb_files:
         if f.endswith('.py'):
-            os.remove(args.proto + f)
+            os.remove(os.path.join(args.proto, f))
         elif f.endswith('__pycache__'):
-            shutil.rmtree(args.proto + f)
+            shutil.rmtree(os.path.join(args.proto, f))
 
     #生成管理器代码
     if args.code:

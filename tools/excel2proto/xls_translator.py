@@ -114,8 +114,8 @@ class SheetInterpreter:
                 dirname = os.path.dirname(sys.argv[0])
                 command = dirname
                 command += "\\protoc.exe "
-                command += "--proto_path=" + g_proto_path + " "
-                command += "--python_out=" + g_proto_path + " "
+                command += "--proto_path=" + os.path.join(g_proto_path, " ")
+                command += "--python_out=" + os.path.join(g_proto_path, " ")
                 command += g_pb_file_name
                 print(command)
                 os.system(command)
@@ -284,7 +284,7 @@ class SheetInterpreter:
         dir = g_proto_path
         if not os.path.exists(dir):
             os.makedirs(dir)
-        pb_file = open(dir + g_pb_file_name, "w+")
+        pb_file = open(os.path.join(dir, g_pb_file_name), "w+")
         pb_file.writelines(self._output)
         pb_file.close()
 
@@ -506,7 +506,7 @@ class DataParser:
         if not os.path.exists(dir):
             os.makedirs(dir)
     
-        file_name = dir + g_struct_name + ".data"
+        file_name = os.path.join(dir, g_struct_name + ".data")
         file = open(file_name, 'wb+')
         file.write(data)
         file.close()
@@ -516,7 +516,7 @@ class DataParser:
         if not os.path.exists(dir):
             os.makedirs(dir)
         
-        file_name = dir + g_struct_name + ".conf"
+        file_name = os.path.join(dir, g_struct_name + ".conf")
         file = open(file_name, 'wb+')
         file.write(data.encode())
         file.close()
@@ -557,7 +557,7 @@ if __name__ == '__main__':
         if g_data_path:
             parser = DataParser(args.file, args.sheet)
             parser.Parse()
-            os.remove(g_data_path + g_struct_name + '.data')
+            os.remove(os.path.join(g_data_path, g_struct_name + '.data'))
         
         LOG_INFO("end interpreted file:%s sheet:%s" % (args.file, args.sheet))
         LOG_INFO("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")

@@ -135,6 +135,9 @@ if __name__ == '__main__':
     dirname = os.path.dirname(sys.argv[0])
     g_proto_path = sys.argv[1]
     g_code_path = sys.argv[2]
+
+    g_proto_path = os.path.join(g_proto_path, '')
+    g_code_path = os.path.join(g_code_path, '')
     #print("%s:%s" % (g_proto_path, g_code_path))
     
     if not os.path.exists(g_code_path):

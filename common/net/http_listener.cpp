@@ -9,7 +9,6 @@
 
 #include "common/net/http_listener.h"
 #include "common/log.h"
-#include <event.h>
 #include <evhttp.h>
 
 namespace net {

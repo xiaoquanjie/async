@@ -10,6 +10,7 @@
 #include "common/transaction/transaction_mgr.h"
 #include "common/ipc/ipc.h"
 #include "common/log.h"
+#include "common/signal/sig.h"
 #include <stdio.h>
 #include <fstream>
 #include <thread>
@@ -48,6 +49,10 @@ bool Serve::init(int argc, char** argv) {
             log("failed to gate::init");
             return false;
         }
+        sig::initSignal(0);
+        sig::regKill([this](uint32_t) {
+            this->mStopped = true;
+        });
 #endif
         if (!mNetConnect.itemVec.empty()) {
 
@@ -84,6 +89,7 @@ void Serve::start() {
         if (mUseGate) {
             gate::update(now);
         }
+        sig::update();
 #endif
         if (mUseAsyn && co_async::loop(now)) {
             isIdle = false;
@@ -108,6 +114,8 @@ void Serve::start() {
             std::this_thread::sleep_for(std::chrono::milliseconds(mSleep));
         }
     }
+
+    log("program exit");
 }
 
 void Serve::useRouter(bool u) {

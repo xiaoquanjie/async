@@ -400,10 +400,12 @@ bool local_redis_init() {
         return true;
     }
 
-    g_redis_global_data.evt_base = event_base_new();
     if (!g_redis_global_data.evt_base) {
-        log("[async_redis] [error] failed to call event_base_new");
-        return false;
+        g_redis_global_data.evt_base = event_base_new();
+        if (!g_redis_global_data.evt_base) {
+            log("[async_redis] [error] failed to call event_base_new");
+            return false;
+        }
     }
 
     g_redis_global_data.init = true;
@@ -411,13 +413,12 @@ bool local_redis_init() {
 }
 
 bool set_event_base(void* evt_base) {
-    if (!g_redis_global_data.init) {
-        return false;
+    if (!g_redis_global_data.evt_base) {
+        g_redis_global_data.evt_base = (event_base*)evt_base;
+        return true;
     }
 
-    g_redis_global_data.evt_base = (event_base*)evt_base;
-    g_redis_global_data.init = true;
-    return true;
+    return false;
 }
 
 void execute(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb cb) {

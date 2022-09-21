@@ -37,7 +37,7 @@ void setMaxTrans(uint32_t max_trans) {
     g_max_concurrent_trans = max_trans;
 }
 
-void setTransContext(std::shared_ptr<void> ctx) {
+void setTransCxt(std::shared_ptr<void> ctx) {
     auto co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
         assert(false);
@@ -47,7 +47,7 @@ void setTransContext(std::shared_ptr<void> ctx) {
     g_context_map[co_id] = ctx;
 }
 
-std::shared_ptr<void> getTransContext() {
+std::shared_ptr<void> getTransCxt() {
     auto co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
         assert(false);
@@ -60,7 +60,7 @@ std::shared_ptr<void> getTransContext() {
     return iter->second;
 }
 
-void clearTransContext() {
+void clearTransCxt() {
     auto co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
         assert(false);
@@ -139,7 +139,7 @@ void tick(uint32_t cur_time) {
     }
 }
 
-int registBucket(TransactionBucket* bucket) {
+int regBucket(TransactionBucket* bucket) {
     auto iter = g_trans_bucket_map.find(bucket->ReqCmdId());
     if (iter != g_trans_bucket_map.end()) {
         delete bucket;
@@ -152,7 +152,7 @@ int registBucket(TransactionBucket* bucket) {
     return 0;
 }
 
-void recycleTransaction(BaseTransaction* t) {
+void recycleTrans(BaseTransaction* t) {
     do {
         // 优先试图转成BaseHttpTransaction
         auto ht = dynamic_cast<BaseHttpTransaction*>(t);
@@ -188,7 +188,7 @@ void recycleTransaction(BaseTransaction* t) {
     g_cur_concurrent_trans--;
 }
 
-int registTickTransaction(TransactionBucket* bucket) {
+int regTickTrans(TransactionBucket* bucket) {
     BaseTransaction* t = bucket->Create();
     BaseTickTransaction* tt = dynamic_cast<BaseTickTransaction*>(t);
     g_tick_trans_list.push_back(tt);
@@ -196,7 +196,7 @@ int registTickTransaction(TransactionBucket* bucket) {
     return 0;
 }
 
-int registHttpTransaction(uint32_t id, std::string url, TransactionBucket* bucket) {
+int regHttpTrans(uint32_t id, std::string url, TransactionBucket* bucket) {
     auto iter = g_http_trans_bucket_map.find(id);
     if (iter == g_http_trans_bucket_map.end()) {
         std::unordered_map<std::string, TransactionBucket*> m;

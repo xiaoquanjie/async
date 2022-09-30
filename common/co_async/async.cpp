@@ -35,7 +35,7 @@ std::pair<int, int64_t> parallel(const std::initializer_list<fn_cb>& fns, int ti
 
 bool loop(uint32_t curTime) {
     bool ret = loopPromise(curTime);
-    ret = ret | async::loop(curTime);
+    ret = ret || async::loop(curTime);
     return ret;
 }
 

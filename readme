@@ -22,7 +22,12 @@ c++异步io库
 7、 如需使用net模块，则cmake时需定义宏USE_NET。如: cmake .. -DUSE_NET=1
     net模块依赖：libevent
 
-8、cmake例子：
+8、serve模块，分三子模块
+    1）libserve模块，提供基础服务操作。提供了默认的后端进程间通信架构及消息处理样式
+    2）router模块，提供默认的后端进程通信需用到的路由功能
+    3）gate模块，一个网关服务进程的模板
+
+9、cmake例子：
     1）根目录下执行：mkdir -p build
     2）cd build
     3）cmake .. -DUSE_ASYNC_CURL=1 -DUSE_ASYNC_REDIS=1 -DUSE_ASYNC_MONGO=1 \

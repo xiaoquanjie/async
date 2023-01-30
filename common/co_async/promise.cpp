@@ -7,7 +7,6 @@
 
 namespace co_async {
 
-TimerPool g_time_pool;
 uint32_t g_unique_id = 1;
 std::unordered_map<uint64_t, std::shared_ptr<UniqueInfo>> g_unique_id_map;
 
@@ -43,16 +42,15 @@ std::shared_ptr<UniqueInfo> getByUniqueId(uint64_t id) {
 }
 
 int64_t addTimer(int interval, std::function<void()> func) {
-    return g_time_pool.AddTimer(interval, func);
+    return t_pool::addTimer(interval, func);
 }
 
 void rmTimer(int64_t timerId) {
-    g_time_pool.CancelTimer(timerId);
+    t_pool::cancelTimer(timerId);
 }
 
 bool loopPromise(uint32_t curTime) {
-    g_time_pool.Update();
-    return true;
+    return t_pool::update();
 }
 
 void Resolve::operator()(std::shared_ptr<void> res) const {

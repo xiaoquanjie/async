@@ -5,8 +5,12 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
-#include "common/ipc/ipc.h"
+#pragma once
 
-namespace ipc {
+namespace net {
+
+void* createEventBase();
+
+void freeEventBase(void* base);
 
 }

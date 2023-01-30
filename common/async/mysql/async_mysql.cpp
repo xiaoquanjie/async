@@ -8,6 +8,7 @@
 #ifdef USE_ASYNC_MYSQL
 
 #include "common/async/mysql/async_mysql.h"
+#include "common/log.h"
 #include <vector>
 #include <mysql/mysql.h>
 #include <mysql/mysqld_error.h>
@@ -17,7 +18,6 @@
 #include <mutex>
 #include <map>
 #include <memory>
-#include <stdarg.h>
 
 namespace async {
 
@@ -46,7 +46,7 @@ struct mysql_addr {
             this->pwd = values[4];
         }
         else {
-            log("[error] uri error:%s\n", uri.c_str());
+            log("[async_mysql] [error] uri error:%s", uri.c_str());
             assert(false);
         }
     }
@@ -111,6 +111,7 @@ struct uri_data {
 };
 
 struct mysql_global_data {
+    bool init = false;
     std::function<void(std::function<void()>)> thr_func;
     unsigned int max_connections = 128;
     unsigned int keep_connections = 64;
@@ -128,30 +129,6 @@ struct mysql_global_data {
 mysql_global_data g_mysql_global_data;
 
 time_t g_last_statistics_time = 0;
-
-// 日志输出接口
-std::function<void(const char*)> g_log_cb = [](const char* data) {
-    static std::mutex s_mutex;
-    s_mutex.lock();
-    printf("[async_mysql] %s\n", data);
-    s_mutex.unlock();
-};
-
-void log(const char* format, ...) {
-    if (!g_log_cb) {
-        return;
-    }
-
-    char buf[1024] = { 0 };
-    va_list ap;
-    va_start(ap, format);
-    vsprintf(buf, format, ap);
-    g_log_cb(buf);
-}
-
-void setLogFunc(std::function<void(const char*)> cb) {
-    g_log_cb = cb;
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -171,7 +148,7 @@ mysql_core_ptr local_create_core(const mysql_addr& addr, uri_data& uri_map) {
     core->state = enum_null_state;
     auto mysql = mysql_init(&core->mysql);
     if (!mysql) {
-        log("[error] failed to call mysql_init\n");
+        log("[async_mysql] [error] failed to call mysql_init");
         return nullptr;
     }
 
@@ -188,6 +165,9 @@ mysql_custom_data_ptr local_create_mysql_custom_data(const std::string &uri,
                                                      async_mysql_cb cb,
                                                      bool is_query)
 {
+    if (!g_mysql_global_data.init) {
+        g_mysql_global_data.init = true;
+    }
     mysql_custom_data_ptr req = std::make_shared<mysql_custom_data>();
     req->addr.Parse(uri);
     req->sql = sql;
@@ -241,7 +221,7 @@ void thread_mysql_look_state(std::list<mysql_custom_data_ptr> &request_queue,
                                                 data->sql.length());
             if (err != 0) {
                 data->core->state = enum_error_state;
-                log("[error] failed to call mysql_real_query_start:%d\n", err);
+                log("[async_mysql] [error] failed to call mysql_real_query_start:%d", err);
             }
             else {
                 if (data->status == 0) {
@@ -309,7 +289,7 @@ void thread_mysql_wait(std::list<mysql_custom_data_ptr> &request_queue,
     int rc = select(max_fd + 1, &fd_r, &fd_w, &fd_e, &to);
 
     if (rc < 0) {
-        log("[error] failed to call select\n");
+        log("[async_mysql] [error] failed to call select");
         return;
     }
 
@@ -467,24 +447,24 @@ void setKeepConnection(unsigned int cnt) {
 }
 
 void statistics(uint32_t cur_time) {
-    if (!g_log_cb) {
-        return;
-    }
-
     if (cur_time - g_last_statistics_time <= 120) {
         return;
     }
 
     // 没有输出连接池大小
     g_last_statistics_time = cur_time;
-    log("[mysql statistics] cur_task:%d, req_task:%d, rsp_task:%d",
+    log("[async_mysql] [statistics] cur_task:%d, req_task:%d, rsp_task:%d",
         (g_mysql_global_data.req_task_cnt - g_mysql_global_data.rsp_task_cnt),
         g_mysql_global_data.req_task_cnt,
         g_mysql_global_data.rsp_task_cnt);
-    log("[mysql statistics] cur_uri:%ld", g_mysql_global_data.uri_map.size());
+    log("[async_mysql] [statistics] cur_uri:%ld", g_mysql_global_data.uri_map.size());
 }
 
 bool loop(uint32_t cur_time) {
+    if (!g_mysql_global_data.init) {
+        return false;
+    }
+    
     bool has_task = false;
     
     statistics(cur_time);
@@ -540,7 +520,7 @@ bool loop(uint32_t cur_time) {
             
             int err = mysql_errno(&item.data->core->mysql);
             if (err != 0) {
-                log("[error] failed to call mysql:%s|%s\n", mysql_error(&item.data->core->mysql), item.data->sql.c_str());
+                log("[async_mysql] [error] failed to call mysql:%s|%s", mysql_error(&item.data->core->mysql), item.data->sql.c_str());
             }
 
             int affected_rows = 0;

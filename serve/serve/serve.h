@@ -42,6 +42,8 @@ public:
 
     void useAsync(bool u);
 
+    void useGate(bool u);
+
     const World& self();
 
     void setLogFunc(std::function<void(const char*)> cb);
@@ -56,6 +58,8 @@ protected:
     bool mUseRouter = false;
     bool mUseDealer = false;
     bool mUseAsyn = true;
+    bool mUseHttp = false;
+    bool mUseGate = false;
 
     std::function<bool(int, char**)> mOnInit;
     std::function<bool()> mOnLoop;

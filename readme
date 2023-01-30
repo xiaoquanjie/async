@@ -1,4 +1,7 @@
 c++异步io库
+目标：
+    1）提供异步访问的通用底层支持（类似node语言里的promise机制）及内置一些常用的io接口
+    2）提供类似服务器进程脚手架的功能，供快速搭建服务器架构
 
 编译：
 1、 如需使用redis模块，则cmake时需定义宏USE_ASYNC_REDIS。如：cmake .. -DUSE_ASYNC_REDIS=1
@@ -22,7 +25,12 @@ c++异步io库
 7、 如需使用net模块，则cmake时需定义宏USE_NET。如: cmake .. -DUSE_NET=1
     net模块依赖：libevent
 
-5、cmake例子：
+8、serve模块，分三子模块
+    1）libserve模块，提供基础服务操作。提供了默认的后端进程间通信架构及消息处理样式
+    2）router模块，提供默认的后端进程通信需用到的路由功能
+    3）gate模块，一个网关服务进程的模板
+
+9、cmake例子：
     1）根目录下执行：mkdir -p build
     2）cd build
     3）cmake .. -DUSE_ASYNC_CURL=1 -DUSE_ASYNC_REDIS=1 -DUSE_ASYNC_MONGO=1 \
@@ -67,10 +75,12 @@ common                  ----> 库目录
     net                 ----> 提供tcp server/client接口，udp server/client接口，http server接口
 
 serve                   ----> 目标是提供一个服务器进程脚手架，可以快速搭建后端服务，还提供一个通用的route进程。
-                              它会依赖common库，且common库需要使用-DUSE_TRANS编译。还在开发中。。。。。
-    serve           
+                              它会依赖common库，且common库需要使用-DUSE_TRANS编译。已实现大部分功能
+    serve               ----> 编译输出libserve.so库
     route               ----> ./router -c router.json 启动路由，不同世界的路由互不通信
+    gate                ----> 一个网关服案例工程，可以对它进行修改实现自定义网关服
     test                ----> 测试案例，起两个进程，这两个进程使用router做转发相互通信。
+    testhttp            ----> 演绎如何监听http服务，并注册httptransaction处理业务
                               
 层次结构：co表示coroutine协程
 

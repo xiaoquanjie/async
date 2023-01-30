@@ -9,9 +9,9 @@
 
 #include "common/transaction/transaction_mgr.h"
 #include "common/coroutine/coroutine.hpp"
+#include "common/log.h"
 #include <unordered_map>
 #include <assert.h>
-#include <stdarg.h>
 #include <algorithm>
 
 namespace trans_mgr {
@@ -29,27 +29,6 @@ std::list<BaseTickTransaction*> g_tick_trans_list;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// 日志输出接口
-std::function<void(const char*)> g_log_cb = [](const char* data) {
-    printf("[transaction] %s\n", data);
-};
-
-void log(const char* format, ...) {
-    if (!g_log_cb) {
-        return;
-    }
-
-    char buf[1024] = { 0 };
-    va_list ap;
-    va_start(ap, format);
-    vsprintf(buf, format, ap);
-    g_log_cb(buf);
-}
-
-void setLogFunc(std::function<void(const char*)> cb) {
-    g_log_cb = cb;
-}
-
 uint32_t genTransId() {
     return (g_trans_id++);
 }
@@ -58,7 +37,7 @@ void setMaxTrans(uint32_t max_trans) {
     g_max_concurrent_trans = max_trans;
 }
 
-void setTransContext(std::shared_ptr<void> ctx) {
+void setTransCxt(std::shared_ptr<void> ctx) {
     auto co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
         assert(false);
@@ -68,7 +47,7 @@ void setTransContext(std::shared_ptr<void> ctx) {
     g_context_map[co_id] = ctx;
 }
 
-std::shared_ptr<void> getTransContext() {
+std::shared_ptr<void> getTransCxt() {
     auto co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
         assert(false);
@@ -81,7 +60,7 @@ std::shared_ptr<void> getTransContext() {
     return iter->second;
 }
 
-void clearTransContext() {
+void clearTransCxt() {
     auto co_id = Coroutine::curid();
     if (co_id == M_MAIN_COROUTINE_ID) {
         assert(false);
@@ -93,7 +72,7 @@ void clearTransContext() {
 
 int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size, void* ext) {
     if (g_cur_concurrent_trans >= g_max_concurrent_trans) {
-        log("over max concurrent trans limit:%d\n", g_cur_concurrent_trans);
+        log("[transaction] over max concurrent trans limit:%d", g_cur_concurrent_trans);
         return -1;
     }
 
@@ -115,7 +94,7 @@ int handle(uint32_t req_cmd_id, const char* packet, uint32_t packet_size, void* 
 
 int handle(uint32_t id, std::string url, const char* packet, uint32_t packet_size, void* ext) {
     if (g_cur_concurrent_trans >= g_max_concurrent_trans) {
-        log("over max concurrent trans limit:%d\n", g_cur_concurrent_trans);
+        log("[transaction] over max concurrent trans limit:%d", g_cur_concurrent_trans);
         return -1;
     }
 
@@ -136,7 +115,7 @@ int handle(uint32_t id, std::string url, const char* packet, uint32_t packet_siz
         return -1;
     }
 
-    auto ht = dynamic_cast<HttpTransaction*>(t);
+    auto ht = dynamic_cast<BaseHttpTransaction*>(t);
     if (!ht) {
         assert(false);
         return -1;
@@ -156,11 +135,11 @@ void tick(uint32_t cur_time) {
     }
     if (cur_time - g_last_check_time >= 120) {
         g_last_check_time = cur_time;
-        log("[trans statistics] cur_trans:%d\n", g_cur_concurrent_trans);
+        log("[transaction] [statistics] cur_trans:%d", g_cur_concurrent_trans);
     }
 }
 
-int registBucket(TransactionBucket* bucket) {
+int regBucket(TransactionBucket* bucket) {
     auto iter = g_trans_bucket_map.find(bucket->ReqCmdId());
     if (iter != g_trans_bucket_map.end()) {
         delete bucket;
@@ -168,15 +147,15 @@ int registBucket(TransactionBucket* bucket) {
         return -1;
     }
 
-    log("regist req_cmd:%d, rsp_cmd:%d, trans:%s\n", bucket->ReqCmdId(), bucket->RspCmdId(), bucket->TransName());
+    log("[transaction] regist req_cmd:%d, rsp_cmd:%d, trans:%s", bucket->ReqCmdId(), bucket->RspCmdId(), bucket->TransName());
     g_trans_bucket_map.insert(std::make_pair(bucket->ReqCmdId(), bucket));
     return 0;
 }
 
-void recycleTransaction(BaseTransaction* t) {
+void recycleTrans(BaseTransaction* t) {
     do {
-        // 优先试图转成HttpTransaction
-        auto ht = dynamic_cast<HttpTransaction*>(t);
+        // 优先试图转成BaseHttpTransaction
+        auto ht = dynamic_cast<BaseHttpTransaction*>(t);
 
         if (ht) {
             auto iter = g_http_trans_bucket_map.find(t->ReqCmdId());
@@ -209,7 +188,7 @@ void recycleTransaction(BaseTransaction* t) {
     g_cur_concurrent_trans--;
 }
 
-int registTickTransaction(TransactionBucket* bucket) {
+int regTickTrans(TransactionBucket* bucket) {
     BaseTransaction* t = bucket->Create();
     BaseTickTransaction* tt = dynamic_cast<BaseTickTransaction*>(t);
     g_tick_trans_list.push_back(tt);
@@ -217,7 +196,7 @@ int registTickTransaction(TransactionBucket* bucket) {
     return 0;
 }
 
-int registHttpTransaction(uint32_t id, std::string url, TransactionBucket* bucket) {
+int regHttpTrans(uint32_t id, std::string url, TransactionBucket* bucket) {
     auto iter = g_http_trans_bucket_map.find(id);
     if (iter == g_http_trans_bucket_map.end()) {
         std::unordered_map<std::string, TransactionBucket*> m;
@@ -233,7 +212,7 @@ int registHttpTransaction(uint32_t id, std::string url, TransactionBucket* bucke
         return -1;
     }
 
-    log("regist id:%d, url:%d, trans:%s\n", id, url.c_str(), bucket->TransName());
+    log("[transaction] regist id:%d, url:%d, trans:%s", id, url.c_str(), bucket->TransName());
     iter->second.insert(std::make_pair(url, bucket));
     return 0;
 }

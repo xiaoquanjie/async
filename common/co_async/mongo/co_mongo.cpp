@@ -9,6 +9,7 @@
 
 #include "common/co_async/mongo/co_mongo.h"
 #include "common/co_async/promise.h"
+#include "common/log.h"
 
 namespace co_async {
 namespace mongo {
@@ -25,6 +26,13 @@ std::pair<int, async::mongo::MongoReplyParserPtr> execute(const std::string &uri
     std::pair<int, async::mongo::MongoReplyParserPtr> ret = std::make_pair(res.first, nullptr);
     if (co_async::checkOk(res)) {
         ret.second = co_async::getOk<async::mongo::MongoReplyParser>(res);
+        auto parser = ret.second;
+        if (!parser->IsOk()) {
+            log("[co_async_mongo] failed to execute mongo|%s|%s", cmd.DebugString().c_str(), parser->What());
+        }
+    }
+    else {
+        log("[co_async_mongo] [timeout] execute mongo|%s", cmd.DebugString().c_str());
     }
 
     return ret;
@@ -57,10 +65,6 @@ std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMon
             jsonResult->append("]");
         }
     }
-    else {
-        auto parser = res.second;
-        async::mongo::log("[error] failed to execute mongo:%s\n", parser->What());
-    }
 
     return ret;
 }
@@ -76,10 +80,6 @@ std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMon
         if (deletedCount) {
             parser->GetDeletedCount(*deletedCount);
         }
-    }
-    else {
-        auto parser = res.second;
-        async::mongo::log("[error] failed to execute mongo:%s\n", parser->What());
     }
 
     return ret;
@@ -102,10 +102,6 @@ std::pair<int, bool> execute(const std::string &uri, const async::mongo::BaseMon
         if (upsertedCount) {
             parser->GetUpsertedCount(*upsertedCount);
         }
-    }
-    else {
-        auto parser = res.second;
-        async::mongo::log("[error] failed to execute mongo:%s\n", parser->What());
     }
 
     return ret;

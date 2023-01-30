@@ -62,8 +62,8 @@ void _transaction_coroutine_enter_(void* p) {
     // 运行
     trans->InCoroutine();
     // 协程退出
-    trans_mgr::clearTransContext();
-    trans_mgr::recycleTransaction(trans);
+    trans_mgr::clearTransCxt();
+    trans_mgr::recycleTrans(trans);
 }
 
 #endif

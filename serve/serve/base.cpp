@@ -1,5 +1,6 @@
 #include "serve/serve/base.h"
 #include <string.h>
+#include <map>
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #include <Winsock2.h>
@@ -68,6 +69,13 @@ std::string LinkInfo::Item::addr() const {
     return addr;
 }
 
+std::string LinkInfo::Item::rawAddr() const {
+    std::string addr;
+    addr += this->ip + ":";
+    addr += std::to_string(this->port);
+    return addr;
+}
+
 uint32_t BackendHeader::size() {
     static uint32_t s = sizeof(BackendHeader);
     return s;
@@ -84,6 +92,59 @@ void BackendMsg::decode(const std::string& input) {
 	data.assign(input.c_str() + this->header.size(), input.size() - this->header.size());
 }
 
+uint32_t FrontendHeader::size() {
+    static uint32_t s = sizeof(FrontendHeader);
+    return s;
+}
+
+void FrontendHeader::encode(FrontendHeader& h) const {
+    h.cmdLength = htonl(this->cmdLength);
+    h.frontSeqNo = htonl(this->frontSeqNo);
+    h.cmd = htonl(this->cmd);
+    h.result = htonl(this->result);
+}
+
+void FrontendHeader::decode(const FrontendHeader& h) {
+    this->cmdLength = ntohl(h.cmdLength);
+    this->frontSeqNo = ntohl(h.frontSeqNo);
+    this->cmd = ntohl(h.cmd);
+    this->result = ntohl(h.result);
+}
+
+void FrontendMsg::encode(std::string& output) const {
+    FrontendHeader newHeader;
+    this->header.encode(newHeader);
+
+    output.assign(reinterpret_cast<const char*>(&newHeader), newHeader.size());
+	output.append(data);
+}
+
+void FrontendMsg::decode(const std::string& input) {
+    decode(input.c_str(), input.size());
+}
+
+void FrontendMsg::decode(const char* d, uint32_t len) {
+    auto p = reinterpret_cast<const FrontendHeader*>(d);
+    this->header.decode(*p);
+	data.assign(d + this->header.size(), len - this->header.size());
+}
+
+void HttpRequest::swap(HttpRequest& req) {
+    void* tr = this->r;
+    this->r = req.r;
+    req.r = tr;
+
+    this->url.swap(req.url);
+    this->host.swap(req.host);
+    this->squery.swap(req.squery);
+    this->body.swap(req.body);
+    this->query.swap(req.query);
+}
+
+void HttpRespond::swap(HttpRespond& rsp) {
+    this->body.swap(rsp.body);
+    this->header.swap(rsp.header);
+}
 
 void split(const std::string source, const std::string &separator, std::vector<std::string> &array) {
     array.clear();

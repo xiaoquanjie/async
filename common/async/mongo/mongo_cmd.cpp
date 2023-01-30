@@ -57,7 +57,7 @@ bool BaseMongoCmd::IsInsertCmd() const {
     return this->d->cmd == "insert";
 }
 
-std::string BaseMongoCmd::DebugString() {
+std::string BaseMongoCmd::DebugString() const {
     if (!this->d) {
         return "";
     }

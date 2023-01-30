@@ -42,15 +42,6 @@ bool loop(uint32_t cur_time) {
     return is_busy;
 }
 
-void setLogFunc(std::function<void(const char*)> cb) {
-    auto& modVec = getModuleVec();
-    for (auto& item : modVec) {
-        if (item.logFunc) {
-            item.logFunc(cb);
-        }
-    }
-}
-
 void setThreadFunc(std::function<void(std::function<void()>)> cb) {
     auto& modVec = getModuleVec();
     for (auto& item : modVec) {

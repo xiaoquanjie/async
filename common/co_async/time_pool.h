@@ -7,48 +7,22 @@
 
 #pragma once
 
-#include <time.h>
 #include <functional>
 #include <memory>
 
 namespace co_async {
+namespace t_pool {
 
-class TimerPool {
-public:
-	struct TimeNode {
-		unsigned long long timer_id;
-		unsigned long long expire;
-		std::function<void()> cb;
-	};
+// 设置最大的间隔天数, 最大不能超过7天，默认是1天
+// 这个需要在addTimer之前就调用
+void setMaxInterval(uint32_t days);
 
-	typedef std::shared_ptr<TimeNode> TimeNodePtr;
+uint64_t addTimer(uint32_t interval, std::function<void()>func);
 
-	// @max_interval_day 最大不能超过7天，默认是7天
-	TimerPool();
+bool cancelTimer(uint64_t id);
 
-	~TimerPool();
+// 调用此函数，超时的节点会被调用回调，时间是毫秒
+bool update();
 
-	void Init(int max_interval_day = 2);
-
-	// 调用此函数，超时的节点会被调用回调，时间是毫秒
-	void Update();
-
-	// @interval是毫秒, 返回值是timer id, 值大于0
-	unsigned long long AddTimer(int interval, std::function<void()>func);
-
-	int CancelTimer(unsigned long long id);
-
-protected:
-	bool _CalcBucket(unsigned long long now_mil, int interval, int& big_bucket, int& small_bucket);
-
-private:
-	bool _init = false;
-	int _max_interval_day = 0;	
-	void** _bucket = 0;			
-	unsigned long long _beg_time = 0;
-	int _big_bucket = 0;
-	int _small_bucket = 0;
-	unsigned long long _cur_timer_id = 1;
-};
-
+}
 }

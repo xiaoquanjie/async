@@ -5,8 +5,11 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
-#include "common/ipc/ipc.h"
+#pragma once
 
-namespace ipc {
+#include <functional>
 
-}
+void log(const char* format, ...);
+
+// 设置日志接口, 要求是线程安全的
+void setSafeLogFunc(std::function<void(const char*)> cb);

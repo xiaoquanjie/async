@@ -28,10 +28,6 @@ public:
         return true;
     }
 
-    bool OnBefore() override {
-        return true;
-    }
-
     bool OnAfter() override {
         if (BaseTrans::RspCmdId() != 0) {
             sendBack(BaseTrans::m_respond);
@@ -44,6 +40,7 @@ public:
                             mHeader.targetId,
                             data, 
                             BaseTrans::RspCmdId(),
+                            mHeader.frontSeqNo,
                             mHeader.reqSeqId,
                             BaseTrans::m_return_value,
                             0);

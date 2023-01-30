@@ -7,11 +7,16 @@
 
 #pragma once
 
-#include "common/ipc/zero_mq_unit.h"
-#include "common/ipc/zero_mq_handler.h"
-#include "common/log.h"
 #include <functional>
 
-namespace ipc {
+namespace sig {
+
+void initSignal(void* eventBase);
+
+bool regSinal(uint32_t signal, std::function<void(uint32_t)> handler);
+
+void regKill(std::function<void(uint32_t)> handler);
+
+void update();
 
 }

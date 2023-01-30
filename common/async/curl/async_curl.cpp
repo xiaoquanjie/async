@@ -8,11 +8,11 @@
 #ifdef USE_ASYNC_CURL
 
 #include "common/async/curl/async_curl.h"
+#include "common/log.h"
 #include <queue>
 #include <string.h>
 #include <curl/curl.h>
 #include <mutex>
-#include <stdarg.h>
 #include <memory>
 
 namespace async {
@@ -64,30 +64,6 @@ curl_global_data g_curl_global_data;
 
 time_t g_last_statistics_time = 0;
 
-// 日志输出接口
-std::function<void(const char*)> g_log_cb = [](const char* data) {
-    static std::mutex s_mutex;
-    s_mutex.lock();
-    printf("[async_curl] %s\n", data);
-    s_mutex.unlock();
-};
-
-void log(const char* format, ...) {
-    if (!g_log_cb) {
-        return;
-    }
-    
-    char buf[1024] = { 0 };
-    va_list ap;
-    va_start(ap, format);
-    vsprintf(buf, format, ap);
-    g_log_cb(buf);
-}
-
-void setLogFunc(std::function<void(const char*)> cb) {
-    g_log_cb = cb;
-}
-
 ////////////////////////////////////////////////////////////////////////////////////
 
 bool local_curl_global_init() {
@@ -97,13 +73,13 @@ bool local_curl_global_init() {
 
     auto code = curl_global_init(CURL_GLOBAL_ALL);
     if (code != CURLE_OK) {
-        log("[error] failed to call curl_global_init: %d", code);
+        log("[async_curl] [error] failed to call curl_global_init: %d", code);
         return false;
     }
 
     g_curl_global_data.curlm = curl_multi_init();
     if (!g_curl_global_data.curlm) {
-        log("[error] failed to call curl_multi_init: %d", errno);
+        log("[async_curl] [error] failed to call curl_multi_init: %d", errno);
         return false;
     }
 
@@ -135,7 +111,7 @@ curl_custom_data_ptr local_create_curl_custom_data(int method,
 {
     CURL* curl = curl_easy_init();
     if (!curl) {
-        log("[error] failed to call curl_easy_init: %d, method:%d, url:%s", errno, method, url.c_str());
+        log("[async_curl] [error] failed to call curl_easy_init: %d, method:%d, url:%s", errno, method, url.c_str());
         return 0;
     }
 
@@ -195,7 +171,7 @@ void thread_curl_finish(CURLM* curlm, std::queue<curl_respond_data>& queue) {
         CURL* curl = (CURL*)curl_msg->easy_handle;
         auto curl_code = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
         if (CURLE_OK != curl_code) {
-            log("failed to call curl_easy_getinfo: %d", curl_code);
+            log("[async_curl] failed to call curl_easy_getinfo: %d", curl_code);
         }
 
         // push to queue
@@ -213,7 +189,7 @@ void thread_curl_process(CURLM* curlm, std::queue<curl_respond_data>& queue, boo
         curl_multi_wait(curlm, NULL, 0, 0, NULL);
         auto code = curl_multi_perform(curlm, &still_running);
         if (code != CURLM_OK) {
-            log("failed to call curl_multi_perform: %d", code);
+            log("[async_curl] failed to call curl_multi_perform: %d", code);
             break;
         }
     } while (still_running);
@@ -276,17 +252,13 @@ void post(const std::string& url, const std::string& content, const std::map<std
 }
 
 void statistics(uint32_t cur_time) {
-    if (!g_log_cb) {
-        return;
-    }
-
     if (cur_time - g_last_statistics_time <= 120) {
         return;
     }
 
     g_last_statistics_time = cur_time;
 
-    log("[curl statistics] cur_task:%d, req_task:%d, rsp_task:%d",
+    log("[async_curl] [statistics] cur_task:%d, req_task:%d, rsp_task:%d",
         (g_curl_global_data.req_task_cnt - g_curl_global_data.rsp_task_cnt),
         g_curl_global_data.req_task_cnt,
         g_curl_global_data.rsp_task_cnt);
@@ -325,7 +297,7 @@ void local_process_request() {
         auto code = curl_multi_add_handle(g_curl_global_data.curlm, req->curl);
         if (code != CURLM_OK) {
             curl_easy_cleanup(req->curl);
-            log("[error] failed to call curl_multi_add_handle: %d", code);
+            log("[async_curl] [error] failed to call curl_multi_add_handle: %d", code);
             continue;
         }
 

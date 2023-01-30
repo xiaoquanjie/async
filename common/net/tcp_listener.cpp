@@ -8,6 +8,7 @@
 #ifdef USE_NET 
 
 #include "common/net/tcp_listener.h"
+#include "common/log.h"
 #include <event2/event.h>
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
@@ -91,6 +92,7 @@ bool TcpListener::listen(const std::string& addr) {
 		return false;
 	}
 
+    log("[tcpnet] listen: %s", addr.c_str());
     return true;
 }
 

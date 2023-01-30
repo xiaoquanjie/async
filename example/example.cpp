@@ -42,7 +42,7 @@ int main() {
     //ipc_test();
 
     while (true) {
-        co_async::loop();
+        co_async::loop(time(0));
         usleep(100);
         //printf("loop\n");
     }

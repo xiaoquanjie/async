@@ -8,7 +8,7 @@
 #ifdef USE_NET
 
 #include "common/net/http_listener.h"
-#include <event.h>
+#include "common/log.h"
 #include <evhttp.h>
 
 namespace net {
@@ -59,6 +59,7 @@ bool HttpListener::listen(const std::string& ip, uint32_t port) {
         return false;
     }
 
+    log("[net] [http_listener] listen:%s|%d", ip.c_str(), port);
     return true;
 }
 
@@ -100,6 +101,10 @@ const char* HttpListener::getUrlParam(const void* request) {
     // 获取查询字符串, 并且对特殊字符进行解码
 	auto query = evhttp_uri_get_query(((const evhttp_request*)request)->uri_elems);
 	return query;
+}
+
+const char* HttpListener::decodeUri(const char* s) {
+    return evhttp_decode_uri(s);
 }
 
 ///////////////////////////////////////////////////////////

@@ -52,7 +52,7 @@ protected:
 /////////////////////////////////////////////////////////////////////
 
 // http的事务
-class HttpTransaction : public BaseTransaction {
+class BaseHttpTransaction : public BaseTransaction {
 public:
     const std::string& Url() {
         return m_url;
@@ -72,19 +72,18 @@ public:
             return;
         }
 
-        if (!OnBefore()) {
-            return;
+        if (OnBefore()) {
+            OnRequest();
         }
 
-        OnRequest();
         OnAfter();
     } 
 
-    virtual bool OnBefore() { return false; }
+    virtual bool OnBefore() { return true; }
 
     virtual int OnRequest() = 0;
 
-    virtual bool OnAfter() { return false; }
+    virtual bool OnAfter() { return true; }
 
 protected:
     std::string m_url;
@@ -122,20 +121,19 @@ public:
             return;
         }
 
-        if (!OnBefore()) {
-            return;
+        m_return_value = -1;
+        if (OnBefore()) {
+            m_return_value = OnRequest();
         }
 
-        m_return_value = OnRequest();
         OnAfter();
     }
 
-    // 在OnRequest之后调用
-    virtual bool OnBefore() { return false; }
+    virtual bool OnBefore() { return true; }
 
     virtual int OnRequest() = 0;
-
-    virtual bool OnAfter() { return false; }
+    
+    virtual bool OnAfter() { return true; }
 
 protected:
     int m_return_value;      // 返回值

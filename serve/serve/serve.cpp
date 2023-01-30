@@ -3,10 +3,14 @@
 #include "serve/serve/json.hpp"
 #include "serve/serve/router.h"
 #include "serve/serve/backend.h"
+#include "serve/serve/http.h"
+#include "serve/serve/gate.h"
 #include "common/co_async/async.h"
 #include "common/async/async.h"
 #include "common/transaction/transaction_mgr.h"
 #include "common/ipc/ipc.h"
+#include "common/log.h"
+#include "common/signal/sig.h"
 #include <stdio.h>
 #include <fstream>
 #include <thread>
@@ -20,32 +24,40 @@ bool Serve::init(int argc, char** argv) {
             break;
         }
         if (mOnInit && !mOnInit(argc, argv)) {
-            printf("failed to onInit\n");
+            log("failed to onInit");
             break;
         }
     
 #ifdef USE_IPC
         // 启动路由
         if (mUseRouter && !router::init(mZmListen, mRoutes)) {
-            printf("failed to router::init\n");
+            log("failed to router::init");
             return false;
         }
         if (mUseDealer && !backend::init(mSelf, mZmConnect)) {
-            printf("failed to backend::init\n");
+            log("failed to backend::init");
             return false;
         }
 #endif
 
-        if (!mNetListen.itemVec.empty()) {
-
+#ifdef USE_NET
+        if (mUseHttp && !http::init(0, mHttpListen)) {
+            log("failed to http::init");
+            return false;
         }
+        if (mUseGate && !gate::init(0, mSelf, mNetListen)) {
+            log("failed to gate::init");
+            return false;
+        }
+        sig::initSignal(0);
+        sig::regKill([this](uint32_t) {
+            this->mStopped = true;
+        });
+#endif
         if (!mNetConnect.itemVec.empty()) {
 
         }
-        if (!mHttpListen.itemVec.empty()) {
-
-        }
-
+        
         return true;
     } while (false);
 
@@ -70,6 +82,15 @@ void Serve::start() {
             isIdle = false;
         }
 #endif
+#ifdef USE_NET
+        if (mUseHttp) {
+            http::update(now);
+        }
+        if (mUseGate) {
+            gate::update(now);
+        }
+        sig::update();
+#endif
         if (mUseAsyn && co_async::loop(now)) {
             isIdle = false;
         }
@@ -93,6 +114,8 @@ void Serve::start() {
             std::this_thread::sleep_for(std::chrono::milliseconds(mSleep));
         }
     }
+
+    log("program exit");
 }
 
 void Serve::useRouter(bool u) {
@@ -123,14 +146,16 @@ void Serve::useAsync(bool u) {
     mUseAsyn = u;
 }
 
+void Serve::useGate(bool u) {
+    mUseGate = u;
+}
+
 const World& Serve::self() {
     return mSelf;
 }
 
 void Serve::setLogFunc(std::function<void(const char*)> cb) {
-    trans_mgr::setLogFunc(cb);
-    async::setLogFunc(cb);
-    ipc::setLogFunc(cb);
+    setSafeLogFunc(cb);
 }
 
 bool Serve::parseArgv(int argc, char** argv) {
@@ -144,12 +169,12 @@ bool Serve::parseArgv(int argc, char** argv) {
     };
 
     auto usage = [&opt, &descr]() {
-        printf("DESCRIPTION\n");
+        log("DESCRIPTION");
         for (size_t idx = 0; idx < sizeof(opt) / sizeof(struct option); ++idx) {
             if (opt[idx].val == 0) {
                 continue;
             }
-            printf("        -%c, --%s       %s\n", opt[idx].val, opt[idx].name, descr[idx]);
+            log("        -%c, --%s       %s", opt[idx].val, opt[idx].name, descr[idx]);
         }
     };
 
@@ -184,7 +209,7 @@ bool Serve::parseArgv(int argc, char** argv) {
             break;
 
         case ':':
-            printf("miss param\n");
+            log("miss param");
             usage();
             return false;
 
@@ -194,7 +219,7 @@ bool Serve::parseArgv(int argc, char** argv) {
     }
 
     if (mConfFile.empty()) {
-        printf("need '-c config'\n");
+        log("need '-c config'");
         return false;
     }
 
@@ -262,9 +287,12 @@ bool Serve::parseArgv(int argc, char** argv) {
         if (!mZmConnect.itemVec.empty()) {
             mUseDealer = true;
         }
+        if (!mHttpListen.itemVec.empty()) {
+            mUseHttp = true;
+        }
     }
     catch(nlohmann::detail::exception& e) {
-        printf("failed to parse %s|%s\n", mConfFile.c_str(), e.what());
+        log("failed to parse %s|%s", mConfFile.c_str(), e.what());
         return false;
     }
 
@@ -291,19 +319,38 @@ bool Serve::parseArgv(int argc, char** argv) {
     if (mUseRouter) {
         for (auto item : mZmListen.itemVec) {
             if (!worldCheck(item.w, 1)) {
+                log("conf: zm_listen.world error");
                 return false;
             }
         }
         for (auto item : mRoutes.itemVec) {
             if (!worldCheck(item.w, 1 | 2 | 4)) {
+                log("conf: routes error");
                 return false;
             }
         }
     }
 
     if (mUseDealer && !worldCheck(mSelf, 1 | 2 | 4)) {
+        log("conf: self error");
         // self不能为空
         return false;
+    }
+
+    if (mUseHttp) {
+        for (auto item : mHttpListen.itemVec) {
+            if (!worldCheck(item.w, 4)) {
+                log("conf: http_listen.id error");
+                return false;
+            }
+        }
+    }
+
+    for (auto item : mNetListen.itemVec) {
+        if (item.protocol != "tcp" && item.protocol != "udp") {
+            log("conf: net_listen.protocol error");
+            return false;
+        }
     }
     
     return true;

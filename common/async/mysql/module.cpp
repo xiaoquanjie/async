@@ -17,7 +17,7 @@ static async::AsyncModule mod = {
     // 主循环钩子
     std::bind(async::mysql::loop, std::placeholders::_1),
     // 日志钩子
-    std::bind(async::mysql::setLogFunc, std::placeholders::_1),
+    nullptr,
     // 线程钩子
     std::bind(async::mysql::setThreadFunc, std::placeholders::_1)
 };

@@ -9,6 +9,7 @@
 
 #include "common/async/redis/async_redis.h"
 #include "common/async/redis/redis_exception.h"
+#include "common/log.h"
 #include <vector>
 #include <queue>
 #include <list>
@@ -137,30 +138,6 @@ redis_global_data g_redis_global_data;
 
 time_t g_last_statistics_time = 0;
 
-// 日志输出接口
-std::function<void(const char*)> g_log_cb = [](const char* data) {
-    static std::mutex s_mutex;
-    s_mutex.lock();
-    printf("[async_redis] %s\n", data);
-    s_mutex.unlock();
-};
-
-void log(const char* format, ...) {
-    if (!g_log_cb) {
-        return;
-    }
-
-    char buf[1024] = { 0 };
-    va_list ap;
-    va_start(ap, format);
-    vsprintf(buf, format, ap);
-    g_log_cb(buf);
-}
-
-void setLogFunc(std::function<void(const char*)> cb) {
-    g_log_cb = cb;
-}
-
 //////////////////////////////////////////////////////////////////////////////////////
 
 redisReply* copy_redis_reply(redisReply* reply) {
@@ -196,7 +173,7 @@ void on_thread_redis_connect(const redisAsyncContext *c, int status) {
     bool flag = false;
     for (auto iter = g_redis_global_data.uri_map.begin(); iter != g_redis_global_data.uri_map.end(); ) {
         if (iter->second->ctxt == c) {
-            log("%s connection|%p|uri:%s\n", (status == REDIS_OK ? "a success" : "a fail"),
+            log("[async_redis] %s connection|%p|uri:%s", (status == REDIS_OK ? "a success" : "a fail"),
                                    c,
                                    iter->second->addr.uri.c_str());
             if (status == REDIS_OK) {
@@ -214,7 +191,7 @@ void on_thread_redis_connect(const redisAsyncContext *c, int status) {
     }
 
     if (!flag) {
-        log("[error] a connection error|%p\n", c);
+        log("[async_redis] [error] a connection error|%p", c);
     }
 }
 
@@ -222,7 +199,7 @@ void on_thread_redis_disconnect(const redisAsyncContext* c, int) {
     bool flag = false;
     for (auto iter = g_redis_global_data.uri_map.begin(); iter != g_redis_global_data.uri_map.end(); ) {
         if (iter->second->ctxt == c) {
-            log("a disconnection|%p|uri:%s\n", c, iter->second->addr.uri.c_str());
+            log("[async_redis] a disconnection|%p|uri:%s", c, iter->second->addr.uri.c_str());
             iter->second->state = enum_disconnected_state;
             // erase掉
             g_redis_global_data.uri_map.erase(iter++);
@@ -233,7 +210,7 @@ void on_thread_redis_disconnect(const redisAsyncContext* c, int) {
     }
 
     if (!flag) {
-        log("[error] a disconnection error|%p\n", c);
+        log("[async_redis] [error] a disconnection error|%p", c);
     }
 }
 
@@ -246,7 +223,7 @@ void on_thread_redis_selectdb(void*, void* r, void* user_data) {
     }
     else {
         data->core->state = enum_disconnected_state;
-        log("[error] failed to select db|%d\n", reply->type);
+        log("[async_redis] [error] failed to select db|%d", reply->type);
     }
 
     // delete redis_custom_data;
@@ -316,7 +293,7 @@ redis_core_ptr thread_create_core(const redis_addr& addr, bool new_create) {
         }
 
         if (!core->ctxt) {
-            log("[error] failed to call redisClusterAsyncConnect or redisAsyncConnect\n");
+            log("[async_redis] [error] failed to call redisClusterAsyncConnect or redisAsyncConnect");
             return nullptr;
         }
 
@@ -423,10 +400,12 @@ bool local_redis_init() {
         return true;
     }
 
-    g_redis_global_data.evt_base = event_base_new();
     if (!g_redis_global_data.evt_base) {
-        log("[error] failed to call event_base_new\n");
-        return false;
+        g_redis_global_data.evt_base = event_base_new();
+        if (!g_redis_global_data.evt_base) {
+            log("[async_redis] [error] failed to call event_base_new");
+            return false;
+        }
     }
 
     g_redis_global_data.init = true;
@@ -434,13 +413,12 @@ bool local_redis_init() {
 }
 
 bool set_event_base(void* evt_base) {
-    if (!g_redis_global_data.init) {
-        return false;
+    if (!g_redis_global_data.evt_base) {
+        g_redis_global_data.evt_base = (event_base*)evt_base;
+        return true;
     }
 
-    g_redis_global_data.evt_base = (event_base*)evt_base;
-    g_redis_global_data.init = true;
-    return true;
+    return false;
 }
 
 void execute(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb cb) {
@@ -455,20 +433,16 @@ void execute(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb cb) 
 }
 
 void statistics(uint32_t cur_time) {
-    if (!g_log_cb) {
-        return;
-    }
-
     if (cur_time - g_last_statistics_time <= 120) {
         return;
     }
 
     g_last_statistics_time = cur_time;
-    log("[redis statistics] cur_task:%d, req_task:%d, rsp_task:%d",
+    log("[async_redis] [statistics] cur_task:%d, req_task:%d, rsp_task:%d",
         (g_redis_global_data.req_task_cnt - g_redis_global_data.rsp_task_cnt),
         g_redis_global_data.req_task_cnt,
         g_redis_global_data.rsp_task_cnt);
-    log("[redis statistics] cur_uri:%ld", g_redis_global_data.uri_map.size());
+    log("[async_redis] [statistics] cur_uri:%ld", g_redis_global_data.uri_map.size());
 }
 
 void local_process_respond() {

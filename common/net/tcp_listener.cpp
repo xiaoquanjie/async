@@ -52,6 +52,9 @@ void* TcpListener::getEventBase() {
 }
 
 void TcpListener::update(time_t) {
+    /**
+     * 这里可优化，可保存一个closing队列，避免轮询所有的fd
+    */
     std::vector<uint32_t> closing_fd_vec;
     for (auto iter = m_conn_map.begin(); iter != m_conn_map.end(); ++iter) {
         if (iter->second.is_closing && iter->second.s_data_cnt == 0) {

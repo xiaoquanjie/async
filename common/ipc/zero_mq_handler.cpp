@@ -33,6 +33,9 @@ bool ZeromqHandler::update(unsigned int) {
 		items[idx].fd = 0;
 	}
 
+    /**
+     * 后面可优化的点：rc的返回值是zmq_pollitem_t的数量，所以没有必要遍历全部
+    */
     int rc = zmq_poll(items, size, 0);
 	if (rc > 0) {
 		for (size_t idx = 0; idx < size; ++idx) {

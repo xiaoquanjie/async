@@ -192,6 +192,7 @@ int regTickTrans(TransactionBucket* bucket) {
     BaseTransaction* t = bucket->Create();
     BaseTickTransaction* tt = dynamic_cast<BaseTickTransaction*>(t);
     g_tick_trans_list.push_back(tt);
+    log("[transaction] regist tick %s", bucket->TransName());
     delete bucket;
     return 0;
 }

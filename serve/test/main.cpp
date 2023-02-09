@@ -79,7 +79,7 @@ public:
     void OnTick(uint32_t curTime) {
         static bool s = false;
         if (!s) {
-            s = true;
+            //s = true;
             oneWay();
             //twoWay();
         }

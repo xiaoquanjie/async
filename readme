@@ -68,6 +68,15 @@ c++异步io库
             4）make
             5) make install
             
+        5、zeromq:
+            1）https://github.com/zeromq/libzmq 下载源码
+            2）unzip libzmq-master.zip
+            3）cd libzmq-master
+            4) yum install -y gettext
+            5) ./autogen.sh (如果报错，就安装yum install -y libtool)
+            6) ./configure
+            7）make
+            8) make install
 目录结构：
 example
     example.cpp         ----> 测试用例

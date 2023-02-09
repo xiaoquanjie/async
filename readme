@@ -54,13 +54,19 @@ c++异步io库
             4) make
             5) make install
             
-        3、hredis:
+        3、hiredis:
             1) https://github.com/redis/hiredis/releases下载源码
             2）tar zxvf hiredis-1.1.0.tar.gz
             3) cd hiredis-1.1.0
             4) make
             5) make install
             
+        4、安装hiredis_vip:
+            1) https://github.com/vipshop/hiredis-vip 下载源码
+            2）unzip hiredis-vip-master.zip
+            3）cd hiredis-vip-master
+            4）make
+            5) make install
             
 目录结构：
 example

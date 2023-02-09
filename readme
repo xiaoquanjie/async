@@ -47,6 +47,21 @@ c++异步io库
             5) make
             6) make install
 
+        2、redis-server:
+            1) wget http://download.redis.io/releases/redis-5.0.9.tar.gz
+            2) tar -zxvf redis-5.0.9.tar.gz
+            3) cd redis-5.0.9
+            4) make
+            5) make install
+            
+        3、hredis:
+            1) https://github.com/redis/hiredis/releases下载源码
+            2）tar zxvf hiredis-1.1.0.tar.gz
+            3) cd hiredis-1.1.0
+            4) make
+            5) make install
+            
+            
 目录结构：
 example
     example.cpp         ----> 测试用例

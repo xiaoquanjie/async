@@ -89,7 +89,7 @@ c++异步io库
             5）查看默认密码：cat /var/log/mysqld.log | grep password
             6）登录修改密码：
                 （1）mysql -uroot -p
-                （2）alter user 'root'@'localhost' identified by 'password'
+                （2）alter user 'root'@'localhost' identified by 'Root@123456'
 目录结构：
 example
     example.cpp         ----> 测试用例

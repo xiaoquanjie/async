@@ -132,14 +132,14 @@ time_t g_last_statistics_time = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-mysql_core_ptr local_create_core(const mysql_addr& addr, uri_data& uri_map) {
-    if (!uri_map.core_list.empty()) {
-        auto core = uri_map.core_list.front();
-        uri_map.core_list.pop_front();
+mysql_core_ptr local_create_core(const mysql_addr& addr, uri_data& uri_d) {
+    if (!uri_d.core_list.empty()) {
+        auto core = uri_d.core_list.front();
+        uri_d.core_list.pop_front();
         return core;
     }
 
-    if (uri_map.conns >= g_mysql_global_data.max_connections) {
+    if (uri_d.conns >= g_mysql_global_data.max_connections) {
         return nullptr;
     }
 
@@ -152,9 +152,9 @@ mysql_core_ptr local_create_core(const mysql_addr& addr, uri_data& uri_map) {
         return nullptr;
     }
 
-    uri_map.conns++;
-    if (uri_map.uri.empty()) {
-        uri_map.uri = addr.uri;
+    uri_d.conns++;
+    if (uri_d.uri.empty()) {
+        uri_d.uri = addr.uri;
     }
     mysql_options(&core->mysql, MYSQL_OPT_NONBLOCK, 0);
     return core;
@@ -317,6 +317,7 @@ void thread_mysql_wait(std::list<mysql_custom_data_ptr> &request_queue,
             if (data->status == 0) {
                 if (!ret) {
                     data->core->state = enum_error_state;
+                    log("[async_mysql] [error] failed to call mysql_real_connect_cont:%d", status);
                 }
                 else {
                     data->core->state = enum_connected_state;
@@ -330,6 +331,7 @@ void thread_mysql_wait(std::list<mysql_custom_data_ptr> &request_queue,
             if (data->status == 0) {
                 if (err) {
                     data->core->state = enum_error_state;
+                    log("[async_mysql] [error] failed to call mysql_real_query_cont:%d", err);
                 }
                 else {
                     data->core->state = enum_queryed_state;
@@ -473,8 +475,8 @@ bool loop(uint32_t cur_time) {
     std::list<mysql_custom_data_ptr> request_queue;
     for (auto iter = g_mysql_global_data.prepare_queue.begin(); iter != g_mysql_global_data.prepare_queue.end();) {
         mysql_custom_data_ptr data = *iter;
-        uri_data& uri_map = g_mysql_global_data.uri_map[data->addr.uri];
-        mysql_core_ptr core = local_create_core(data->addr, uri_map);
+        uri_data& uri_d = g_mysql_global_data.uri_map[data->addr.uri];
+        mysql_core_ptr core = local_create_core(data->addr, uri_d);
         if (!core) {
             ++iter;
             continue;
@@ -516,7 +518,7 @@ bool loop(uint32_t cur_time) {
         // 运行结果
         for (auto& item : respond_queue) {
             g_mysql_global_data.rsp_task_cnt++;
-            uri_data& uri_map = g_mysql_global_data.uri_map[item.data->addr.uri];
+            uri_data& uri_d = g_mysql_global_data.uri_map[item.data->addr.uri];
             
             int err = mysql_errno(&item.data->core->mysql);
             if (err != 0) {
@@ -538,11 +540,11 @@ bool loop(uint32_t cur_time) {
                 || CR_CONN_HOST_ERROR == err 
                 || CR_CONNECTION_ERROR == err
                 || CR_UNKNOWN_HOST == err) {
-                uri_map.conns--;
+                uri_d.conns--;
             }
             else {
                 item.data->core->state = enum_connected_state;
-                uri_map.core_list.push_back(item.data->core);
+                uri_d.core_list.push_back(item.data->core);
             }
         }
     }

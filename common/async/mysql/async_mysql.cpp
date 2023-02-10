@@ -221,7 +221,7 @@ void thread_mysql_look_state(std::list<mysql_custom_data_ptr> &request_queue,
                                                 data->sql.length());
             if (err != 0) {
                 data->core->state = enum_error_state;
-                log("[async_mysql] [error] failed to call mysql_real_query_start:%d", err);
+                log("[async_mysql] [error] failed to call mysql_real_query_start:%d|%s", err, mysql_error(&data->core->mysql));
             }
             else {
                 if (data->status == 0) {
@@ -455,11 +455,11 @@ void statistics(uint32_t cur_time) {
 
     // 没有输出连接池大小
     g_last_statistics_time = cur_time;
-    log("[async_mysql] [statistics] cur_task:%d, req_task:%d, rsp_task:%d",
-        (g_mysql_global_data.req_task_cnt - g_mysql_global_data.rsp_task_cnt),
+    log("[async_mysql] [statistics] cur_task:%d, req_task:%d, rsp_task:%d, cur_uri:%ld",
+        (g_mysql_global_data.prepare_queue.size() + g_mysql_global_data.request_queue.size()),
         g_mysql_global_data.req_task_cnt,
-        g_mysql_global_data.rsp_task_cnt);
-    log("[async_mysql] [statistics] cur_uri:%ld", g_mysql_global_data.uri_map.size());
+        g_mysql_global_data.rsp_task_cnt,
+        g_mysql_global_data.uri_map.size());
 }
 
 bool loop(uint32_t cur_time) {

@@ -10,6 +10,7 @@
 #include <functional>
 #include <string>
 #include <unordered_map>
+#include <list>
 
 namespace net {
 
@@ -70,6 +71,7 @@ protected:
     void* m_listener;
     uint32_t m_header_size;
     std::unordered_map<uint32_t, ConnInfo> m_conn_map;
+    std::list<uint32_t> m_closing_list;
     std::function<void(TcpListener*, uint32_t)> m_connected_cb;
     std::function<void(TcpListener*, uint32_t)> m_disconnected_cb;
     std::function<void(TcpListener*, uint32_t, const char*, uint32_t)> m_data_cb;

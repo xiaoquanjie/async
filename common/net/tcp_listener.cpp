@@ -56,14 +56,25 @@ void TcpListener::update(time_t) {
     /**
      * 这里可优化，可保存一个closing队列，避免轮询所有的fd
     */
-    std::vector<uint32_t> closing_fd_vec;
-    for (auto iter = m_conn_map.begin(); iter != m_conn_map.end(); ++iter) {
-        if (iter->second.is_closing && iter->second.s_data_cnt == 0) {
-            closing_fd_vec.push_back(iter->first);
+    // std::vector<uint32_t> closing_fd_vec;
+    // for (auto iter = m_conn_map.begin(); iter != m_conn_map.end(); ++iter) {
+    //     if (iter->second.is_closing && iter->second.s_data_cnt == 0) {
+    //         closing_fd_vec.push_back(iter->first);
+    //     }
+    // }
+    // for (auto fd : m_closing_list) {
+    //     closed(fd);
+    // }
+    for (auto iter = m_closing_list.begin(); iter != m_closing_list.end();) {
+        auto iter2 = m_conn_map.find(*iter);
+        if (iter2 != m_conn_map.end()) {
+            if (iter2->second.s_data_cnt == 0) {
+                closed(*iter);
+                iter = m_closing_list.erase(iter);
+                continue;
+            }
         }
-    }
-    for (auto fd : closing_fd_vec) {
-        closed(fd);
+        ++iter;
     }
 
     if (m_created_base) {
@@ -123,6 +134,7 @@ void TcpListener::close(uint32_t fd) {
 	}
 
     iter->second.is_closing = true;
+    m_closing_list.push_back(fd);
 }
 
 std::string TcpListener::getIp(uint32_t fd) {

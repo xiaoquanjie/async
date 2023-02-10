@@ -77,6 +77,19 @@ c++异步io库
             6) ./configure
             7）make
             8) make install
+            
+        6、libmariadb:
+            1）yum install -y mariadb-devel.x86_64
+           
+        7、mysql-server8.0:
+            1）wget http://dev.mysql.com/get/mysql80-community-release-el7-5.noarch.rpm
+            2）rpm -ivh mysql80-community-release-el7-5.noarch.rpm
+            3）yum install mysql-community-server -y
+            4）systemctl restart mysqld
+            5）查看默认密码：cat /var/log/mysqld.log | grep password
+            6）登录修改密码：
+                （1）mysql -uroot -p
+                （2）alter user 'root'@'localhost' identified by 'Root@123456'
 目录结构：
 example
     example.cpp         ----> 测试用例

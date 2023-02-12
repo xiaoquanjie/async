@@ -6,6 +6,9 @@
 //----------------------------------------------------------------*/
 
 #include "common/async/cpu/async_cpu.h"
+
+#if CUR_CPU_VERSION == 1
+
 #include "common/log.h"
 #include <queue>
 #include <mutex>
@@ -145,3 +148,5 @@ bool loop(uint32_t cur_time) {
 
 }
 }
+
+#endif

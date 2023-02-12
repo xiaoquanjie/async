@@ -8,12 +8,20 @@
 #include "common/log.h"
 #include <stdarg.h>
 #include <mutex>
+#include <thread>
+#include <sstream>
+
+std::string curThreadId() {
+    std::stringstream ss;
+    ss << std::this_thread::get_id();
+    return ss.str();
+}
 
 // 日志输出接口，是线程安全的
 std::function<void(const char*)> gLogCb = [](const char* data) {
     static std::mutex sMutex;
     sMutex.lock();
-    printf("%s\n", data);
+    printf("[%s] %s\n", curThreadId().c_str(), data);
     sMutex.unlock();
 };
 

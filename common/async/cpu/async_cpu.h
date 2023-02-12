@@ -9,6 +9,8 @@
 
 #include <functional>
 
+#define CUR_CPU_VERSION (2)
+
 namespace async {
 namespace cpu {
 

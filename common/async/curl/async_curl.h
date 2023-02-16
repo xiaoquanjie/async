@@ -10,8 +10,9 @@
 #include <functional>
 #include <map>
 
-namespace async {
+#define CUR_CURL_VERSION (2)
 
+namespace async {
 namespace curl {
 
 // CURLcode, response_code, body
@@ -28,6 +29,8 @@ void post(const std::string& url, const std::string& content, const std::map<std
 bool loop(uint32_t cur_time);
 
 void setThreadFunc(std::function<void(std::function<void()>)>);
+
+void setMaxConnection(uint32_t c);
 
 }// curl
 }// async

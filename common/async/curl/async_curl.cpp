@@ -8,6 +8,9 @@
 #ifdef USE_ASYNC_CURL
 
 #include "common/async/curl/async_curl.h"
+
+#if CUR_CURL_VERSION == 1
+
 #include "common/log.h"
 #include <queue>
 #include <string.h>
@@ -344,4 +347,5 @@ bool loop(uint32_t cur_time) {
 }
 }
 
+#endif
 #endif

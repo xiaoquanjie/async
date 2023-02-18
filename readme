@@ -68,6 +68,14 @@ c++异步io库
             4）make
             5) make install
             
+        4-2、安装hiredis-cluster:
+            1) https://github.com/Nordix/hiredis-cluster 下载源码
+            2）unzip hiredis-cluster-master.zip
+            3）cd hiredis-cluster-master
+            4）mkdir build
+            5) cd build
+            6) cmake .. // (需要cmake3.2版本)  
+            
         5、zeromq:
             1）https://github.com/zeromq/libzmq 下载源码
             2）unzip libzmq-master.zip

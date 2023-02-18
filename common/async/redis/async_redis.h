@@ -11,8 +11,9 @@
 #include "common/async/redis/redis_parser.h"
 #include "common/async/redis/redis_cmd.h"
 
-namespace async {
+#define CUR_REDIS_VERSION (2)
 
+namespace async {
 namespace redis {
 
 struct BaseRedisCmd;
@@ -20,6 +21,7 @@ struct BaseRedisCmd;
 typedef std::function<void(RedisReplyParserPtr)> async_redis_cb;
 
 // @uri: [host|port|pwd|idx|cluster]
+/*hiredis_vip不支持带认证的集群*/
 void execute(std::string uri, const BaseRedisCmd& redis_cmd, async_redis_cb cb);
 
 // 同步redis接口, 无连接池

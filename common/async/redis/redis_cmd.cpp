@@ -40,6 +40,11 @@ std::string BaseRedisCmd::GetCmd() const {
 
 /////////////////////////////////////////////////////////////////////////////////
 
+AuthCmd::AuthCmd(const std::string& pwd) {
+	cmd.push_back("AUTH");
+	cmd.push_back(pwd);
+}
+
 SelectCmd::SelectCmd(int db) {
 	cmd.push_back("SELECT");
 	cmd.push_back(std::to_string(db));

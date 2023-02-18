@@ -12,10 +12,9 @@
 #include <map>
 
 namespace async {
-
 namespace redis {
 
-// redis »ù´¡commandÀà
+// redis baes cmd
 struct BaseRedisCmd {
 	std::vector<std::string> cmd;
 
@@ -27,6 +26,10 @@ struct BaseRedisCmd {
 };
 
 /////////////////////////////////////////////////////////////////////////////////
+
+struct AuthCmd : public BaseRedisCmd {
+	AuthCmd(const std::string& pwd);
+};
 
 struct SelectCmd : public BaseRedisCmd {
 	SelectCmd(int db);

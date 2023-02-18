@@ -206,7 +206,7 @@ RedisException checkReply(void* reply, int hope) {
 			break;
 		}
 		if (((redisReply*)reply)->type == REDIS_REPLY_SELF_TIMEOUT) {
-			error = RedisException(M_ERR_REDIS_CONNECT_FAIL);
+			error = RedisException(M_ERR_REDIS_TIMEOUT);
 			break;
 		}
 		if (hope != 0 && ((redisReply*)reply)->type != hope) {

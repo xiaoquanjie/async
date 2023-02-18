@@ -56,11 +56,13 @@
 #define M_ERR_REDIS_SELECT_DB_ERROR ("select db error")
 #define M_ERR_REDIS_AUTH_ERROR		("auth error")	
 #define M_ERR_REDIS_SCAN            ("scan error")
+#define M_ERR_REDIS_TIMEOUT         ("request timeout")
+
 
 namespace async {
 namespace redis {
 
-// redis�쳣
+// redis�쳣
 struct RedisException
 {
 	RedisException();

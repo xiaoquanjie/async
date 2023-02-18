@@ -8,6 +8,9 @@
 #ifdef USE_ASYNC_REDIS
 
 #include "common/async/redis/async_redis.h"
+
+#if CUR_REDIS_VERSION == 1
+
 #include "common/async/redis/redis_exception.h"
 #include "common/log.h"
 #include <vector>
@@ -515,4 +518,5 @@ bool loop(uint32_t cur_time) {
 } // redis
 } // async
 
+#endif
 #endif

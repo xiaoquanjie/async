@@ -1,6 +1,8 @@
 c++异步io库
 目标：
     1）提供异步访问的通用底层支持（类似node语言里的promise机制）及内置一些常用的io接口
+       目前已支持的io接口：redis、mysql、http、mongo
+       未来将支持的io接口: websocket、rabbitmq、zookeeper
     2）提供类似服务器进程脚手架的功能，供快速搭建服务器架构
 
 编译：

@@ -10,6 +10,9 @@
 #include <mutex>
 #include <thread>
 #include <sstream>
+#include <time.h>
+#include <iomanip>
+//#include <chrono>
 
 std::string curThreadId() {
     std::stringstream ss;
@@ -21,7 +24,11 @@ std::string curThreadId() {
 std::function<void(const char*)> gLogCb = [](const char* data) {
     static std::mutex sMutex;
     sMutex.lock();
-    printf("[%s] %s\n", curThreadId().c_str(), data);
+    auto tp = std::chrono::system_clock::now();
+    time_t t = std::chrono::system_clock::to_time_t(tp);
+    std::stringstream ss;
+    ss << std::put_time(localtime(&t), "%Y-%m-%d %H-%M-%S");
+    printf("[%s] [%s] %s\n", curThreadId().c_str(), ss.str().c_str(), data);
     sMutex.unlock();
 };
 

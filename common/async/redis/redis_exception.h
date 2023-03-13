@@ -62,7 +62,7 @@
 namespace async {
 namespace redis {
 
-// redis�쳣
+// redis异常
 struct RedisException
 {
 	RedisException();

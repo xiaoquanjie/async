@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.1)
 set(TARGET_NAME "example")
 project(${TARGET_NAME})
 
@@ -42,4 +42,4 @@ add_executable(${TARGET_NAME} ${ALL_CPP})
 
 add_dependencies(${TARGET_NAME} "common")
 
-target_link_libraries(${TARGET_NAME} PRIVATE "common")
+target_link_libraries(${TARGET_NAME} PRIVATE "common" "pthread")

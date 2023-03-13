@@ -10,19 +10,7 @@
 #include "common/async/redis/redis_parser.h"
 #include "common/async/redis/redis_exception.h"
 #include <assert.h>
-
-#ifndef WIN32
-#include <hiredis-vip/hiredis.h>
-#else
-struct redisReply {
-	int type; /* REDIS_REPLY_* */
-	long long integer; /* The integer when type is REDIS_REPLY_INTEGER */
-	int len; /* Length of string */
-	char *str; /* Used for both REDIS_REPLY_ERROR and REDIS_REPLY_STRING */
-	size_t elements; /* number of elements, for REDIS_REPLY_ARRAY */
-	redisReply **element; /* elements vector for REDIS_REPLY_ARRAY */
-};
-#endif
+#include <hiredis/hiredis.h>
 
 namespace async {
 namespace redis {

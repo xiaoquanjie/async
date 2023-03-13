@@ -11,8 +11,6 @@
 #include "common/async/redis/redis_parser.h"
 #include "common/async/redis/redis_cmd.h"
 
-#define CUR_REDIS_VERSION (2)
-
 namespace async {
 namespace redis {
 

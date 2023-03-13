@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.1)
 set(TARGET_NAME "common")
 project(${TARGET_NAME})
 
@@ -36,8 +36,13 @@ endif(USE_ASYNC_CURL)
 
 if(USE_ASYNC_REDIS)
     add_definitions(-DUSE_ASYNC_REDIS)
-    set(LINK_LIBRARYS ${LINK_LIBRARYS} event_core hiredis_vip hiredis)
+    set(LINK_LIBRARYS ${LINK_LIBRARYS} event_core hiredis)
 endif(USE_ASYNC_REDIS)
+
+if(USE_ASYNC_CLUSTER_REDIS)
+    add_definitions(-DUSE_ASYNC_CLUSTER_REDIS)
+    set(LINK_LIBRARYS ${LINK_LIBRARYS} hiredis_cluster)
+endif(USE_ASYNC_CLUSTER_REDIS)
 
 if(USE_ASYNC_MONGO)
     add_definitions(-DUSE_ASYNC_MONGO)

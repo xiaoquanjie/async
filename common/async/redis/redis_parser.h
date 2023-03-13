@@ -11,6 +11,7 @@
 #include <map>
 #include <set>
 #include <memory>
+#include <functional>
 #include <string.h>
 #include "common/async/redis/redis_exception.h"
 
@@ -26,12 +27,12 @@ void DataConstruct(T& v) {
 
 RedisException checkReply(void* reply, int hope);
 
-// µü´ú
+// è¿­ä»£
 void iteratorReply(void* reply, std::function<void(void*)> f);
 void iteratorReply(void* reply, std::function<void(void*, void*)> f);
 void iteratorReply(void* reply, void** ele1, void** ele2);
 
-// redis½á¹û½âÎö¸¨Öú
+// redisç»“æœè§£æè¾…åŠ©
 struct RedisReplyParser {
 	RedisReplyParser();
 
@@ -39,15 +40,15 @@ struct RedisReplyParser {
 
 	~RedisReplyParser();
 
-	// ·¢ÉúÔÚredis³ö´íÊ±
+	// å‘ç”Ÿåœ¨rediså‡ºé”™æ—¶
 	bool IsEmpty() const;
 
-	// ±íÊ¾·µ»ØÊÇ¿Õ£¬·¢ÉúÔÚredisÎŞÖµ·µ»Ø
+	// è¡¨ç¤ºè¿”å›æ˜¯ç©ºï¼Œå‘ç”Ÿåœ¨redisæ— å€¼è¿”å›
 	bool IsNil() const;
 
 	bool GetError(std::string& value);
 
-	// ¸ústringÊµÏÖÁË»¥»»
+	// è·Ÿstringå®ç°äº†äº’æ¢
 	void GetInteger(long long& value);
 
 	void GetString(std::string& value);
@@ -69,7 +70,7 @@ struct RedisReplyParser {
     void GetScan(long long& cursor, T& values);
 
 protected:
-	// ½ûÖ¹¿½±´
+	// ç¦æ­¢æ‹·è´
 	RedisReplyParser(const RedisReplyParser&);
 
 	RedisReplyParser& operator =(const RedisReplyParser&);
@@ -93,7 +94,7 @@ private:
 
 ////////////////////////////////////////////////////////////////////
 
-// »ñÈ¡Êı×é
+// è·å–æ•°ç»„
 template <typename T>
 void RedisReplyParser::GetArray(T &values) {
 	RedisException error;

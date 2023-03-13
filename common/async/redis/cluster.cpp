@@ -138,6 +138,7 @@ RedisCorePtr threadClusterCreateCore(RedisThreadData* tData, RedisAddrPtr addr) 
         redisClusterFree(cc);
     }
 
+    corePool.lastDisconnect = curTime;
     return nullptr;
 }
 

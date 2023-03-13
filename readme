@@ -107,6 +107,14 @@ c++异步io库
             3）./configure --prefix=/usr/local/ --without-ssl
             4）make
             5）make install
+            
+        9、mongoc安装：
+            1）下载 wget https://github.com/mongodb/mongo-c-driver/releases/download/1.23.2/mongo-c-driver-1.23.2.tar.gz 
+            2）mkdir cmake-build
+            3）cd cmake-build
+            4）cmake -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF ..
+            5) make
+            6) make install
         
 目录结构：
 example

@@ -6,8 +6,8 @@ c++异步io库
     2）提供类似服务器进程脚手架的功能，供快速搭建服务器架构
 
 编译：
-1、 如需使用redis模块，则cmake时需定义宏USE_ASYNC_REDIS。如：cmake .. -DUSE_ASYNC_REDIS=1
-    redis模块依赖：libevent、hiredis_vip、hiredis库
+1、 如需使用redis模块，则cmake时需定义宏USE_ASYNC_REDIS，如需使用集群则需要定义宏USE_ASYNC_CLUSTER_REDIS。如：cmake .. -DUSE_ASYNC_REDIS=1 -DUSE_ASYNC_CLUSTER_REDIS=1
+    redis模块依赖：libevent、hiredis_cluster、hiredis库
 
 2、 如需使用mongo模块，则cmake时需定义宏USE_ASYNC_MONGO。如：cmake .. -DUSE_ASYNC_MONGO=1
     monogo模块依赖: bson-1.0、mongoc-1.0库
@@ -35,7 +35,7 @@ c++异步io库
 9、cmake例子：
     1）根目录下执行：mkdir -p build
     2）cd build
-    3）cmake .. -DUSE_ASYNC_CURL=1 -DUSE_ASYNC_REDIS=1 -DUSE_ASYNC_MONGO=1 \
+    3）cmake .. -DUSE_ASYNC_CURL=1 -DUSE_ASYNC_REDIS=1 -DUSE_ASYNC_CLUSTER_REDIS=1 -DUSE_ASYNC_MONGO=1 \
         -DUSE_ASYNC_MYSQL=1 -DUSE_IPC=1 -DUSE_TRANS=1 -DUSE_NET=1 -DCMAKE_BUILD_TYPE=Debug
 
 依赖库安装：

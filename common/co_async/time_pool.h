@@ -13,15 +13,15 @@
 namespace co_async {
 namespace t_pool {
 
-// ÉèÖÃ×î´óµÄ¼ä¸ôÌìÊı, ×î´ó²»ÄÜ³¬¹ı7Ìì£¬Ä¬ÈÏÊÇ1Ìì
-// Õâ¸öĞèÒªÔÚaddTimerÖ®Ç°¾Íµ÷ÓÃ
+// è®¾ç½®æœ€å¤§çš„é—´éš”å¤©æ•°, æœ€å¤§ä¸èƒ½è¶…è¿‡7å¤©ï¼Œé»˜è®¤æ˜¯1å¤©
+// è¿™ä¸ªéœ€è¦åœ¨addTimerä¹‹å‰å°±è°ƒç”¨
 void setMaxInterval(uint32_t days);
 
 uint64_t addTimer(uint32_t interval, std::function<void()>func);
 
 bool cancelTimer(uint64_t id);
 
-// µ÷ÓÃ´Ëº¯Êı£¬³¬Ê±µÄ½Úµã»á±»µ÷ÓÃ»Øµ÷£¬Ê±¼äÊÇºÁÃë
+// è°ƒç”¨æ­¤å‡½æ•°ï¼Œè¶…æ—¶çš„èŠ‚ç‚¹ä¼šè¢«è°ƒç”¨å›è°ƒï¼Œæ—¶é—´æ˜¯æ¯«ç§’
 bool update();
 
 }

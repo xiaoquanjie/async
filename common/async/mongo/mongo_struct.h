@@ -42,12 +42,12 @@ void bson_append(void *b, const char *field, uint64_t val);
 
 void bson_append(void *b, const char *field, double val);
 
-// val±íÊ¾µÄÊÇbsonÊı¾İ
+// valè¡¨ç¤ºçš„æ˜¯bsonæ•°æ®
 void bson_append(void *b, const char *field, void *val);
 
 void bson_append(void *b, const char *field, bool val);
 
-// ¶ş½øÖÆ
+// äºŒè¿›åˆ¶
 void bson_append(void *b, const char *field, const char *val, size_t size);
 
 // null
@@ -66,9 +66,9 @@ void bson_append(void *b, const std::initializer_list<std::string> &fields, bool
 void bson_array_append(void *b, const char *field, void* val);
 //////////////////////////////////////////////////////////////////////////////////////////////
 
-// ¼üÖµ¶Ô
+// é”®å€¼å¯¹
 struct MongoKeyValue {
-    // Êı¾İÀàĞÍ
+    // æ•°æ®ç±»å‹
     enum {
         en_type_str = 0,
         en_type_double = 1,
@@ -104,10 +104,10 @@ struct MongoKeyValue {
     
     ~MongoKeyValue();
 
-    // ×Ö·û´®
+    // å­—ç¬¦ä¸²
     MongoKeyValue(const std::string& key, const std::string& val);
 
-    // ×Ö·û´®
+    // å­—ç¬¦ä¸²
     MongoKeyValue(const std::string& key, const char* val);
 
     MongoKeyValue(const std::string& key, int32_t val);
@@ -126,10 +126,10 @@ struct MongoKeyValue {
 
     MongoKeyValue(const std::string& key);
 
-    // ¶ş½øÖÆ
+    // äºŒè¿›åˆ¶
     MongoKeyValue(const std::string& key, const char* val, uint32_t size);
 
-    // Êı×é
+    // æ•°ç»„
     template<typename T>
     MongoKeyValue(const std::string& key, const std::initializer_list<T>& array) {
         std::vector<T> vec;
@@ -186,7 +186,7 @@ struct MongoKeyValue {
     bool has_cmp() const;
 
 protected:
-    // ½ûÖ¹Ä¬ÈÏ¹¹Ôìº¯Êı
+    // ç¦æ­¢é»˜è®¤æ„é€ å‡½æ•°
     MongoKeyValue() = delete;
 
     void copy_str(const char* val, uint32_t size);
@@ -194,7 +194,7 @@ protected:
 
 //////////////////////////////////////////////////////////////////
 
-// ´ø±È½ÏÌõ¼şµÄ¼üÖµ¶Ô
+// å¸¦æ¯”è¾ƒæ¡ä»¶çš„é”®å€¼å¯¹
 struct MongoKeyValueCmp : public MongoKeyValue {
     MongoKeyValueCmp(const std::string& key, const std::string& val) 
         : MongoKeyValue(key, val) {}
@@ -208,7 +208,7 @@ struct MongoKeyValueCmp : public MongoKeyValue {
     MongoKeyValueCmp(const std::string& key, bool val)
         : MongoKeyValue(key, val) {}
 
-    // @cmpÎª¿ÕÊ±£¬±íÊ¾±È½ÏÌõ¼şÊÇÏàµÈ
+    // @cmpä¸ºç©ºæ—¶ï¼Œè¡¨ç¤ºæ¯”è¾ƒæ¡ä»¶æ˜¯ç›¸ç­‰
     MongoKeyValueCmp(const std::string& key, int32_t val, const char* cmp = nullptr);
 
     MongoKeyValueCmp(const std::string& key, uint32_t val, const char* cmp = nullptr);

@@ -29,7 +29,7 @@ struct PoolInfo {
     void** bucket = nullptr;
     uint32_t bigIter = 0;
     uint32_t smallIter = 0;
-    uint64_t allocTimerId = 1;  // ·ÖÅäµÄid
+    uint64_t allocTimerId = 1;  // åˆ†é…çš„id
     uint64_t begTime = 0;
 
     ~PoolInfo();
@@ -37,9 +37,9 @@ struct PoolInfo {
 
 typedef std::multimap<uint64_t, TimeNode> TimeNodeMulMap;
 
-// ´óÍ°µÄ¾«¶ÈÊÇ1Ãë
+// å¤§æ¡¶çš„ç²¾åº¦æ˜¯1ç§’
 const uint32_t gBigBucket = 24 * 3600;
-// Ğ¡Í°µÄ¾«¶ÈÊÇ1/10Ãë
+// å°æ¡¶çš„ç²¾åº¦æ˜¯1/10ç§’
 const uint32_t gSmallBucket = 10;
 PoolInfo gPoolInfo;
 
@@ -53,7 +53,7 @@ clock_t getMilClock() {
 #endif
 }
 
-// ÊÍ·Å
+// é‡Šæ”¾
 PoolInfo::~PoolInfo() {
     if (!this->bucket) {
         return;
@@ -75,7 +75,7 @@ PoolInfo::~PoolInfo() {
     free(this->bucket);
 }
 
-// ¼ÆËãÂäÔÚÄÄ¸öÍ°
+// è®¡ç®—è½åœ¨å“ªä¸ªæ¡¶
 bool calcBucket(uint64_t nowMil, uint32_t interval, uint32_t& bigBucket, uint32_t& smallBucket) {
     if (nowMil < gPoolInfo.begTime) {
         assert(false);
@@ -85,9 +85,9 @@ bool calcBucket(uint64_t nowMil, uint32_t interval, uint32_t& bigBucket, uint32_
     uint64_t intervalMil = nowMil - gPoolInfo.begTime + interval;
     uint64_t intervalSec = intervalMil / 1000;
 
-    // ¼ÆËãÂäÔÚÄÄ¸ö´óÍ°
+    // è®¡ç®—è½åœ¨å“ªä¸ªå¤§æ¡¶
     bigBucket = intervalSec % (gBigBucket * gPoolInfo.maxIntervalDays);
-    // ¼ÆËãÂäÔÚÄÄ¸öĞ¡Í°
+    // è®¡ç®—è½åœ¨å“ªä¸ªå°æ¡¶
     smallBucket = ((intervalMil % 1000) / 100) % 10;
 
     return true;
@@ -107,7 +107,7 @@ void setMaxInterval(uint32_t days) {
     gPoolInfo.maxIntervalDays = days;
 }
 
-// ³õÊ¼»¯
+// åˆå§‹åŒ–
 void init() {
     if (gPoolInfo.init) {
         return;
@@ -115,11 +115,11 @@ void init() {
 
     uint32_t totalBigBucket = gBigBucket * gPoolInfo.maxIntervalDays;
 
-    // ³õÊ¼»¯´óÍ°, ¾«¶ÈÊÇ1Ãë
+    // åˆå§‹åŒ–å¤§æ¡¶, ç²¾åº¦æ˜¯1ç§’
     gPoolInfo.bucket = (void**)malloc(sizeof(void*) * totalBigBucket);
 
     for (uint32_t idx = 0; idx < totalBigBucket; ++idx) {
-        // ³õÊ¼»¯Ğ¡Í°
+        // åˆå§‹åŒ–å°æ¡¶
         void** small = (void**)malloc(sizeof(void*) * gSmallBucket);
         memset(small, 0, sizeof(void*) * gSmallBucket);
         gPoolInfo.bucket[idx] = small;

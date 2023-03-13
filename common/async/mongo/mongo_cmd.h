@@ -49,15 +49,15 @@ struct InsertMongoCmd : public BaseMongoCmd {
 /////////////////////////////////////////////////////////////////////////
 
 struct FindMongoCmd : public BaseMongoCmd {
-    // Í¨¹ıË÷ÒıÀ´²éÕÒ£¬Èç¹û²»Ë÷Òı¾ÍÊÇjson
+    // é€šè¿‡ç´¢å¼•æ¥æŸ¥æ‰¾ï¼Œå¦‚æœä¸ç´¢å¼•å°±æ˜¯json
     FindMongoCmd(const std::string& query, bool is_idx = true);
 
     FindMongoCmd(const std::initializer_list<MongoKeyValueCmp> &query_fields,
                  const std::initializer_list<std::string> &include_fields = {},
                  const std::initializer_list<std::string> &except_fields = {});
 
-    // @sort_fielsÊÇÅÅĞò²ÎÊı
-    // @limitÊÇÏŞÖÆ·µ»Ø¶àÉÙÌõ£¬Ìî0ÊÇÄ¬ÈÏËùÓĞ
+    // @sort_fielsæ˜¯æ’åºå‚æ•°
+    // @limitæ˜¯é™åˆ¶è¿”å›å¤šå°‘æ¡ï¼Œå¡«0æ˜¯é»˜è®¤æ‰€æœ‰
     FindMongoCmd(const std::initializer_list<MongoKeyValueCmp> &query_fields,
                  const std::initializer_list<MongoKeyValue> &sort_fiels,
                  uint32_t limit);
@@ -65,39 +65,39 @@ struct FindMongoCmd : public BaseMongoCmd {
 
 /////////////////////////////////////////////////////////////////////////
 
-// É¾³ıÒ»Ìõ
+// åˆ é™¤ä¸€æ¡
 struct DeleteOneMongoCmd : public BaseMongoCmd {
-    // Í¨¹ıË÷ÒıÀ´²éÕÒ£¬Èç¹û²»Ë÷Òı¾ÍÊÇjson
+    // é€šè¿‡ç´¢å¼•æ¥æŸ¥æ‰¾ï¼Œå¦‚æœä¸ç´¢å¼•å°±æ˜¯json
     DeleteOneMongoCmd(const std::string& query, bool is_idx = true);
 
-    // Í¨¹ıfieldÀ´²éÕÒ
+    // é€šè¿‡fieldæ¥æŸ¥æ‰¾
     DeleteOneMongoCmd(const std::initializer_list<MongoKeyValueCmp> &option_fields);
 };
 
 /////////////////////////////////////////////////////////////////////////
 
-// É¾³ı¶àÌõ
+// åˆ é™¤å¤šæ¡
 struct DeleteManyMongoCmd : public BaseMongoCmd {
-    // Í¨¹ıË÷ÒıÀ´²éÕÒ£¬Èç¹û²»Ë÷Òı¾ÍÊÇjson
+    // é€šè¿‡ç´¢å¼•æ¥æŸ¥æ‰¾ï¼Œå¦‚æœä¸ç´¢å¼•å°±æ˜¯json
     DeleteManyMongoCmd(const std::string& query, bool is_idx = true);
 
-    // Í¨¹ıfieldÀ´²éÕÒ
+    // é€šè¿‡fieldæ¥æŸ¥æ‰¾
     DeleteManyMongoCmd(const std::initializer_list<MongoKeyValueCmp> &option_fields);
 };
 
 /////////////////////////////////////////////////////////////////////////
 
-// ¸üĞÂÒ»Ìõ
+// æ›´æ–°ä¸€æ¡
 struct UpdateOneMongoCmd : public BaseMongoCmd {
-    // @upsertÊÇ·ñ¸üĞÂ²åÈë
+    // @upsertæ˜¯å¦æ›´æ–°æ’å…¥
     UpdateOneMongoCmd(const std::initializer_list<MongoKeyValueCmp> &option_fields,
         const std::initializer_list<MongoKeyValue> &update_fields,
         bool upsert = false);
 };
 
-// ¸üĞÂ¶àÌõ
+// æ›´æ–°å¤šæ¡
 struct UpdateManyMongoCmd : public BaseMongoCmd {
-    // @upsertÊÇ·ñ¸üĞÂ²åÈë
+    // @upsertæ˜¯å¦æ›´æ–°æ’å…¥
     UpdateManyMongoCmd(const std::initializer_list<MongoKeyValueCmp> &option_fields,
         const std::initializer_list<MongoKeyValue> &update_fields,
         bool upsert = false);
@@ -105,16 +105,16 @@ struct UpdateManyMongoCmd : public BaseMongoCmd {
 
 /////////////////////////////////////////////////////////////////////////
 
-// ´´½¨Ë÷Òı
+// åˆ›å»ºç´¢å¼•
 struct CreateIndexMongoCmd : public BaseMongoCmd {
     CreateIndexMongoCmd(const std::vector<std::string> &fields);
 
     CreateIndexMongoCmd(const std::initializer_list<std::string> &fields);
 };
 
-// ´´½¨³¬Ê±Ë÷Òı
+// åˆ›å»ºè¶…æ—¶ç´¢å¼•
 struct CreateExpireIndexMongoCmd : public BaseMongoCmd {
-    // ²»ĞèÒª²ÎÊı£¬ÒòÎª²ÎÊı¶¼urlÖĞÒÑ×Ô´øÁË
+    // ä¸éœ€è¦å‚æ•°ï¼Œå› ä¸ºå‚æ•°éƒ½urlä¸­å·²è‡ªå¸¦äº†
     CreateExpireIndexMongoCmd();
 };
 

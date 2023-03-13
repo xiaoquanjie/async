@@ -15,7 +15,7 @@ namespace async {
 
 namespace mongo {
 
-// Èç¹ûÊÇ·µ»ØµÄ½á¹û¼¯£¬±ØĞëÏÈµ÷ÓÃÍêNextJson²ÅÖªµÀIsOk()º¯ÊıµÄÕıÈ·ĞÔ
+// å¦‚æœæ˜¯è¿”å›çš„ç»“æœé›†ï¼Œå¿…é¡»å…ˆè°ƒç”¨å®ŒNextJsonæ‰çŸ¥é“IsOk()å‡½æ•°çš„æ­£ç¡®æ€§
 struct MongoReplyParser {
     MongoReplyParser();
 
@@ -27,7 +27,7 @@ struct MongoReplyParser {
 
     const char* What();
 
-    // ·µ»ØÒ»¸öbson_tÖ¸Õë
+    // è¿”å›ä¸€ä¸ªbson_tæŒ‡é’ˆ
     const void* NextBson();
 
     char* NextJson();
@@ -46,7 +46,7 @@ struct MongoReplyParser {
 
     bool GetUpsertedCount(int& cnt);
 
-    int op_result = -1;  // 0±íÊ¾³É¹¦
+    int op_result = -1;  // 0è¡¨ç¤ºæˆåŠŸ
     void* error;
     void* cursor;
     std::vector<void*> bsons;

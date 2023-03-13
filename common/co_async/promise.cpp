@@ -151,4 +151,8 @@ void setTimeout(std::function<void()> fn, int timeOut) {
     addTimer(timeOut, fn);
 }
 
+// void setInterval(std::function<void()> fn, int timeOut) {
+
+// }
+
 }

@@ -220,7 +220,6 @@ void localStatistics(int32_t curTime, RedisThreadData* tData) {
         tData->reqTaskCnt,
         tData->rspTaskCnt);
 
-    
     for (auto& item : tData->corePool) {
         redisLog("[statistics] id: %s, valid: %d, conning: %d, using: %d", item.first.c_str(), item.second.valid.size(), item.second.conning.size(), item.second.useing.size());
     }

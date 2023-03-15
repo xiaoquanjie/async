@@ -142,7 +142,8 @@ c++异步io库
             2) 下载: rabbitmq-server-3.8.8-1.el7.noarch.rpm 在：https://github.com/rabbitmq/rabbitmq-server/releases/tag/v3.8.8
             3) yum install -y socat
             4）rpm -ivh rabbitmq-server-3.8.8-1.el7.noarch.rpm
-            5）
+            5）systemctl start rabbitmq-server
+            6) systemctl enable rabbitmq-server
         
 目录结构：
 example

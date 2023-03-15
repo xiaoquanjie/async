@@ -16,7 +16,7 @@ c++异步io库
     libcurl模块依赖: libcurl库
 
 4、 如需使用mysql模块，则cmake时需定义宏USE_ASYNC_MYSQL。如：cmake .. -DUSE_ASYNC_MYSQL=1
-    mysql模块依赖：mariadb库, 安装命令:yum install -y mariadb-devel.x86_64
+    mysql模块依赖：libmysqlclient8.0库
 
 5、 如需使用ipc模块，则cmake时需定义宏USE_IPC。如：cmake .. -DUSE_IPC=1
     ipc模块依赖：zeromq库
@@ -88,7 +88,9 @@ c++异步io库
             7）make
             8) make install
             
-        6、libmariadb:
+        6、安装libmysqlclient8.0:
+            1）它可以随8.0的服务器一起安装
+            2）https://downloads.mysql.com/archives/community/ 在这个地址下载下来，然后分别拷贝头文件和库到/usr/include/mysql/、/usr/lib64/mysql/
             1）yum install -y mariadb-devel.x86_64
            
         7、mysql-server8.0:

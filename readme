@@ -117,6 +117,13 @@ c++异步io库
             4）cmake -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF ..
             5) make
             6) make install
+            
+        10、rabbitmq-c安装：
+            1）下载 wget https://github.com/alanxz/rabbitmq-c/archive/refs/tags/v0.13.0.tar.gz
+            2) tar zxvf rabbitmq-c-0.13.0.tar.gz
+            3) mkdir build && cd build
+            4) cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_SSL_SUPPORT=OFF ..
+            5）make && make install
         
 目录结构：
 example

@@ -25,17 +25,15 @@ typedef std::function<void(int, const void*)> async_mysql_query_cb2;
 typedef  std::function<void(MysqlReplyParserPtr)> async_mysql_cb;
 
 // 不支持查询多结果集，如果执行了返回多结果集的sql语句，行为是未可知的
-void query(const std::string& uri, const std::string& sql, async_mysql_cb cb);
+void query(const std::string& id, const std::string& sql, async_mysql_cb cb);
 
-void execute(const std::string& uri, const std::string& sql, async_mysql_cb cb);
+void execute(const std::string& id, const std::string& sql, async_mysql_cb cb);
 
 ///////////////
 
-void setMaxConnection(unsigned int cnt);
+void setMaxConnection(uint32_t cnt);
 
-void setKeepConnection(unsigned int cnt);
-
-bool loop(uint32_t cur_time);
+bool loop(uint32_t curTime);
 
 void setThreadFunc(std::function<void(std::function<void()>)>);
 

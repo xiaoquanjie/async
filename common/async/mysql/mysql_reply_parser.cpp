@@ -6,10 +6,11 @@
 namespace async {
 namespace mysql {
 
-MysqlReplyParser::MysqlReplyParser(const void* res, int affect, int err) {
+MysqlReplyParser::MysqlReplyParser(const void* res, int err) {
     this->_res = res;
     this->_errno = err;
-    this->_affectedRow = affect;
+    this->_timeout = false;
+    this->_affect = 0;
 }
 
 MysqlReplyParser::~MysqlReplyParser() {
@@ -19,12 +20,16 @@ MysqlReplyParser::~MysqlReplyParser() {
 }
 
 int MysqlReplyParser::GetAffectedRow() {
+    return this->_affect;
+}
+
+int MysqlReplyParser::GetNumRow() {
     if (this->_res && this->_errno == 0) {
         auto rows = (int)mysql_num_rows((MYSQL_RES*)this->_res);
         return rows;
     }   
     else {
-        return this->_affectedRow;
+        return 0;
     }
 }
 
@@ -40,6 +45,7 @@ int MysqlReplyParser::GetField() {
 
 const void* MysqlReplyParser::Next() {
     if (this->_res && this->_errno == 0) {
+        // 同步取值
         MYSQL_ROW row = mysql_fetch_row((MYSQL_RES*)this->_res);
         return (const void*)row;
     }
@@ -50,6 +56,15 @@ const void* MysqlReplyParser::Next() {
 
 int MysqlReplyParser::GetError() {
     return this->_errno;
+}
+
+bool MysqlReplyParser::IsTimeout() {
+    return this->_timeout;
+}
+
+const char* MysqlReplyParser::GetRowValue(const void* row, int idx) {
+    MYSQL_ROW r = (MYSQL_ROW)row;
+    return r[idx];
 }
 
 }

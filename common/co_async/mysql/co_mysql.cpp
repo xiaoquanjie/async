@@ -69,7 +69,7 @@ std::pair<int, int> query(const std::string& uri, const std::string& sql, async:
         ret.second = parser->GetError();
 
         int idx = 1;
-        int affectedRow = parser->GetAffectedRow();
+        int affectedRow = parser->GetNumRow();
         int fields = parser->GetField();
 
         while (true) {

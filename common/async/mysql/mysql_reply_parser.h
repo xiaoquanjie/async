@@ -13,12 +13,15 @@ namespace async {
 namespace mysql {
 
 struct MysqlReplyParser {
-    MysqlReplyParser(const void* res, int affect, int err);
+    MysqlReplyParser(const void* res, int err);
 
     ~MysqlReplyParser();
 
     // 获取受影响的行数
     int GetAffectedRow();
+
+    // 获取结果集行数
+    int GetNumRow();
 
     // 获取列数
     int GetField();
@@ -27,9 +30,14 @@ struct MysqlReplyParser {
 
     int GetError();
 
+    bool IsTimeout();
+
+    const char* GetRowValue(const void* row, int idx);
+
     const void* _res;
     int _errno;
-    int _affectedRow;
+    bool _timeout;
+    int _affect;
 };
 
 typedef std::shared_ptr<MysqlReplyParser> MysqlReplyParserPtr;

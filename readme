@@ -139,9 +139,9 @@ c++异步io库
                     enabled=1                    
                 (5) yum install erlang
                 
-            2) 下载: rabbitmq-server-3.8.8-1.el7.noarch.rpm 在：https://github.com/rabbitmq/rabbitmq-server/releases/tag/v3.8.8
+            2) 下载: rabbitmq-server-3.9.29-1.el8.noarch.rpm 在：https://github.com/rabbitmq/rabbitmq-server/releases/tag/v3.9.29
             3) yum install -y socat
-            4）rpm -ivh rabbitmq-server-3.8.8-1.el7.noarch.rpm
+            4）rpm -ivh rabbitmq-server-3.9.29-1.el8.noarch.rpm
             5）systemctl start rabbitmq-server
             6) systemctl enable rabbitmq-server
         

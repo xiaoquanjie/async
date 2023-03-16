@@ -145,6 +145,9 @@ c++异步io库
             5）systemctl start rabbitmq-server
             6) systemctl enable rabbitmq-server
             7) 启动管理插件：rabbitmq-plugins enable rabbitmq_management, systemctl stop firewalld， http://localhost:15672
+            8) 创建用户，授权用户：
+                rabbitmqctl add_user admin admin 
+                rabbitmqctl set_user_tags admin administrator
         
 目录结构：
 example

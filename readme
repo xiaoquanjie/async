@@ -144,6 +144,7 @@ c++异步io库
             4）rpm -ivh rabbitmq-server-3.9.29-1.el8.noarch.rpm
             5）systemctl start rabbitmq-server
             6) systemctl enable rabbitmq-server
+            7) 启动管理插件：rabbitmq-plugins enable rabbitmq_management, systemctl stop firewalld， http://localhost:15672
         
 目录结构：
 example

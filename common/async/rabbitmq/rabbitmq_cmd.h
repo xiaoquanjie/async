@@ -22,6 +22,7 @@ enum cmd_type {
     watch_cmd = 6,              // 监听
     delete_queue_cmd = 7,       // 删除队列
     delete_exchange_cmd = 8,    // 删除交换机
+    unwatch_cmd = 9,
 };
 
 struct BaseRabbitCmd {
@@ -102,6 +103,13 @@ struct WatchCmd : public BaseRabbitCmd {
     bool no_local = false;      // 1不接收 0接收
     bool no_ack = true;         // true: 不需要ack就会删除
     bool exclusive = false;     // 1当前连接不在时，队列自动删除 0当前连接不在时，队列不自动删除
+};
+
+struct UnWatchCmd : public BaseRabbitCmd {
+    UnWatchCmd();
+
+    std::string queue;          // 队列
+    std::string consumer_tag;   // 用于区分不同的消费者
 };
 
 // 删除

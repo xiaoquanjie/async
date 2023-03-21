@@ -84,6 +84,7 @@ struct WatcherInfo {
     async_rabbit_watch_cb cb;
     uint32_t chId = 0;
     std::shared_ptr<WatchCmd> cmd;
+    bool cancel = false;
 };
 
 struct RabbitWatcher {
@@ -107,6 +108,8 @@ struct GlobalData {
     // 监听者
     std::unordered_map<std::string, RabbitWatcher> watchPool;
     std::mutex watchLock;
+    uint32_t watchIdle = 0;
+    clock_t watchIdleTick = 0;
     std::atomic_flag watcherRun;
 
     GlobalData() : watcherRun(ATOMIC_FLAG_INIT) {}

@@ -12,12 +12,20 @@ void rabbit_test(bool use_co) {
         log("msg1: %s", msg.c_str());
     });
 
+    static int watchCmdCnt = 0;
     auto watchCmd2 = std::make_shared<async::rabbitmq::WatchCmd>();
     watchCmd2->queue = "queue2";
     watchCmd2->no_ack = true;
-    async::rabbitmq::watch("localhost|5672|/|admin|admin", watchCmd2, [](void* reply, void* envelope, char* body, size_t len) {
+    async::rabbitmq::watch("localhost|5672|/|admin|admin", watchCmd2, [&watchCmdCnt](void* reply, void* envelope, char* body, size_t len) {
         std::string msg(body, len);
         log("msg2: %s", msg.c_str());
+        watchCmdCnt++;
+
+        if (watchCmdCnt == 2) {
+            auto unwatchCmd = std::make_shared<async::rabbitmq::UnWatchCmd>();
+            unwatchCmd->queue = "queue2";
+            async::rabbitmq::unwatch("localhost|5672|/|admin|admin", unwatchCmd);
+        }
     });
 
     auto watchCmd3 = std::make_shared<async::rabbitmq::WatchCmd>();
@@ -28,6 +36,8 @@ void rabbit_test(bool use_co) {
         std::string msg(body, len);
         log("msg3: %s", msg.c_str());
     });
+
+
     return;
 
     auto exchangeCmd = std::make_shared<async::rabbitmq::DeclareExchangeCmd>();

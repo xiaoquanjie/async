@@ -48,11 +48,11 @@ int main() {
     //redis_test(true);
     //co_mysql_test();
     //ipc_test();
-    rabbit_test(true);
+    //rabbit_test(true);
 
     while (true) {
         co_async::loop(time(0));
-        usleep(100);
+        usleep(1000);
         //printf("loop\n");
     }
     return 0;

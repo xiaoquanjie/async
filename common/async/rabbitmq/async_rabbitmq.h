@@ -29,7 +29,11 @@ typedef std::function<void(void* reply, void* envelope, char* body, size_t len)>
 // @uri: [host|port|vhost|user|pwd]
 void execute(const std::string& uri, std::shared_ptr<BaseRabbitCmd> cmd, async_rabbit_cb cb);
 
+// 监听
 bool watch(const std::string& uri, std::shared_ptr<WatchCmd> cmd, async_rabbit_watch_cb);
+
+// 取消监听
+void unwatch(const std::string& uri, std::shared_ptr<UnWatchCmd> cmd);
 
 bool loop(uint32_t curTime);
 

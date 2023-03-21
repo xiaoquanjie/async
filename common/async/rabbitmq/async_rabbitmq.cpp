@@ -8,6 +8,7 @@
 #ifdef USE_ASYNC_RABBITMQ
 
 #include <cassert>
+#include <time.h>
 #include "common/async/rabbitmq/data.h"
 #include <rabbitmq-c/tcp_socket.h>
 
@@ -441,6 +442,7 @@ void threadWatcherProcess(GlobalData* gData) {
     gData->watchLock.unlock();
 
     bool change = false;
+    gData->watchIdle++;
 
     if (!watchPool.empty()) {
         time_t curTime = 0;
@@ -462,7 +464,18 @@ void threadWatcherProcess(GlobalData* gData) {
             }
 
             for (auto& item2 : item.second.cbs) {
-                if (item2.second.chId == 0) {
+                if (item2.second.cancel) {
+                    if (item2.second.chId != 0) {
+                        // 关闭channel
+                        change = true;
+                        rabbitLog("close channel: %s, %d", item.second.core->addr->id.c_str(), item2.second.chId);
+                        amqp_basic_cancel(item.second.core->conn, item2.second.chId, amqp_cstring_bytes(item2.second.cmd->consumer_tag.c_str()));
+                        amqp_maybe_release_buffers_on_channel(item.second.core->conn, item2.second.chId);
+                        checkError(amqp_channel_close(item.second.core->conn, item2.second.chId, AMQP_CHANNEL_ERROR), 
+                            "amqp_channel_close");
+                    }
+                }
+                else if (item2.second.chId == 0) {
                     // 创建channel
                     change = true;
                     uint32_t chId = item.second.genChId++;
@@ -487,7 +500,7 @@ void threadWatcherProcess(GlobalData* gData) {
                 RabbitRspDataPtr rsp = std::make_shared<RabbitRspData>();
                 struct timeval tv;
                 tv.tv_sec = 0;
-                tv.tv_usec = 1000 * 2;
+                tv.tv_usec = 10; //1000 * 2;
                 amqp_maybe_release_buffers(item.second.core->conn);
                 rsp->reply = amqp_consume_message(item.second.core->conn, &rsp->envelope, &tv, 0);
                 
@@ -496,6 +509,7 @@ void threadWatcherProcess(GlobalData* gData) {
                     //rabbitLog("recv channel: %d", rsp->envelope.channel);
                     for (auto item2 : item.second.cbs) { 
                         if (item2.second.chId == rsp->envelope.channel) {
+                            gData->watchIdle = 0;
                             rsp->watch_cb = item2.second.cb;
                             // 放入队列
                             RabbitThreadData* tData = (RabbitThreadData*)item2.second.tData;
@@ -532,12 +546,32 @@ conn_err:
     if (change) {
         // 回写watchPool
         gData->watchLock.lock();
-        for (auto& item : gData->watchPool) {
-            auto iter = watchPool.find(item.first);
-            if (iter != watchPool.end()) {
-                item.second = iter->second;
+        for (auto iter1 = gData->watchPool.begin(); iter1 != gData->watchPool.end(); ) {
+            auto iter2 = watchPool.find(iter1->first);
+            if (iter2 != watchPool.end()) {
+                iter1->second = iter2->second;
+            }
+
+            for (auto iter3 = iter1->second.cbs.begin(); iter3 != iter1->second.cbs.end(); ) {
+                if (iter3->second.cancel) {
+                    iter3 = iter1->second.cbs.erase(iter3);
+                } else {
+                    iter3++;
+                }
+            }
+
+            if (iter1->second.cbs.empty()) {
+                iter1 = gData->watchPool.erase(iter1);
+            } else {
+                iter1++;
             }
         }
+        // for (auto& item : gData->watchPool) {
+        //     auto iter = watchPool.find(item.first);
+        //     if (iter != watchPool.end()) {
+        //         item.second = iter->second;
+        //     }
+        // }
         gData->watchLock.unlock();
     }
 
@@ -625,25 +659,52 @@ void localStatistics(int32_t curTime, RabbitThreadData* tData) {
     gData->watchLock.unlock();
 }
 
-void localWatch(RabbitThreadData* tData) {
+clock_t getMilClock() {
+#ifndef WIN32
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+#else
+	return GetTickCount();
+#endif
+}
+
+bool localWatch(RabbitThreadData* tData) {
     auto gData = globalData();
     if (gData->watcherRun.test_and_set()) {
-        return;
+        return false;
     }
     
-    if (gData->watchPool.empty()) {
-        gData->watcherRun.clear();
-        return;
-    }
+    do {
+        if (gData->watchPool.empty()) {
+            break;
+        }
 
-    auto f = std::bind(threadWatcherProcess, gData);
-    if (gIoThr) {
-        gIoThr(f);
-    } else {
-        f();
-    }
+        clock_t nTick = getMilClock();
+        if (nTick - gData->watchIdleTick < 100) {
+            //rabbitLog("idle...%s", "");
+            break;
+        }
 
-    //rabbitLog("local watch%s", "");
+        // gData->watchIdleTick = 0;
+        if (gData->watchIdle >= 500) {
+            gData->watchIdleTick = nTick;
+            gData->watchIdle = 0;
+            break;
+        }
+
+        auto f = std::bind(threadWatcherProcess, gData);
+        if (gIoThr) {
+            gIoThr(f);
+        } else {
+            f();
+        }
+
+        return true;
+    } while (false);
+
+    gData->watcherRun.clear();
+    return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -693,15 +754,37 @@ bool watch(const std::string& uri, std::shared_ptr<WatchCmd> cmd, async_rabbit_w
     return ret;
 }
 
+void unwatch(const std::string& uri, std::shared_ptr<UnWatchCmd> cmd) {
+    if (cmd->queue.empty()) {
+        return;
+    }
+
+    std::string watchId = cmd->queue + "#" + cmd->consumer_tag;
+
+    auto gData = globalData();
+
+    gData->watchLock.lock();
+    
+    auto iterPool = gData->watchPool.find(uri);
+    if (iterPool != gData->watchPool.end()) {
+        auto iterWatch = iterPool->second.cbs.find(watchId);
+        if (iterWatch != iterPool->second.cbs.end()) {
+            iterWatch->second.cancel = true;
+        }
+    }
+
+    gData->watchLock.unlock();
+}
+
 bool loop(uint32_t curTime) {
     RabbitThreadData* tData = runningData();
     localStatistics(curTime, tData);
     localRespond(tData);
     localProcess(curTime, tData);
-    localWatch(tData);
+    bool w = localWatch(tData);
 
     bool hasTask = tData->reqTaskCnt != tData->rspTaskCnt;
-    return hasTask;
+    return hasTask || w;
 }
 
 void setThreadFunc(std::function<void(std::function<void()>)> f) {

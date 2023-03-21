@@ -36,6 +36,10 @@ WatchCmd::WatchCmd() {
     cmdType = watch_cmd;
 }
 
+UnWatchCmd::UnWatchCmd() {
+    cmdType = unwatch_cmd;
+}
+
 DeleteQueueCmd::DeleteQueueCmd() {
     cmdType = delete_queue_cmd;
 }

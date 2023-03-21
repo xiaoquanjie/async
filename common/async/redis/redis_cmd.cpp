@@ -5,11 +5,12 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
+#ifdef USE_ASYNC_REDIS
+
 #include "common/async/redis/redis_cmd.h"
 #include <string.h>
 
 namespace async {
-
 namespace redis {
 
 BaseRedisCmd::BaseRedisCmd() {
@@ -483,5 +484,7 @@ HmgetRedisCmd::HmgetRedisCmd(const std::string& key, const std::vector<std::stri
 
 } // redis
 } // async
+
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////

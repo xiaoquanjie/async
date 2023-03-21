@@ -19,7 +19,7 @@ typedef std::function<void(int64_t, void*)> async_cpu_cb;
 
 void execute(async_cpu_op op, void* user_data, async_cpu_cb cb);
 
-bool loop(uint32_t cur_time);
+bool loop(uint32_t curTime);
 
 void setThreadFunc(std::function<void(std::function<void()>)>);
 

@@ -30,6 +30,10 @@ if(USE_NET)
     add_definitions(-DUSE_NET)
 endif(USE_NET)
 
+if(USE_ASYNC_RABBITMQ)
+    add_definitions(-DUSE_ASYNC_RABBITMQ)
+endif(USE_ASYNC_RABBITMQ)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
 file(GLOB_RECURSE ALL_CPP *.cpp *.cc)
 

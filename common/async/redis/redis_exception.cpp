@@ -5,6 +5,8 @@
 // author: 404558965@qq.com (xiaoquanjie)
 //----------------------------------------------------------------*/
 
+#ifdef USE_ASYNC_REDIS
+
 #include "common/async/redis/redis_exception.h"
 
 namespace async {
@@ -36,3 +38,5 @@ bool RedisException::Empty()const {
 
 } // redis
 } // async
+
+#endif

@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <memory>
+#include "common/async/async.h"
 #include "common/co_async/async.h"
 #include "common/co_async/promise.h"
 #include "common/coroutine/coroutine.hpp"
+#include "common/threads/thread_pool.h"
 #include <unistd.h>
 
 ////////////////////
@@ -16,6 +18,7 @@ void mongo_test(bool use_co);
 void redis_test(bool use_co);
 void co_mysql_test();
 void ipc_test();
+void rabbit_test(bool use_co);
 
 void promise_test() {
     CoroutineTask::doTask([](void*){
@@ -32,6 +35,11 @@ void promise_test() {
 }
 
 int main() {
+    ThreadPool tp(std::thread::hardware_concurrency() * 2);
+    async::setThreadFunc([&tp](std::function<void()> f) {
+        tp.enqueue(f);
+    });
+
     //promise_test();
     //cpu_test(true);
     //co_parallel_test();
@@ -40,6 +48,7 @@ int main() {
     //redis_test(true);
     //co_mysql_test();
     //ipc_test();
+    rabbit_test(true);
 
     while (true) {
         co_async::loop(time(0));

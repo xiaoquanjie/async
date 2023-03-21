@@ -18,6 +18,7 @@
 #include "common/net/udp_client.h"
 #include "common/threads/thread_pool.h"
 #include "common/co_async//ipc/co_ipc.h"
+#include "common/async/rabbitmq/async_rabbitmq.h"
 
 // 计时器
 struct TimeElapsed {

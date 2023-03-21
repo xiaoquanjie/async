@@ -69,4 +69,9 @@ if(USE_NET)
     set(LINK_LIBRARYS ${LINK_LIBRARYS} event_core event_extra)
 endif(USE_NET)
 
+if(USE_ASYNC_RABBITMQ)
+    add_definitions(-DUSE_ASYNC_RABBITMQ)
+    set(LINK_LIBRARYS ${LINK_LIBRARYS} rabbitmq)
+endif(USE_ASYNC_RABBITMQ)
+
 target_link_libraries(${TARGET_NAME} PRIVATE ${LINK_LIBRARYS})

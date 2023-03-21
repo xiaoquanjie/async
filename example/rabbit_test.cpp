@@ -6,9 +6,27 @@ void rabbit_test(bool use_co) {
     auto watchCmd = std::make_shared<async::rabbitmq::WatchCmd>();
     watchCmd->queue = "queue1";
     watchCmd->consumer_tag = "consumer_tag";
+    watchCmd->no_ack = true;
     async::rabbitmq::watch("localhost|5672|/|admin|admin", watchCmd, [](void* reply, void* envelope, char* body, size_t len) {
         std::string msg(body, len);
-        log("msg: %s", msg.c_str());
+        log("msg1: %s", msg.c_str());
+    });
+
+    auto watchCmd2 = std::make_shared<async::rabbitmq::WatchCmd>();
+    watchCmd2->queue = "queue2";
+    watchCmd2->no_ack = true;
+    async::rabbitmq::watch("localhost|5672|/|admin|admin", watchCmd2, [](void* reply, void* envelope, char* body, size_t len) {
+        std::string msg(body, len);
+        log("msg2: %s", msg.c_str());
+    });
+
+    auto watchCmd3 = std::make_shared<async::rabbitmq::WatchCmd>();
+    watchCmd3->queue = "queue1";
+    watchCmd3->consumer_tag = "consumer_tag2";
+    watchCmd3->no_ack = true;
+    async::rabbitmq::watch("localhost|5672|/|admin|admin", watchCmd3, [](void* reply, void* envelope, char* body, size_t len) {
+        std::string msg(body, len);
+        log("msg3: %s", msg.c_str());
     });
     return;
 

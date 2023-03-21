@@ -331,7 +331,9 @@ RabbitChannelPtr threadCreateChannel(RabbitCorePtr core, uint32_t chId) {
         ch->chId = chId == 0 ? 1 : chId;
         amqp_channel_open(ch->conn, ch->chId);
         if (checkError(amqp_get_rpc_reply(ch->conn), "amqp_channel_open")) {
-            core->chId = ch->chId;
+            if (chId == 0) {
+                core->chId = ch->chId;
+            }
             rabbitLog("open channel: %s, %d successfully", ch->id.c_str(), ch->chId);
         }
         else {
@@ -438,6 +440,8 @@ void threadWatcherProcess(GlobalData* gData) {
     watchPool = gData->watchPool;
     gData->watchLock.unlock();
 
+    bool change = false;
+
     if (!watchPool.empty()) {
         time_t curTime = 0;
         time(&curTime);
@@ -446,6 +450,7 @@ void threadWatcherProcess(GlobalData* gData) {
             if (!item.second.core) {
                 // 创建连接
                 if (curTime - item.second.lastCreate >= 5) {
+                    change = true;
                     item.second.lastCreate = curTime;
                     RabbitAddrPtr addr = std::make_shared<RabbitAddr>(item.first);
                     item.second.core = threadCreateCore(addr);
@@ -459,6 +464,7 @@ void threadWatcherProcess(GlobalData* gData) {
             for (auto& item2 : item.second.cbs) {
                 if (item2.second.chId == 0) {
                     // 创建channel
+                    change = true;
                     uint32_t chId = item.second.genChId++;
                     auto ch = threadCreateChannel(item.second.core, chId);
                     if (!ch) {
@@ -481,12 +487,13 @@ void threadWatcherProcess(GlobalData* gData) {
                 RabbitRspDataPtr rsp = std::make_shared<RabbitRspData>();
                 struct timeval tv;
                 tv.tv_sec = 0;
-                tv.tv_usec = 0;
+                tv.tv_usec = 1000 * 2;
                 amqp_maybe_release_buffers(item.second.core->conn);
                 rsp->reply = amqp_consume_message(item.second.core->conn, &rsp->envelope, &tv, 0);
                 
                 if (rsp->reply.reply_type == AMQP_RESPONSE_NORMAL) {
                     // 收到一个完整的消息
+                    //rabbitLog("recv channel: %d", rsp->envelope.channel);
                     for (auto item2 : item.second.cbs) { 
                         if (item2.second.chId == rsp->envelope.channel) {
                             rsp->watch_cb = item2.second.cb;
@@ -503,6 +510,7 @@ void threadWatcherProcess(GlobalData* gData) {
                 } else if (AMQP_RESPONSE_LIBRARY_EXCEPTION == rsp->reply.reply_type) {
                     if (rsp->reply.library_error == AMQP_STATUS_TIMEOUT) {
                         // 超时
+                        // rabbitLog("timeout%s", "");
                         break;
                     } 
                 } 
@@ -511,6 +519,7 @@ void threadWatcherProcess(GlobalData* gData) {
             
             continue;
 conn_err:
+            change = true;
             item.second.core = nullptr;
             item.second.genChId = 1;
             for (auto& item2 : item.second.cbs) { 
@@ -520,15 +529,17 @@ conn_err:
         }    
     }   
 
-    // 回写watchPool
-    gData->watchLock.lock();
-    for (auto& item : gData->watchPool) {
-        auto iter = watchPool.find(item.first);
-        if (iter != watchPool.end()) {
-            item.second = iter->second;
+    if (change) {
+        // 回写watchPool
+        gData->watchLock.lock();
+        for (auto& item : gData->watchPool) {
+            auto iter = watchPool.find(item.first);
+            if (iter != watchPool.end()) {
+                item.second = iter->second;
+            }
         }
+        gData->watchLock.unlock();
     }
-    gData->watchLock.unlock();
 
     // clear flag
     gData->watcherRun.clear();
@@ -586,7 +597,7 @@ void localProcess(uint32_t curTime, RabbitThreadData* tData) {
 }
 
 void localStatistics(int32_t curTime, RabbitThreadData* tData) {
-    if (curTime - tData->lastPrintTime < 10) {
+    if (curTime - tData->lastPrintTime < 120) {
         return;
     }
 
@@ -631,6 +642,8 @@ void localWatch(RabbitThreadData* tData) {
     } else {
         f();
     }
+
+    //rabbitLog("local watch%s", "");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -657,10 +670,7 @@ bool watch(const std::string& uri, std::shared_ptr<WatchCmd> cmd, async_rabbit_w
     if (cmd->queue.empty()) {
         return false;
     }
-    if (cmd->consumer_tag.empty()) {
-        return false;
-    }
-
+    
     bool ret = false;
     std::string watchId = cmd->queue + "#" + cmd->consumer_tag;
 

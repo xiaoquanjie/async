@@ -100,7 +100,7 @@ struct WatchCmd : public BaseRabbitCmd {
     std::string queue;          // 队列
     std::string consumer_tag;   // 用于区分不同的消费者
     bool no_local = false;      // 1不接收 0接收
-    bool no_ack = false;        // true: 不回复
+    bool no_ack = true;         // true: 不需要ack就会删除
     bool exclusive = false;     // 1当前连接不在时，队列自动删除 0当前连接不在时，队列不自动删除
 };
 

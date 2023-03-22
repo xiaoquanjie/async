@@ -183,10 +183,12 @@ void rabbit_test(bool use_co) {
         count++;
         std::string msg(body, len);
         log("msg: %s", msg.c_str());
-        if (count < 2) {
+        if (count < 3) {
             auto ackCmd = std::make_shared<async::rabbitmq::AckCmd>();
             ackCmd->delivery_tag = delivery_tag;
-            async::rabbitmq::execute(uri, ackCmd, [delivery_tag](void* reply, bool ok) {
+            ackCmd->queue = "queue1";
+            ackCmd->consumer_tag = "consumer_tag";
+            async::rabbitmq::watchAck(uri, ackCmd, [delivery_tag](void* reply, bool ok) {
                 if (ok) {
                     log("ack ok: %ld", delivery_tag);
                 } else {

@@ -135,13 +135,15 @@ struct GetCmd : public BaseRabbitCmd {
     GetCmd();
 
     std::string queue;
-    bool no_ack = true;         // true: 不需要ack就会删除
+    bool no_ack = true;         // true: 不需要ack就会删除, 暂不支持填false
 };
 
 struct AckCmd : public BaseRabbitCmd {
     AckCmd();
 
-    uint64_t delivery_tag;   // the delivery tag of the message to be ack'd
+    std::string queue;          // 队列
+    std::string consumer_tag;   // 用于区分不同的消费者
+    uint64_t delivery_tag;      // the delivery tag of the message to be ack'd
 };
 
 }

@@ -42,6 +42,9 @@ bool watch(const std::string& uri, std::shared_ptr<WatchCmd> cmd, async_rabbit_w
 // 取消监听
 void unwatch(const std::string& uri, std::shared_ptr<UnWatchCmd> cmd);
 
+// 监听ack
+bool watchAck(const std::string& uri, std::shared_ptr<AckCmd> cmd, async_rabbit_cb cb);
+
 bool loop(uint32_t curTime);
 
 void setThreadFunc(std::function<void(std::function<void()>)> f);

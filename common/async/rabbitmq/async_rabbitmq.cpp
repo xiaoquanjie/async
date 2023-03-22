@@ -458,10 +458,14 @@ void threadWatcherProcess(GlobalData* gData) {
                     RabbitAddrPtr addr = std::make_shared<RabbitAddr>(item.first);
                     item.second.core = threadCreateCore(addr);
                     if (!item.second.core) {
-                        rabbitLog("[error] failed to connect for watch: %s", item.first);
+                        rabbitLog("[error] failed to connect for watch: %s", item.first.c_str());
                         goto conn_err;
                     }
                 }
+            }
+
+            if (!item.second.core) {
+                continue;
             }
 
             for (auto& item2 : item.second.cbs) {

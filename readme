@@ -151,7 +151,29 @@ c++异步io库
             8) 创建用户，授权用户：
                 rabbitmqctl add_user admin admin 
                 rabbitmqctl set_user_tags admin administrator
-        
+                
+        12、 zookeeper安装（依赖java）：
+            1）下载：https://www.apache.org/dyn/closer.lua/zookeeper/zookeeper-3.7.1/apache-zookeeper-3.7.1-bin.tar.gz
+            2）解压：tar zxvf apache-zookeeper-3.7.1-bin.tar.gz
+            3）cp -r apache-zookeeper-3.7.1-bin /usr/local/zookeeper
+            4）cd /usr/local/zookeeper
+            5) mkdir logs
+            6) mkdir data
+            7) vi ./conf/zoo.cfg
+                tickTime = 2000
+                dataDir = /usr/local/zookeeper/data
+                dataLogDir = /usr/local/zookeeper/logs
+                clientPort = 2181
+                initLimit = 5
+                syncLimit = 2
+            8) 服务命令：
+                cd ./bin
+                ./zkServer.sh start
+                ./zkServer.sh stop
+                ./zkServer.sh restart
+                ./zkServer.sh status
+            9）客户端命令：
+                ./zkCli.sh 
 目录结构：
 example
     example.cpp         ----> 测试用例

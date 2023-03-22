@@ -74,4 +74,12 @@ if(USE_ASYNC_RABBITMQ)
     set(LINK_LIBRARYS ${LINK_LIBRARYS} rabbitmq)
 endif(USE_ASYNC_RABBITMQ)
 
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    add_definitions(-DDEBUG)
+endif()
+
+if(TRACE)
+    add_definitions(-DTRACE)
+endif(TRACE)
+
 target_link_libraries(${TARGET_NAME} PRIVATE ${LINK_LIBRARYS})

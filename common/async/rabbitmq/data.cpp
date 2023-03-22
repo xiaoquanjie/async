@@ -44,7 +44,9 @@ RabbitCore::~RabbitCore() {
         amqp_channel_close(this->conn, this->chId, AMQP_REPLY_SUCCESS);
     }
     if (this->conn) {
-        rabbitLog("close connection: %s", addr->id.c_str());
+        if (addr) {
+            rabbitLog("close connection: %s", addr->id.c_str());
+        }
         amqp_maybe_release_buffers(this->conn);
         amqp_connection_close(this->conn, AMQP_REPLY_SUCCESS);
         amqp_destroy_connection(this->conn);

@@ -172,7 +172,7 @@ uint64_t addTimer(uint32_t interval, std::function<void()>func) {
 	node.timerId = timerId;
 	pmap->insert(std::make_pair(node.expire, node));
 
-    log("add timer bigIter:%d, smallIter:%d, timerId:%llu, sysBigIter:%d, sysSmallIter:%d, expire:%llu, nowMil:%llu\n",
+    logTrace("add timer bigIter:%d, smallIter:%d, timerId:%llu, sysBigIter:%d, sysSmallIter:%d, expire:%llu, nowMil:%llu\n",
 		big, small, timerId, gPoolInfo.bigIter, gPoolInfo.smallIter, node.expire, nowMil);
 
     return timerId;
@@ -183,7 +183,7 @@ bool cancelTimer(uint64_t id) {
     uint32_t big = high32Bit / 10;
     uint32_t small = high32Bit % 10;
 
-    log("cancel timer bigIter:%d, smallIter:%d, timerId:%llu", big, small, id);
+    logTrace("cancel timer bigIter:%d, smallIter:%d, timerId:%llu", big, small, id);
 
     if (big >= gBigBucket * gPoolInfo.maxIntervalDays) {
         assert(false);

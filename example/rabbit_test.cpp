@@ -2,7 +2,7 @@
 
 #include "./common.h"
 
-void rabbit_test(bool use_co) {
+void rabbit_test2(bool use_co) {
     auto watchCmd = std::make_shared<async::rabbitmq::WatchCmd>();
     watchCmd->queue = "queue1";
     watchCmd->consumer_tag = "consumer_tag";
@@ -94,6 +94,83 @@ void rabbit_test(bool use_co) {
                 log("push msg fail");
             }
     });
+}
+
+void rabbit_test(bool use_co) {
+    std::string uri = "localhost|5672|/|admin|admin";
+    // 使用协程
+    CoroutineTask::doTask([uri](void*) {
+        return;
+        auto exchangeCmd = std::make_shared<async::rabbitmq::DeclareExchangeCmd>();
+        exchangeCmd->name = "direct.exchange1";
+        exchangeCmd->type = "direct";
+
+        auto ret = co_async::rabbitmq::execute(uri, exchangeCmd);
+        if (ret.first == co_async::E_OK) {
+            log("declare exchange: %d", ret.second);
+        } else {
+            log("declare exchange timeout or error: %d", ret.first);
+        } 
+
+        auto queueCmd = std::make_shared<async::rabbitmq::DeclareQueueCmd>();
+        queueCmd->name = "queue1";
+        ret = co_async::rabbitmq::execute(uri, queueCmd);
+        if (ret.first == co_async::E_OK) {
+            log("declare queue: %d", ret.second);
+        } else {
+            log("declare queue timeout or error: %d", ret.first);
+        } 
+
+        auto bindCmd = std::make_shared<async::rabbitmq::BindCmd>();
+        bindCmd->exchange = "direct.exchange1";
+        bindCmd->queue = "queue1";
+        bindCmd->routingKey = "test";
+        ret = co_async::rabbitmq::execute(uri, bindCmd);
+        if (ret.first == co_async::E_OK) {
+            log("bind queue: %d", ret.second);
+        } else {
+            log("bind queue timeout or error: %d", ret.first);
+        } 
+
+        for (int i = 0; i < 10000; i++) {
+            auto publishCmd = std::make_shared<async::rabbitmq::PublishCmd>();
+            publishCmd->msg = "this is a message " + std::to_string(i);
+            publishCmd->exchange = "direct.exchange1";
+            publishCmd->routingKey = "test";
+
+            co_async::rabbitmq::execute(uri, publishCmd);
+        }
+
+    }, 0);
+
+    for (int i = 0; i < 10000; i++) {
+        auto publishCmd = std::make_shared<async::rabbitmq::PublishCmd>();
+        publishCmd->msg = "this is a message " + std::to_string(i);
+        publishCmd->exchange = "direct.exchange1";
+        publishCmd->routingKey = "test";
+
+        async::rabbitmq::execute(uri, publishCmd, [](void* reply, bool ok) {
+            static int count = 0;
+            count++;
+            if (count == 10000) {
+                log("%d %d", count, ok);
+            }
+        });
+    }
+
+    // auto watchCmd = std::make_shared<async::rabbitmq::WatchCmd>();
+    // watchCmd->queue = "queue1";
+    // watchCmd->consumer_tag = "consumer_tag";
+    // watchCmd->no_ack = true;
+    // async::rabbitmq::watch(uri, watchCmd, [](void* reply, void* envelope, char* body, size_t len) {
+    //     static int count = 0;
+    //     count++;
+    //     if (count == 10000) {
+    //         std::string msg(body, len);
+    //         log("msg: %s", msg.c_str());
+    //     }
+    // });
+
 }
 
 #endif

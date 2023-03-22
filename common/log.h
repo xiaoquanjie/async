@@ -12,5 +12,17 @@
 
 void log(const char* format, ...);
 
+#ifdef DEBUG
+#define logDebug log
+#else
+#define logDebug(...)
+#endif
+
+#ifdef TRACE
+#define logTrace log
+#else
+#define logTrace(...)
+#endif
+
 // 设置日志接口, 要求是线程安全的
 void setSafeLogFunc(std::function<void(const char*)> cb);

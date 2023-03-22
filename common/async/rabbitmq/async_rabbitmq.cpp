@@ -487,8 +487,15 @@ void threadWatcherDie(RabbitWatcher& watcher) {
     watcher.core = nullptr;
     watcher.genChId = 1;
     for (auto iter = watcher.cbs.begin(); iter != watcher.cbs.end(); iter++) {
-        iter->second.chId = 0;
-        iter->second.ack_cbs.clear();
+        auto& info = iter->second;
+        info.chId = 0;
+        for (auto& ack : info.ack_cbs) {
+            RabbitRspDataPtr rsp = std::make_shared<RabbitRspData>();
+            rsp->cb = ack.cb;
+            rsp->ok = false;
+            threadPushRes(info.tData, rsp);
+        }
+        info.ack_cbs.clear();
     }
 }
 

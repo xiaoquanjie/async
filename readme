@@ -28,6 +28,7 @@ c++异步io库
     net模块依赖：libevent
 
 8、 如需使用rabbitmq模块，则cmake时需要定义宏USE_ASYNC_RABBITMQ。如：cmake .. -DUSE_ASYNC_RABBITMQ=1
+    rabbitmq模块依赖：librabbitmq库
 
 20、serve模块，分三子模块
     1）libserve模块，提供基础服务操作。提供了默认的后端进程间通信架构及消息处理样式

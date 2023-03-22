@@ -1,3 +1,11 @@
+/*----------------------------------------------------------------
+// Copyright 2022
+// All rights reserved.
+//
+// author: 404558965@qq.com (xiaoquanjie)
+// github: https://github.com/xiaoquanjie/async
+//----------------------------------------------------------------*/
+
 #include "serve/serve/serve.h"
 #include "serve/serve/getopt.h"
 #include "serve/serve/json.hpp"

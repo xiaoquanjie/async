@@ -3,6 +3,7 @@
 // All rights reserved.
 //
 // author: 404558965@qq.com (xiaoquanjie)
+// github: https://github.com/xiaoquanjie/async
 //----------------------------------------------------------------*/
 
 #pragma once
@@ -68,7 +69,7 @@ public:
 	};
 
 	static T& data(){
-		// ½èÓÃÆæÒùÇÉ¼Æ£¬¶ã±Ügcc¿ªÆôÓÅ»¯Ñ¡Ïîºó±àÒëµÄclobbered´íÎóÎ§É±
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¼Æ£ï¿½ï¿½ï¿½ï¿½gccï¿½ï¿½ï¿½ï¿½ï¿½Å»ï¿½Ñ¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½clobberedï¿½ï¿½ï¿½ï¿½Î§É±
 		_point_ p;
 		if (0 == (p.p1 = (T*)pthread_getspecific(_data._tkey))) {
 			p.p1 = new T;

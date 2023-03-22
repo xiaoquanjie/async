@@ -1,3 +1,11 @@
+/*----------------------------------------------------------------
+// Copyright 2022
+// All rights reserved.
+//
+// author: 404558965@qq.com (xiaoquanjie)
+// github: https://github.com/xiaoquanjie/async
+//----------------------------------------------------------------*/
+
 #include "common/co_async/promise.h"
 #include "common/co_async/time_pool.h"
 #include "common/coroutine/coroutine.hpp"

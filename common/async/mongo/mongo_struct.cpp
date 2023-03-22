@@ -3,6 +3,7 @@
 // All rights reserved.
 //
 // author: 404558965@qq.com (xiaoquanjie)
+// github: https://github.com/xiaoquanjie/async
 //----------------------------------------------------------------*/
 
 #ifdef USE_ASYNC_MONGO
@@ -98,7 +99,7 @@ void bson_append(void* b, const char* field) {
 void bson_append(void* b, const char* cmp, const MongoKeyValue& field) {
     bson_t bson;
     BSON_APPEND_DOCUMENT_BEGIN((bson_t*)b, field.d->key.c_str(), (bson_t*)&bson);
-    // ¹¹ÔìÒ»¸öĞÂµÄMongoKeyValue
+    // ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Âµï¿½MongoKeyValue
     MongoKeyValue kv(cmp, 0);
     kv = field;
     kv.d->key = cmp;
@@ -315,7 +316,7 @@ MongoKeyValue::MongoKeyValue(const std::string &key, double val) {
 }
 
 MongoKeyValue::MongoKeyValue(const std::string &key, void *val) {
-    // ´«½øÀ´µÄvalÒªÇóÊÇbson_tÀàĞÍ,²¢ÇÒÄÚ²¿»á½øĞĞ×Ô¶¯ÊÍ·Å
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½valÒªï¿½ï¿½ï¿½ï¿½bson_tï¿½ï¿½ï¿½ï¿½,ï¿½ï¿½ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½Í·ï¿½
     this->d = std::make_shared<Data>();
     this->d->type = en_type_bson;
     this->d->key = key;

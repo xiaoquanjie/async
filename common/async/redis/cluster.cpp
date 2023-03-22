@@ -4,6 +4,7 @@
 // desc: 使用的是同步api，因为异步api无法区分不同连接的redisAsyncContext
 //
 // author: 404558965@qq.com (xiaoquanjie)
+// github: https://github.com/xiaoquanjie/async
 //----------------------------------------------------------------*/
 
 #ifdef USE_ASYNC_REDIS

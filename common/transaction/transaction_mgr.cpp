@@ -3,6 +3,7 @@
 // All rights reserved.
 //
 // author: 404558965@qq.com (xiaoquanjie)
+// github: https://github.com/xiaoquanjie/async
 //----------------------------------------------------------------*/
 
 #ifdef USE_TRANS

@@ -59,6 +59,7 @@ struct RabbitRspData {
     amqp_envelope_t envelope;
     amqp_message_t message;
     async_rabbit_cb cb;
+    async_rabbit_ack_cb ack_cb;
     async_rabbit_get_cb get_cb;
     async_rabbit_watch_cb watch_cb;
 };
@@ -85,7 +86,7 @@ typedef std::shared_ptr<RabbitChannel> RabbitChannelPtr;
 
 struct AckInfo {
     std::shared_ptr<AckCmd> cmd;
-    async_rabbit_cb cb;
+    async_rabbit_ack_cb cb;
 };
 
 struct WatcherInfo {

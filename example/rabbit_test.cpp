@@ -174,30 +174,77 @@ void rabbit_test(bool use_co) {
     //     }
     // });
 
-    auto watchCmd = std::make_shared<async::rabbitmq::WatchCmd>();
-    watchCmd->queue = "queue1";
-    watchCmd->consumer_tag = "consumer_tag";
-    watchCmd->no_ack = false;
-    async::rabbitmq::watch(uri, watchCmd, [uri](void* reply, void* envelope, uint64_t delivery_tag, char* body, size_t len) {
-        static int count = 0;
-        count++;
-        std::string msg(body, len);
-        log("msg: %s", msg.c_str());
-        if (count < 3) {
+    {
+        auto watchCmd = std::make_shared<async::rabbitmq::WatchCmd>();
+        watchCmd->queue = "queue1";
+        watchCmd->consumer_tag = "consumer_tag1";
+        watchCmd->no_ack = false;
+        async::rabbitmq::watch(uri, watchCmd, [uri](void* reply, void* envelope, uint64_t delivery_tag, char* body, size_t len) {
+            static int count = 0;
+            count++;
+            std::string msg(body, len);
+            log("msg1: %s", msg.c_str());
             auto ackCmd = std::make_shared<async::rabbitmq::AckCmd>();
             ackCmd->delivery_tag = delivery_tag;
             ackCmd->queue = "queue1";
-            ackCmd->consumer_tag = "consumer_tag";
-            async::rabbitmq::watchAck(uri, ackCmd, [delivery_tag](void* reply, bool ok) {
+            ackCmd->consumer_tag = "consumer_tag1";
+            async::rabbitmq::watchAck(uri, ackCmd, [delivery_tag](bool ok) {
                 if (ok) {
-                    log("ack ok: %ld", delivery_tag);
+                    log("msg1 ack ok: %ld", delivery_tag);
                 } else {
-                    log("ack fail: %ld", delivery_tag);
+                    log("msg1 ack fail: %ld", delivery_tag);
                 }
             });
-        }
-    });
+        });
+    }
+    
+    {
+        auto watchCmd = std::make_shared<async::rabbitmq::WatchCmd>();
+        watchCmd->queue = "queue1";
+        watchCmd->consumer_tag = "consumer_tag2";
+        watchCmd->no_ack = false;
+        async::rabbitmq::watch(uri, watchCmd, [uri](void* reply, void* envelope, uint64_t delivery_tag, char* body, size_t len) {
+            static int count = 0;
+            count++;
+            std::string msg(body, len);
+            log("msg2: %s", msg.c_str());
+            auto ackCmd = std::make_shared<async::rabbitmq::AckCmd>();
+            ackCmd->delivery_tag = delivery_tag;
+            ackCmd->queue = "queue1";
+            ackCmd->consumer_tag = "consumer_tag2";
+            async::rabbitmq::watchAck(uri, ackCmd, [delivery_tag](bool ok) {
+                if (ok) {
+                    log("msg2 ack ok: %ld", delivery_tag);
+                } else {
+                    log("msg2 ack fail: %ld", delivery_tag);
+                }
+            });
+        });
+    }
 
+    {
+        auto watchCmd = std::make_shared<async::rabbitmq::WatchCmd>();
+        watchCmd->queue = "queue2";
+        //watchCmd->consumer_tag = "consumer_tag2";
+        watchCmd->no_ack = false;
+        async::rabbitmq::watch(uri, watchCmd, [uri](void* reply, void* envelope, uint64_t delivery_tag, char* body, size_t len) {
+            static int count = 0;
+            count++;
+            std::string msg(body, len);
+            log("msg3: %s", msg.c_str());
+            auto ackCmd = std::make_shared<async::rabbitmq::AckCmd>();
+            ackCmd->delivery_tag = delivery_tag;
+            ackCmd->queue = "queue2";
+            //ackCmd->consumer_tag = "consumer_tag2";
+            async::rabbitmq::watchAck(uri, ackCmd, [delivery_tag](bool ok) {
+                if (ok) {
+                    log("msg3 ack ok: %ld", delivery_tag);
+                } else {
+                    log("msg3 ack fail: %ld", delivery_tag);
+                }
+            });
+        });
+    }
 }
 
 #endif

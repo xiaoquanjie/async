@@ -274,17 +274,26 @@ void threadGetCmd(RabbitChannelPtr ch, std::shared_ptr<GetCmd> cmd, RabbitRspDat
 }
 
 void threadAckCmd(RabbitChannelPtr ch, std::shared_ptr<AckCmd> cmd, RabbitRspDataPtr rsp) {
-    amqp_basic_ack(ch->conn, 
+    int x = amqp_basic_ack(ch->conn, 
         ch->chId, 
         cmd->delivery_tag, 
         0
     );
 
-    rsp->reply = amqp_get_rpc_reply(ch->conn);
-    if (checkError(rsp->reply, "amqp_basic_ack")) {
-        rsp->ok = true;
-    } else {
+    std::string context = "amqp_basic_ack in queue:" 
+        + cmd->queue 
+        + ", consumer_tag: " 
+        + cmd->consumer_tag 
+        + " in " 
+        + ch->id 
+        + ", " 
+        + std::to_string(ch->chId);
+
+    if (x < 0) {
         rsp->ok = false;
+        logTrace("[async_rabbitmq] failed to call %s: %s", context.c_str(), amqp_error_string2(x));
+    } else {
+        rsp->ok = true;
     }
 }
 
@@ -301,6 +310,11 @@ void threadWatch(RabbitChannelPtr ch, std::shared_ptr<WatchCmd> cmd, RabbitRspDa
 
     rsp->reply = amqp_get_rpc_reply(ch->conn);
     if (checkError(rsp->reply, "amqp_basic_consume")) {
+        rabbitLog("watch queue:%s, consumer_tag: %s in %s, %d", 
+            cmd->queue.c_str(), 
+            cmd->consumer_tag.c_str(),
+            ch->id.c_str(),
+            ch->chId);
         rsp->ok = true;
     } else {
         rsp->ok = false;
@@ -462,9 +476,7 @@ void threadProcess(RabbitReqDataPtr req, RabbitThreadData* tData) {
             threadDelExchangeCmd(ch, std::static_pointer_cast<DeleteExchangeCmd>(req->cmd), rsp);
         } else if (req->cmd->cmdType == get_cmd) {
             threadGetCmd(ch, std::static_pointer_cast<GetCmd>(req->cmd), rsp);
-        } else if (req->cmd->cmdType == ack_cmd) {
-            //threadAckCmd(ch, std::static_pointer_cast<AckCmd>(req->cmd), rsp);
-        }
+        } 
 
         auto gData = globalData();
         gData->lock.lock();
@@ -491,7 +503,7 @@ void threadWatcherDie(RabbitWatcher& watcher) {
         info.chId = 0;
         for (auto& ack : info.ack_cbs) {
             RabbitRspDataPtr rsp = std::make_shared<RabbitRspData>();
-            rsp->cb = ack.cb;
+            rsp->ack_cb = ack.cb;
             rsp->ok = false;
             threadPushRes(info.tData, rsp);
         }
@@ -607,7 +619,7 @@ void threadWatcherCreate(std::unordered_map<std::string, RabbitWatcher>& watchPo
                 for (auto& ack : info.ack_cbs) {
                     changed = true;
                     RabbitRspDataPtr rsp = std::make_shared<RabbitRspData>();
-                    rsp->cb = ack.cb;
+                    rsp->ack_cb = ack.cb;
                     threadAckCmd(ch, ack.cmd, rsp);
                     threadPushRes(info.tData, rsp);
                 }
@@ -709,13 +721,14 @@ void localRespond(RabbitThreadData* tData) {
         if (rsp->watch_cb) {
             char* body = (char *)rsp->envelope.message.body.bytes;
             size_t len = rsp->envelope.message.body.len;
-
             rsp->watch_cb(&rsp->reply, &rsp->envelope, rsp->envelope.delivery_tag, body, len);
         } else if (rsp->get_cb) {
             char* body = (char *)rsp->message.body.bytes;
             size_t len = rsp->message.body.len;
             rsp->get_cb(&rsp->reply, &rsp->message, rsp->ok, body, len);
-        } else {
+        } else if (rsp->ack_cb) {
+            rsp->ack_cb(rsp->ok);
+        }else {
             tData->rspTaskCnt++;
             rsp->cb(&rsp->reply, rsp->ok);
         }
@@ -897,7 +910,7 @@ void unwatch(const std::string& uri, std::shared_ptr<UnWatchCmd> cmd) {
     gData->watchLock.unlock();
 }
 
-bool watchAck(const std::string& uri, std::shared_ptr<AckCmd> cmd, async_rabbit_cb cb) {
+bool watchAck(const std::string& uri, std::shared_ptr<AckCmd> cmd, async_rabbit_ack_cb cb) {
     if (cmd->queue.empty()) {
         return false;
     }

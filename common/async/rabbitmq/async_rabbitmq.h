@@ -31,6 +31,8 @@ typedef std::function<void(void* reply, void* envelope, uint64_t delivery_tag, c
 // message: amqp_message_t
 typedef std::function<void(void* reply, void* message, bool ok, char* body, size_t len)> async_rabbit_get_cb;
 
+typedef std::function<void(bool ok)> async_rabbit_ack_cb;
+
 // @uri: [host|port|vhost|user|pwd]
 void execute(const std::string& uri, std::shared_ptr<BaseRabbitCmd> cmd, async_rabbit_cb cb);
 
@@ -43,7 +45,7 @@ bool watch(const std::string& uri, std::shared_ptr<WatchCmd> cmd, async_rabbit_w
 void unwatch(const std::string& uri, std::shared_ptr<UnWatchCmd> cmd);
 
 // 监听ack
-bool watchAck(const std::string& uri, std::shared_ptr<AckCmd> cmd, async_rabbit_cb cb);
+bool watchAck(const std::string& uri, std::shared_ptr<AckCmd> cmd, async_rabbit_ack_cb cb);
 
 bool loop(uint32_t curTime);
 

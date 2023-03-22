@@ -17,6 +17,8 @@ namespace rabbitmq {
 // pair.second表示执行结果
 std::pair<int, bool> execute(const std::string& uri, std::shared_ptr<async::rabbitmq::BaseRabbitCmd> cmd, const TimeOut& t = TimeOut());
 
+std::pair<int, bool> execute(const std::string& uri, std::shared_ptr<async::rabbitmq::GetCmd> cmd, std::string& msg, const TimeOut& t = TimeOut());
+
 
 }
 }

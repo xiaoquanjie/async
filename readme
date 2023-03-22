@@ -45,51 +45,51 @@ c++异步io库
     如果库安装路径、链接版本、头文件等出现报错，可以根据编译环境调整 common/CMakeLists.txt文件
     centos安装依赖库：
         1、libevent: 
-            1) wget https://github.com/libevent/libevent/releases/download/release-2.1.8-stable/libevent-2.1.8-stable.tar.gz
-            2) tar zxvf libevent-2.1.8-stable.tar.gz
-            3) cd libevent-2.1.8-stable
-            4) ./configure –prefix=/usr --libdir=/usr/local/lib64
-            5) make
-            6) make install
+            1）wget https://github.com/libevent/libevent/releases/download/release-2.1.8-stable/libevent-2.1.8-stable.tar.gz
+            2）tar zxvf libevent-2.1.8-stable.tar.gz
+            3）cd libevent-2.1.8-stable
+            4）./configure –prefix=/usr --libdir=/usr/local/lib64
+            5）make
+            6）make install
 
         2、redis-server:
-            1) wget http://download.redis.io/releases/redis-5.0.9.tar.gz
-            2) tar -zxvf redis-5.0.9.tar.gz
-            3) cd redis-5.0.9
-            4) make
-            5) make install
+            1）wget http://download.redis.io/releases/redis-5.0.9.tar.gz
+            2）tar -zxvf redis-5.0.9.tar.gz
+            3）cd redis-5.0.9
+            4）make
+            5）make install
             
         3、hiredis:
-            1) https://github.com/redis/hiredis/releases下载源码
+            1）https://github.com/redis/hiredis/releases下载源码
             2）tar zxvf hiredis-1.1.0.tar.gz
-            3) cd hiredis-1.1.0
-            4) make
-            5) make install
+            3）cd hiredis-1.1.0
+            4）make
+            5）make install
             
         4、安装hiredis_vip:
-            1) https://github.com/vipshop/hiredis-vip 下载源码
+            1）https://github.com/vipshop/hiredis-vip 下载源码
             2）unzip hiredis-vip-master.zip
             3）cd hiredis-vip-master
             4）make
-            5) make install
+            5）make install
             
         4-2、安装hiredis-cluster:
-            1) https://github.com/Nordix/hiredis-cluster 下载源码
+            1）https://github.com/Nordix/hiredis-cluster 下载源码
             2）unzip hiredis-cluster-master.zip
             3）cd hiredis-cluster-master
             4）mkdir build
-            5) cd build
-            6) cmake .. // (需要cmake3.2版本)  
+            5）cd build
+            6）cmake .. // (需要cmake3.2版本)  
             
         5、zeromq:
             1）https://github.com/zeromq/libzmq 下载源码
             2）unzip libzmq-master.zip
             3）cd libzmq-master
-            4) yum install -y gettext
-            5) ./autogen.sh (如果报错，就安装yum install -y libtool)
-            6) ./configure
+            4）yum install -y gettext
+            5）./autogen.sh (如果报错，就安装yum install -y libtool)
+            6）./configure
             7）make
-            8) make install
+            8）make install
             
         6、安装libmysqlclient8.0:
             1）它可以随8.0的服务器一起安装
@@ -118,18 +118,18 @@ c++异步io库
             2）mkdir cmake-build
             3）cd cmake-build
             4）cmake -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF ..
-            5) make
-            6) make install
+            5）make
+            6）make install
             
         10、rabbitmq-c安装：
             1）下载 wget https://github.com/alanxz/rabbitmq-c/archive/refs/tags/v0.13.0.tar.gz
-            2) tar zxvf rabbitmq-c-0.13.0.tar.gz
-            3) mkdir build && cd build
-            4) cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_SSL_SUPPORT=OFF ..
+            2）tar zxvf rabbitmq-c-0.13.0.tar.gz
+            3）mkdir build && cd build
+            4）cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_SSL_SUPPORT=OFF ..
             5）make && make install
             
         11、rabbitmq-server安装:
-            1) 安装erlang:
+            1）安装erlang:
                 (1) wget https://packages.erlang-solutions.com/erlang-solutions-2.0-1.noarch.rpm
                 (2) rpm -Uvh erlang-solutions-2.0-1.noarch.rpm
                 (3) rpm --import https://packages.erlang-solutions.com/rpm/erlang_solutions.asc
@@ -142,13 +142,13 @@ c++异步io库
                     enabled=1                    
                 (5) yum install erlang
                 
-            2) 下载: rabbitmq-server-3.9.29-1.el8.noarch.rpm 在：https://github.com/rabbitmq/rabbitmq-server/releases/tag/v3.9.29
-            3) yum install -y socat
+            2）下载: rabbitmq-server-3.9.29-1.el8.noarch.rpm 在：https://github.com/rabbitmq/rabbitmq-server/releases/tag/v3.9.29
+            3）yum install -y socat
             4）rpm -ivh rabbitmq-server-3.9.29-1.el8.noarch.rpm
             5）systemctl start rabbitmq-server
-            6) systemctl enable rabbitmq-server
-            7) 启动管理插件：rabbitmq-plugins enable rabbitmq_management, systemctl stop firewalld， http://localhost:15672
-            8) 创建用户，授权用户：
+            6）systemctl enable rabbitmq-server
+            7）启动管理插件：rabbitmq-plugins enable rabbitmq_management, systemctl stop firewalld， http://localhost:15672
+            8）创建用户，授权用户：
                 rabbitmqctl add_user admin admin 
                 rabbitmqctl set_user_tags admin administrator
                 
@@ -157,16 +157,16 @@ c++异步io库
             2）解压：tar zxvf apache-zookeeper-3.7.1-bin.tar.gz
             3）cp -r apache-zookeeper-3.7.1-bin /usr/local/zookeeper
             4）cd /usr/local/zookeeper
-            5) mkdir logs
-            6) mkdir data
-            7) vi ./conf/zoo.cfg
+            5）mkdir logs
+            6）mkdir data
+            7）vi ./conf/zoo.cfg
                 tickTime = 2000
                 dataDir = /usr/local/zookeeper/data
                 dataLogDir = /usr/local/zookeeper/logs
                 clientPort = 2181
                 initLimit = 5
                 syncLimit = 2
-            8) 服务命令：
+            8）服务命令：
                 cd ./bin
                 ./zkServer.sh start
                 ./zkServer.sh stop
@@ -174,6 +174,18 @@ c++异步io库
                 ./zkServer.sh status
             9）客户端命令：
                 ./zkCli.sh 
+
+        13、zookeeper-c安装：
+            依赖工具：
+                yum install -y cppunit-devel
+                yum install -y ant
+
+            1）下载：https://github.com/apache/zookeeper
+            2）进入top目录，运行ant compile_jute， 如果报错没有build.xml文件，需要去3。5.*的版本将build.xml和ivy开头的文件拷贝过来
+            3）进入zookeeper-client/zookeeper-client-c目录
+            4）autoreconf -if 
+            5）./configure
+            6）make && make install
 目录结构：
 example
     example.cpp         ----> 测试用例
@@ -220,22 +232,22 @@ serve                   ----> 目标是提供一个服务器进程脚手架，�
 层次结构：co表示coroutine协程
 
                               co_async
-            ________________________________________________
-            |      |        |        |         |          |
-        ____|      |        |        |         |          |_
-       |           |        |        |         |           |
-     co_redis   co_mongo   co_curl  co_cpu   co_mysql   parallel接口
-       |           |        |        |         |           |
-       |           |        |        |         |           |
-       |           |        |        |         |           |
-       -----------------------------------------------------
-       |                      promise                      |
-       -----------------------------------------------------
-       |           |        |        |         |           |
-async_redis  async_mongo async_curl async_cpu async_mysql  |
-       |           |        |        |         |           |
-       |           |        |        |         |           |
-       -----------------------------------------------------
+            ____________________________________________________________
+            |      |        |        |         |          |            |
+        ____|      |        |        |         |          |_           |
+       |           |        |        |         |           |           |
+     co_redis   co_mongo   co_curl  co_cpu   co_mysql   parallel接口  co_rabbitmq
+       |           |        |        |         |           |           |
+       |           |        |        |         |           |           |
+       |           |        |        |         |           |           |
+       -----------------------------------------------------------------
+       |                      promise                                  |    
+       ----------------------------------------------------------------- 
+       |           |        |        |         |                  |
+async_redis  async_mongo async_curl async_cpu async_mysql      async_rabbitmq
+       |           |        |        |         |                  |
+       |           |        |        |         |                  |
+       ------------------------------------------------------------
                                     |
                                     |
                              thread_pool(*可选用)      

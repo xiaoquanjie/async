@@ -44,6 +44,7 @@ typedef std::shared_ptr<RabbitAddr> RabbitAddrPtr;
 // 请求
 struct RabbitReqData {
     async_rabbit_cb cb;
+    async_rabbit_get_cb get_cb;
     std::shared_ptr<BaseRabbitCmd> cmd;
     RabbitAddrPtr addr;
     time_t reqTime = 0;
@@ -56,6 +57,7 @@ struct RabbitRspData {
     bool ok = false;
     amqp_rpc_reply_t reply;
     amqp_envelope_t envelope;
+    amqp_message_t message;
     RabbitReqDataPtr req;
     async_rabbit_watch_cb watch_cb;
 };
@@ -86,6 +88,7 @@ struct WatcherInfo {
     uint32_t chId = 0;
     std::shared_ptr<WatchCmd> cmd;
     bool cancel = false;
+    time_t lastCreate = 0; 
 };
 
 struct RabbitWatcher {

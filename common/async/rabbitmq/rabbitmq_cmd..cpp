@@ -49,6 +49,14 @@ DeleteExchangeCmd::DeleteExchangeCmd() {
     cmdType = delete_exchange_cmd;
 }
 
+GetCmd::GetCmd() {
+    cmdType = get_cmd;
+}
+
+AckCmd::AckCmd() {
+    cmdType = ack_cmd;
+}
+
 }
 }
 

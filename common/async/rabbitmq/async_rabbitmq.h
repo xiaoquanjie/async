@@ -23,15 +23,21 @@ void setMaxChannel(uint32_t c);
 typedef std::function<void(void* reply, bool ok)> async_rabbit_cb;
 
 // reply: amqp_rpc_reply_t
-// envelope: amqp_envelope_t
+// envelope: amqp_envelope_t 
 // body: msg
-typedef std::function<void(void* reply, void* envelope, char* body, size_t len)> async_rabbit_watch_cb;
+typedef std::function<void(void* reply, void* envelope, uint64_t delivery_tag, char* body, size_t len)> async_rabbit_watch_cb;
+
+// reply: amqp_rpc_reply_t
+// message: amqp_message_t
+typedef std::function<void(void* reply, void* message, bool ok, char* body, size_t len)> async_rabbit_get_cb;
 
 // @uri: [host|port|vhost|user|pwd]
 void execute(const std::string& uri, std::shared_ptr<BaseRabbitCmd> cmd, async_rabbit_cb cb);
 
+void execute(const std::string& uri, std::shared_ptr<GetCmd> cmd, async_rabbit_get_cb cb);
+
 // 监听
-bool watch(const std::string& uri, std::shared_ptr<WatchCmd> cmd, async_rabbit_watch_cb);
+bool watch(const std::string& uri, std::shared_ptr<WatchCmd> cmd, async_rabbit_watch_cb cb);
 
 // 取消监听
 void unwatch(const std::string& uri, std::shared_ptr<UnWatchCmd> cmd);

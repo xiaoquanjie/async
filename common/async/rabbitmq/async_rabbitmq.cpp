@@ -86,7 +86,7 @@ bool checkChannel(amqp_rpc_reply_t x) {
     return true;
 }
 
-void threadDeclareExchange(RabbitChannelPtr ch, std::shared_ptr<DeclareExchangeCmd> cmd, RabbitRspDataPtr rsp) {
+void threadExchangeCmd(RabbitChannelPtr ch, std::shared_ptr<DeclareExchangeCmd> cmd, RabbitRspDataPtr rsp) {
     //rabbitLog("enter declare exchange%s", "");
     amqp_exchange_declare(ch->conn, 
         ch->chId, 
@@ -109,7 +109,7 @@ void threadDeclareExchange(RabbitChannelPtr ch, std::shared_ptr<DeclareExchangeC
     //rabbitLog("leave declare exchange%s", "");
 }
 
-void threadDeclareQueue(RabbitChannelPtr ch, std::shared_ptr<DeclareQueueCmd> cmd, RabbitRspDataPtr rsp) {
+void threadQueueCmd(RabbitChannelPtr ch, std::shared_ptr<DeclareQueueCmd> cmd, RabbitRspDataPtr rsp) {
     //rabbitLog("enter declare queue%s", "");
     amqp_queue_declare(ch->conn,
         ch->chId,
@@ -131,7 +131,7 @@ void threadDeclareQueue(RabbitChannelPtr ch, std::shared_ptr<DeclareQueueCmd> cm
     //rabbitLog("leave declare queue%s", "");
 }
 
-void threadBind(RabbitChannelPtr ch, std::shared_ptr<BindCmd> cmd, RabbitRspDataPtr rsp) {
+void threadBindCmd(RabbitChannelPtr ch, std::shared_ptr<BindCmd> cmd, RabbitRspDataPtr rsp) {
     amqp_queue_bind(ch->conn, 
         ch->chId, 
         amqp_cstring_bytes(cmd->queue.c_str()),
@@ -148,7 +148,7 @@ void threadBind(RabbitChannelPtr ch, std::shared_ptr<BindCmd> cmd, RabbitRspData
     }
 }
 
-void threadUnbind(RabbitChannelPtr ch, std::shared_ptr<UnbindCmd> cmd, RabbitRspDataPtr rsp) {
+void threadUnbindCmd(RabbitChannelPtr ch, std::shared_ptr<UnbindCmd> cmd, RabbitRspDataPtr rsp) {
     amqp_queue_unbind(ch->conn, 
         ch->chId, 
         amqp_cstring_bytes(cmd->queue.c_str()),
@@ -165,7 +165,7 @@ void threadUnbind(RabbitChannelPtr ch, std::shared_ptr<UnbindCmd> cmd, RabbitRsp
     }
 }
 
-void threadPublish(RabbitChannelPtr ch, std::shared_ptr<PublishCmd> cmd, RabbitRspDataPtr rsp) {
+void threadPublishCmd(RabbitChannelPtr ch, std::shared_ptr<PublishCmd> cmd, RabbitRspDataPtr rsp) {
     amqp_basic_properties_t props;
     props._flags = 0;
     for (auto& item : cmd->properties) {
@@ -213,16 +213,9 @@ void threadPublish(RabbitChannelPtr ch, std::shared_ptr<PublishCmd> cmd, RabbitR
     } else {
         rsp->ok = false;
     }
-
-    // if (x < 0) {
-    //     rsp->ok = false;
-    //     rabbitLog("[error] failed to call amqp_basic_publish: %s", amqp_error_string2(x));
-    // } else {
-    //     rsp->ok = true;
-    // }
 }
 
-void threadDeleteQueue(RabbitChannelPtr ch, std::shared_ptr<DeleteQueueCmd> cmd, RabbitRspDataPtr rsp) {
+void threadDelQueueCmd(RabbitChannelPtr ch, std::shared_ptr<DeleteQueueCmd> cmd, RabbitRspDataPtr rsp) {
     amqp_queue_delete(ch->conn, 
         ch->chId, 
         amqp_cstring_bytes(cmd->name.c_str()), 
@@ -238,7 +231,7 @@ void threadDeleteQueue(RabbitChannelPtr ch, std::shared_ptr<DeleteQueueCmd> cmd,
     }
 }
 
-void threadDeleteExchange(RabbitChannelPtr ch, std::shared_ptr<DeleteExchangeCmd> cmd, RabbitRspDataPtr rsp) {
+void threadDelExchangeCmd(RabbitChannelPtr ch, std::shared_ptr<DeleteExchangeCmd> cmd, RabbitRspDataPtr rsp) {
     amqp_exchange_delete(ch->conn, 
         ch->chId,
         amqp_cstring_bytes(cmd->name.c_str()), 
@@ -250,6 +243,48 @@ void threadDeleteExchange(RabbitChannelPtr ch, std::shared_ptr<DeleteExchangeCmd
         rsp->ok = true;
     } else {
         rsp->ok = false;
+    }
+}
+
+void threadGetCmd(RabbitChannelPtr ch, std::shared_ptr<GetCmd> cmd, RabbitRspDataPtr rsp) {
+    rsp->reply = amqp_basic_get(ch->conn, 
+        ch->chId, 
+        amqp_cstring_bytes(cmd->queue.c_str()), 
+        cmd->no_ack ? 1 : 0
+    );
+
+    if (checkError(rsp->reply, "amqp_basic_get")) {
+        rsp->ok = true;
+    } else {
+        rsp->ok = false;
+        return;
+    }
+
+    if (rsp->reply.reply.id == AMQP_BASIC_GET_EMPTY_METHOD) {
+        return;
+    }
+
+    rsp->reply = amqp_read_message(ch->conn, ch->chId, &rsp->message, 0);
+    if (checkError(rsp->reply, "amqp_read_message")) {
+        rsp->ok = true;
+    } else {
+        rsp->ok = false;
+        return;
+    }
+}
+
+void threadAckCmd(RabbitChannelPtr ch, std::shared_ptr<AckCmd> cmd, RabbitRspDataPtr rsp) {
+    int x = amqp_basic_ack(ch->conn, 
+        ch->chId, 
+        cmd->delivery_tag, 
+        0
+    );
+
+    if (x < 0) {
+        rsp->ok = false;
+        rabbitLog("[error] failed to call amqp_basic_ack: %s", amqp_error_string2(x));
+    } else {
+        rsp->ok = true;
     }
 }
 
@@ -347,9 +382,6 @@ RabbitChannelPtr threadCreateChannel(RabbitCorePtr core, uint32_t chId) {
 }
 
 void threadCloseChannel(RabbitCorePtr core, uint32_t chId) {
-    if (core->chId != chId) {
-        return;
-    }
     rabbitLog("close channel: %s, %d", core->addr->id.c_str(), chId);
     amqp_channel_close_ok_t close_ok;
     amqp_send_method(core->conn, chId, AMQP_CHANNEL_CLOSE_OK_METHOD, &close_ok);
@@ -398,21 +430,25 @@ void threadProcess(RabbitReqDataPtr req, RabbitThreadData* tData) {
         }
 
         if (req->cmd->cmdType == declare_exchange_cmd) {
-            threadDeclareExchange(ch, std::static_pointer_cast<DeclareExchangeCmd>(req->cmd), rsp);
+            threadExchangeCmd(ch, std::static_pointer_cast<DeclareExchangeCmd>(req->cmd), rsp);
         } else if (req->cmd->cmdType == declare_queue_cmd) {
-            threadDeclareQueue(ch, std::static_pointer_cast<DeclareQueueCmd>(req->cmd), rsp);
+            threadQueueCmd(ch, std::static_pointer_cast<DeclareQueueCmd>(req->cmd), rsp);
         } else if (req->cmd->cmdType == bind_cmd) {
-            threadBind(ch, std::static_pointer_cast<BindCmd>(req->cmd), rsp);
+            threadBindCmd(ch, std::static_pointer_cast<BindCmd>(req->cmd), rsp);
         } else if (req->cmd->cmdType == unbind_cmd) {
-            threadUnbind(ch, std::static_pointer_cast<UnbindCmd>(req->cmd), rsp);
+            threadUnbindCmd(ch, std::static_pointer_cast<UnbindCmd>(req->cmd), rsp);
         } else if (req->cmd->cmdType == publish_cmd) {
-            threadPublish(ch, std::static_pointer_cast<PublishCmd>(req->cmd), rsp);
+            threadPublishCmd(ch, std::static_pointer_cast<PublishCmd>(req->cmd), rsp);
         } else if (req->cmd->cmdType == watch_cmd) {
             
         } else if (req->cmd->cmdType == delete_queue_cmd) {
-            threadDeleteQueue(ch, std::static_pointer_cast<DeleteQueueCmd>(req->cmd), rsp);
+            threadDelQueueCmd(ch, std::static_pointer_cast<DeleteQueueCmd>(req->cmd), rsp);
         } else if (req->cmd->cmdType == delete_exchange_cmd) {
-            threadDeleteExchange(ch, std::static_pointer_cast<DeleteExchangeCmd>(req->cmd), rsp);
+            threadDelExchangeCmd(ch, std::static_pointer_cast<DeleteExchangeCmd>(req->cmd), rsp);
+        } else if (req->cmd->cmdType == get_cmd) {
+            threadGetCmd(ch, std::static_pointer_cast<GetCmd>(req->cmd), rsp);
+        } else if (req->cmd->cmdType == ack_cmd) {
+            threadAckCmd(ch, std::static_pointer_cast<AckCmd>(req->cmd), rsp);
         }
 
         auto gData = globalData();
@@ -435,6 +471,159 @@ void threadProcess(RabbitReqDataPtr req, RabbitThreadData* tData) {
     tData->lock.unlock();
 }
 
+void threadWatcherPoll(RabbitWatcher& watcher, bool& changed, bool& idle) {
+    while (true) {
+        RabbitRspDataPtr rsp = std::make_shared<RabbitRspData>();
+        struct timeval tv;
+        tv.tv_sec = 0;
+        tv.tv_usec = 10; //1000 * 2;
+
+        amqp_maybe_release_buffers(watcher.core->conn);
+        rsp->reply = amqp_consume_message(watcher.core->conn, &rsp->envelope, &tv, 0);
+                
+        if (AMQP_RESPONSE_NORMAL == rsp->reply.reply_type) {
+            // 收到一个完整的消息
+            //rabbitLog("recv channel: %d", rsp->envelope.channel);
+            for (auto iter = watcher.cbs.begin(); iter != watcher.cbs.end(); iter++) {
+                auto& info = iter->second;
+                if (info.chId == rsp->envelope.channel) {
+                    idle = false;
+                    // 放入队列
+                    rsp->watch_cb = info.cb;
+                    RabbitThreadData* tData = (RabbitThreadData*)info.tData;
+                    tData->lock.lock();
+                    // 存入队列
+                    tData->rspQueue.push_back(rsp);
+                    tData->lock.unlock();
+                    break;
+                }
+            }
+            continue;
+        } else if (AMQP_RESPONSE_LIBRARY_EXCEPTION == rsp->reply.reply_type) {
+            if (rsp->reply.library_error == AMQP_STATUS_TIMEOUT) {
+                // 超时
+                // rabbitLog("timeout%s", "");
+                break;
+            } 
+        }
+
+        // error
+        changed = true;
+        watcher.core = nullptr;
+        watcher.genChId = 1;
+        for (auto iter = watcher.cbs.begin(); iter != watcher.cbs.end(); iter++) {
+            iter->second.chId = 0;
+        }
+        break;
+    }
+}
+
+void threadWatcherCreate(std::unordered_map<std::string, RabbitWatcher>& watchPool, bool& changed, bool& idle) {
+    if (watchPool.empty()) {
+        return;
+    }
+
+    time_t curTime = 0;
+    time(&curTime);
+
+    for (auto iter = watchPool.begin(); iter != watchPool.end(); iter++) {
+        auto& watcher = iter->second;
+        if (!watcher.core) {
+            if (curTime - watcher.lastCreate >= 5) {
+                changed = true;
+                watcher.lastCreate = curTime;
+                RabbitAddrPtr addr = std::make_shared<RabbitAddr>(iter->first);
+                watcher.core = threadCreateCore(addr);
+                if (!watcher.core) {
+                    rabbitLog("[error] failed to connect for watch: %s", iter->first.c_str());
+                }
+            } else {
+                //rabbitLog("time limit....%s", "");
+            }
+        }
+        if (!watcher.core) {
+            continue;
+        }
+
+        bool poll = false;
+        for (auto iter2 = watcher.cbs.begin(); iter2 != watcher.cbs.end(); iter2++) {
+            auto& info = iter2->second;
+            if (info.cancel) {
+                if (info.chId != 0) {
+                    // 关闭channel
+                    changed = true;
+                    rabbitLog("close channel: %s, %d", iter->first.c_str(), info.chId);
+                    amqp_basic_cancel(watcher.core->conn, info.chId, amqp_cstring_bytes(info.cmd->consumer_tag.c_str()));
+                    amqp_maybe_release_buffers_on_channel(watcher.core->conn, info.chId);
+                    checkError(amqp_channel_close(watcher.core->conn, info.chId, AMQP_CHANNEL_ERROR), 
+                        "amqp_channel_close"
+                    );
+                }
+            } else if (info.chId == 0 && curTime - info.lastCreate >= 5) {
+                changed = true;
+                info.lastCreate = curTime;
+                uint32_t chId = watcher.genChId++;
+                auto ch = threadCreateChannel(watcher.core, chId);
+                if (!ch) {
+                    rabbitLog("[error] failed to open channel for watch: %s, %d", iter->first, chId);
+                    goto c_err;
+                }
+
+                // 创建consumer
+                RabbitRspDataPtr rsp = std::make_shared<RabbitRspData>();
+                threadWatch(ch, info.cmd, rsp);
+                if (rsp->ok) {
+                    info.chId = chId;
+                } else if (!checkConn(rsp->reply)) {
+                    goto c_err;
+                } else {
+                    // 关闭channel
+                    threadCloseChannel(watcher.core, chId);
+                }
+            }
+
+            if (info.chId != 0) {
+                poll = true;
+            }
+        } 
+
+        if (poll) {
+            threadWatcherPoll(watcher, changed, idle);
+        }
+        continue;
+
+c_err:
+        watcher.core = nullptr;
+        watcher.genChId = 1;
+        for (auto iter2 = watcher.cbs.begin(); iter2 != watcher.cbs.end(); iter2++) {
+            iter2->second.chId = 0;
+        }
+    }
+}
+
+void threadWriateBackWatcher(std::unordered_map<std::string, RabbitWatcher>& src, std::unordered_map<std::string, RabbitWatcher>& other) {
+    for (auto iter1 = src.begin(); iter1 != src.end(); ) {
+        auto iter2 = other.find(iter1->first);
+        if (iter2 != other.end()) {
+            iter1->second = iter2->second;
+        }
+
+        for (auto iter3 = iter1->second.cbs.begin(); iter3 != iter1->second.cbs.end(); ) {
+            if (iter3->second.cancel) {
+                iter3 = iter1->second.cbs.erase(iter3);
+            } else {
+                iter3++;
+            }
+        }
+
+        if (iter1->second.cbs.empty()) {
+            iter1 = src.erase(iter1);
+        } else {
+            iter1++;
+        }
+    }
+}
+
 void threadWatcherProcess(GlobalData* gData) {
     std::unordered_map<std::string, RabbitWatcher> watchPool;
 
@@ -442,141 +631,23 @@ void threadWatcherProcess(GlobalData* gData) {
     watchPool = gData->watchPool;
     gData->watchLock.unlock();
 
-    bool change = false;
+    bool changed = false;
+    bool idle = true;
+
+    threadWatcherCreate(watchPool, changed, idle);
+
+    if (idle) {
+        gData->watchIdle++;
+    } else {
+        gData->watchIdle = 0;
+    }
+
     gData->watchIdle++;
 
-    if (!watchPool.empty()) {
-        time_t curTime = 0;
-        time(&curTime);
-
-        for (auto& item : watchPool) {
-            if (!item.second.core) {
-                // 创建连接
-                if (curTime - item.second.lastCreate >= 5) {
-                    change = true;
-                    item.second.lastCreate = curTime;
-                    RabbitAddrPtr addr = std::make_shared<RabbitAddr>(item.first);
-                    item.second.core = threadCreateCore(addr);
-                    if (!item.second.core) {
-                        rabbitLog("[error] failed to connect for watch: %s", item.first.c_str());
-                        goto conn_err;
-                    }
-                }
-            }
-
-            if (!item.second.core) {
-                continue;
-            }
-
-            for (auto& item2 : item.second.cbs) {
-                if (item2.second.cancel) {
-                    if (item2.second.chId != 0) {
-                        // 关闭channel
-                        change = true;
-                        rabbitLog("close channel: %s, %d", item.second.core->addr->id.c_str(), item2.second.chId);
-                        amqp_basic_cancel(item.second.core->conn, item2.second.chId, amqp_cstring_bytes(item2.second.cmd->consumer_tag.c_str()));
-                        amqp_maybe_release_buffers_on_channel(item.second.core->conn, item2.second.chId);
-                        checkError(amqp_channel_close(item.second.core->conn, item2.second.chId, AMQP_CHANNEL_ERROR), 
-                            "amqp_channel_close");
-                    }
-                }
-                else if (item2.second.chId == 0) {
-                    // 创建channel
-                    change = true;
-                    uint32_t chId = item.second.genChId++;
-                    auto ch = threadCreateChannel(item.second.core, chId);
-                    if (!ch) {
-                        rabbitLog("[error] failed to open channel for watch: %s, %d", item.first, chId);
-                        goto conn_err;
-                    }
-
-                    // 创建consumer
-                    RabbitRspDataPtr rsp = std::make_shared<RabbitRspData>();
-                    threadWatch(ch, item2.second.cmd, rsp);
-                    if (rsp->ok) {
-                        item2.second.chId = chId;
-                    } else {
-                        goto conn_err;
-                    }
-                }
-            }
-
-            while (1) {
-                RabbitRspDataPtr rsp = std::make_shared<RabbitRspData>();
-                struct timeval tv;
-                tv.tv_sec = 0;
-                tv.tv_usec = 10; //1000 * 2;
-                amqp_maybe_release_buffers(item.second.core->conn);
-                rsp->reply = amqp_consume_message(item.second.core->conn, &rsp->envelope, &tv, 0);
-                
-                if (rsp->reply.reply_type == AMQP_RESPONSE_NORMAL) {
-                    // 收到一个完整的消息
-                    //rabbitLog("recv channel: %d", rsp->envelope.channel);
-                    for (auto item2 : item.second.cbs) { 
-                        if (item2.second.chId == rsp->envelope.channel) {
-                            gData->watchIdle = 0;
-                            rsp->watch_cb = item2.second.cb;
-                            // 放入队列
-                            RabbitThreadData* tData = (RabbitThreadData*)item2.second.tData;
-                            tData->lock.lock();
-                            // 存入队列
-                            tData->rspQueue.push_back(rsp);
-                            tData->lock.unlock();
-                            break;
-                        }
-                    }
-                    continue;
-                } else if (AMQP_RESPONSE_LIBRARY_EXCEPTION == rsp->reply.reply_type) {
-                    if (rsp->reply.library_error == AMQP_STATUS_TIMEOUT) {
-                        // 超时
-                        // rabbitLog("timeout%s", "");
-                        break;
-                    } 
-                } 
-                goto conn_err;
-            }
-            
-            continue;
-conn_err:
-            change = true;
-            item.second.core = nullptr;
-            item.second.genChId = 1;
-            for (auto& item2 : item.second.cbs) { 
-                item2.second.chId = 0;
-            }
-            continue; 
-        }    
-    }   
-
-    if (change) {
+    if (changed) {
         // 回写watchPool
         gData->watchLock.lock();
-        for (auto iter1 = gData->watchPool.begin(); iter1 != gData->watchPool.end(); ) {
-            auto iter2 = watchPool.find(iter1->first);
-            if (iter2 != watchPool.end()) {
-                iter1->second = iter2->second;
-            }
-
-            for (auto iter3 = iter1->second.cbs.begin(); iter3 != iter1->second.cbs.end(); ) {
-                if (iter3->second.cancel) {
-                    iter3 = iter1->second.cbs.erase(iter3);
-                } else {
-                    iter3++;
-                }
-            }
-
-            if (iter1->second.cbs.empty()) {
-                iter1 = gData->watchPool.erase(iter1);
-            } else {
-                iter1++;
-            }
-        }
-        // for (auto& item : gData->watchPool) {
-        //     auto iter = watchPool.find(item.first);
-        //     if (iter != watchPool.end()) {
-        //         item.second = iter->second;
-        //     }
-        // }
+        threadWriateBackWatcher(gData->watchPool, watchPool);
         gData->watchLock.unlock();
     }
 
@@ -613,12 +684,17 @@ void localRespond(RabbitThreadData* tData) {
         if (rsp->watch_cb) {
             char* body = (char *)rsp->envelope.message.body.bytes;
             size_t len = rsp->envelope.message.body.len;
-            rsp->watch_cb(&rsp->reply, &rsp->envelope, body, len);
-            amqp_destroy_envelope(&rsp->envelope);
+            rsp->watch_cb(&rsp->reply, &rsp->envelope, rsp->envelope.delivery_tag, body, len);
+        } else if (rsp->req->get_cb) {
+            char* body = (char *)rsp->message.body.bytes;
+            size_t len = rsp->message.body.len;
+            rsp->req->get_cb(&rsp->reply, &rsp->message, rsp->ok, body, len);
         } else {
             tData->rspTaskCnt++;
             rsp->req->cb(&rsp->reply, rsp->ok);
         }
+        amqp_destroy_envelope(&rsp->envelope);
+        amqp_destroy_message(&rsp->message);
     }
 }
 
@@ -725,6 +801,19 @@ void execute(const std::string& uri, std::shared_ptr<BaseRabbitCmd> cmd, async_r
     req->cmd = cmd;
     req->addr = std::make_shared<RabbitAddr>(uri);
     req->cb = cb;
+    time(&req->reqTime);
+
+    RabbitThreadData* tData = runningData();
+    tData->reqQueue.push_back(req);
+    tData->reqTaskCnt++;
+}
+
+void execute(const std::string& uri, std::shared_ptr<GetCmd> cmd, async_rabbit_get_cb cb) {
+    // 构造一个请求
+    RabbitReqDataPtr req = std::make_shared<RabbitReqData>();
+    req->cmd = cmd;
+    req->addr = std::make_shared<RabbitAddr>(uri);
+    req->get_cb = cb;
     time(&req->reqTime);
 
     RabbitThreadData* tData = runningData();

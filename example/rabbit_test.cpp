@@ -7,7 +7,7 @@ void rabbit_test2(bool use_co) {
     watchCmd->queue = "queue1";
     watchCmd->consumer_tag = "consumer_tag";
     watchCmd->no_ack = true;
-    async::rabbitmq::watch("localhost|5672|/|admin|admin", watchCmd, [](void* reply, void* envelope, char* body, size_t len) {
+    async::rabbitmq::watch("localhost|5672|/|admin|admin", watchCmd, [](void* reply, void* envelope, uint64_t delivery_tag, char* body, size_t len) {
         std::string msg(body, len);
         log("msg1: %s", msg.c_str());
     });
@@ -16,7 +16,7 @@ void rabbit_test2(bool use_co) {
     auto watchCmd2 = std::make_shared<async::rabbitmq::WatchCmd>();
     watchCmd2->queue = "queue2";
     watchCmd2->no_ack = true;
-    async::rabbitmq::watch("localhost|5672|/|admin|admin", watchCmd2, [&watchCmdCnt](void* reply, void* envelope, char* body, size_t len) {
+    async::rabbitmq::watch("localhost|5672|/|admin|admin", watchCmd2, [&watchCmdCnt](void* reply, void* envelope, uint64_t delivery_tag, char* body, size_t len) {
         std::string msg(body, len);
         log("msg2: %s", msg.c_str());
         watchCmdCnt++;
@@ -32,7 +32,7 @@ void rabbit_test2(bool use_co) {
     watchCmd3->queue = "queue1";
     watchCmd3->consumer_tag = "consumer_tag2";
     watchCmd3->no_ack = true;
-    async::rabbitmq::watch("localhost|5672|/|admin|admin", watchCmd3, [](void* reply, void* envelope, char* body, size_t len) {
+    async::rabbitmq::watch("localhost|5672|/|admin|admin", watchCmd3, [](void* reply, void* envelope, uint64_t delivery_tag, char* body, size_t len) {
         std::string msg(body, len);
         log("msg3: %s", msg.c_str());
     });
@@ -143,33 +143,58 @@ void rabbit_test(bool use_co) {
 
     }, 0);
 
-    for (int i = 0; i < 10000; i++) {
-        auto publishCmd = std::make_shared<async::rabbitmq::PublishCmd>();
-        publishCmd->msg = "this is a message " + std::to_string(i);
-        publishCmd->exchange = "direct.exchange1";
-        publishCmd->routingKey = "test";
+    // for (int i = 0; i < 10000; i++) {
+    //     auto publishCmd = std::make_shared<async::rabbitmq::PublishCmd>();
+    //     publishCmd->msg = "this is a message " + std::to_string(i);
+    //     publishCmd->exchange = "direct.exchange1";
+    //     publishCmd->routingKey = "test";
 
-        async::rabbitmq::execute(uri, publishCmd, [](void* reply, bool ok) {
-            static int count = 0;
-            count++;
-            if (count == 10000) {
-                log("%d %d", count, ok);
-            }
-        });
-    }
+    //     async::rabbitmq::execute(uri, publishCmd, [](void* reply, bool ok) {
+    //         static int count = 0;
+    //         count++;
+    //         if (count == 10000) {
+    //             log("%d %d", count, ok);
+    //         }
+    //     });
+    // }
 
-    // auto watchCmd = std::make_shared<async::rabbitmq::WatchCmd>();
-    // watchCmd->queue = "queue1";
-    // watchCmd->consumer_tag = "consumer_tag";
-    // watchCmd->no_ack = true;
-    // async::rabbitmq::watch(uri, watchCmd, [](void* reply, void* envelope, char* body, size_t len) {
-    //     static int count = 0;
-    //     count++;
-    //     if (count == 10000) {
+    // auto getCmd = std::make_shared<async::rabbitmq::GetCmd>();
+    // getCmd->queue = "queue1";
+    // getCmd->no_ack = false;
+    // async::rabbitmq::execute(uri, getCmd, [](void*, void* message, bool ok, char* body, size_t len) {
+    //     if (!ok) {
+    //         log("error");
+    //         return;
+    //     }
+    //     if (!body) {
+    //         log("get empty: %d", len);
+    //     } else {
     //         std::string msg(body, len);
-    //         log("msg: %s", msg.c_str());
+    //         log("get: %s", msg.c_str());
     //     }
     // });
+
+    auto watchCmd = std::make_shared<async::rabbitmq::WatchCmd>();
+    watchCmd->queue = "queue1";
+    watchCmd->consumer_tag = "consumer_tag";
+    watchCmd->no_ack = false;
+    async::rabbitmq::watch(uri, watchCmd, [uri](void* reply, void* envelope, uint64_t delivery_tag, char* body, size_t len) {
+        static int count = 0;
+        count++;
+        std::string msg(body, len);
+        log("msg: %s", msg.c_str());
+        if (count < 2) {
+            auto ackCmd = std::make_shared<async::rabbitmq::AckCmd>();
+            ackCmd->delivery_tag = delivery_tag;
+            async::rabbitmq::execute(uri, ackCmd, [delivery_tag](void* reply, bool ok) {
+                if (ok) {
+                    log("ack ok: %ld", delivery_tag);
+                } else {
+                    log("ack fail: %ld", delivery_tag);
+                }
+            });
+        }
+    });
 
 }
 

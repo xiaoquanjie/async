@@ -24,6 +24,8 @@ enum cmd_type {
     delete_queue_cmd = 7,       // 删除队列
     delete_exchange_cmd = 8,    // 删除交换机
     unwatch_cmd = 9,
+    get_cmd = 10,               // 获取消息
+    ack_cmd = 11,               // 确认
 };
 
 struct BaseRabbitCmd {
@@ -127,6 +129,19 @@ struct DeleteExchangeCmd : public BaseRabbitCmd {
 
     std::string name;               // 名字
     bool if_unused = false;         // 交换机不用后删掉
+};
+
+struct GetCmd : public BaseRabbitCmd {
+    GetCmd();
+
+    std::string queue;
+    bool no_ack = true;         // true: 不需要ack就会删除
+};
+
+struct AckCmd : public BaseRabbitCmd {
+    AckCmd();
+
+    uint64_t delivery_tag;   // the delivery tag of the message to be ack'd
 };
 
 }

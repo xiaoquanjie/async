@@ -22,6 +22,8 @@ std::function<void(std::function<void()>)> gIoThr = nullptr;
 uint32_t gTimeout = 5;
 // 最大channel数
 uint32_t gMaxChannel = 1; // 目前不允许线程共享conn
+// 消费速度
+uint32_t gConsumeRate = 1000;
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -274,6 +276,7 @@ void threadGetCmd(RabbitChannelPtr ch, std::shared_ptr<GetCmd> cmd, RabbitRspDat
 }
 
 void threadAckCmd(RabbitChannelPtr ch, std::shared_ptr<AckCmd> cmd, RabbitRspDataPtr rsp) {
+    //rabbitLog("ack %d in queue: %s id: %s, %d", cmd->consumer_tag, cmd->queue.c_str(), ch->id.c_str(), ch->chId);
     int x = amqp_basic_ack(ch->conn, 
         ch->chId, 
         cmd->delivery_tag, 
@@ -291,7 +294,7 @@ void threadAckCmd(RabbitChannelPtr ch, std::shared_ptr<AckCmd> cmd, RabbitRspDat
             + ", " 
             + std::to_string(ch->chId);
 
-        logTrace("[async_rabbitmq] failed to call %s: %s", context.c_str(), amqp_error_string2(x));
+        rabbitLog("[error] failed to call %s: %s", context.c_str(), amqp_error_string2(x));
     } else {
         rsp->ok = true;
     }
@@ -495,19 +498,23 @@ void threadProcess(RabbitReqDataPtr req, RabbitThreadData* tData) {
     threadPushRes(tData, rsp);
 }
 
+void threadClearAck(WatcherInfo& info) {
+    for (auto& ack : info.ack_cbs) {
+        RabbitRspDataPtr rsp = std::make_shared<RabbitRspData>();
+        rsp->ack_cb = ack.cb;
+        rsp->ok = false;
+        threadPushRes(info.tData, rsp);
+    }
+    info.ack_cbs.clear();
+}
+
 void threadWatcherDie(RabbitWatcher& watcher) {
     watcher.core = nullptr;
     watcher.genChId = 1;
     for (auto iter = watcher.cbs.begin(); iter != watcher.cbs.end(); iter++) {
         auto& info = iter->second;
         info.chId = 0;
-        for (auto& ack : info.ack_cbs) {
-            RabbitRspDataPtr rsp = std::make_shared<RabbitRspData>();
-            rsp->ack_cb = ack.cb;
-            rsp->ok = false;
-            threadPushRes(info.tData, rsp);
-        }
-        info.ack_cbs.clear();
+        threadClearAck(info);
     }
 }
 
@@ -560,7 +567,7 @@ void threadWatcherCreate(std::unordered_map<std::string, RabbitWatcher>& watchPo
     for (auto iter = watchPool.begin(); iter != watchPool.end(); iter++) {
         auto& watcher = iter->second;
         if (!watcher.core) {
-            if (curTime - watcher.lastCreate >= 5) {
+            if (curTime - watcher.lastCreate >= 10) {
                 changed = true;
                 watcher.lastCreate = curTime;
                 RabbitAddrPtr addr = std::make_shared<RabbitAddr>(iter->first);
@@ -590,7 +597,7 @@ void threadWatcherCreate(std::unordered_map<std::string, RabbitWatcher>& watchPo
                         "amqp_channel_close"
                     );
                 }
-            } else if (info.chId == 0 && curTime - info.lastCreate >= 5) {
+            } else if (info.chId == 0 && curTime - info.lastCreate >= 10) {
                 changed = true;
                 info.lastCreate = curTime;
                 uint32_t chId = watcher.genChId++;
@@ -638,15 +645,17 @@ c_err:
     }
 }
 
-void threadWriateBackWatcher(std::unordered_map<std::string, RabbitWatcher>& src, std::unordered_map<std::string, RabbitWatcher>& other) {
+void threadWriteBackWatcher(std::unordered_map<std::string, RabbitWatcher>& src, std::unordered_map<std::string, RabbitWatcher>& other) {
     for (auto iter1 = src.begin(); iter1 != src.end(); ) {
-        auto iter2 = other.find(iter1->first);
-        if (iter2 != other.end()) {
-            iter1->second = iter2->second;
+        auto iterOther1 = other.find(iter1->first);
+        if (iterOther1 != other.end()) {
+            // 复制
+            iter1->second.copy(iterOther1->second);
         }
 
         for (auto iter3 = iter1->second.cbs.begin(); iter3 != iter1->second.cbs.end(); ) {
             if (iter3->second.cancel) {
+                threadClearAck(iter3->second);
                 iter3 = iter1->second.cbs.erase(iter3);
             } else {
                 iter3++;
@@ -666,6 +675,11 @@ void threadWatcherProcess(GlobalData* gData) {
 
     gData->watchLock.lock();
     watchPool = gData->watchPool;
+    for (auto iter = gData->watchPool.begin(); iter != gData->watchPool.end(); iter++) {
+        for (auto iter2 = iter->second.cbs.begin(); iter2 != iter->second.cbs.end(); iter2++) {
+            iter2->second.ack_cbs.clear();
+        }
+    }
     gData->watchLock.unlock();
 
     bool changed = false;
@@ -684,7 +698,7 @@ void threadWatcherProcess(GlobalData* gData) {
     if (changed) {
         // 回写watchPool
         gData->watchLock.lock();
-        threadWriateBackWatcher(gData->watchPool, watchPool);
+        threadWriteBackWatcher(gData->watchPool, watchPool);
         gData->watchLock.unlock();
     }
 
@@ -813,6 +827,11 @@ bool localWatch(RabbitThreadData* tData) {
             break;
         }
 
+        // 速率控制
+        if (tData->rspQueue.size() >= gConsumeRate) {
+            break;
+        }
+
         auto f = std::bind(threadWatcherProcess, gData);
         if (gIoThr) {
             gIoThr(f);
@@ -927,13 +946,13 @@ bool watchAck(const std::string& uri, std::shared_ptr<AckCmd> cmd, async_rabbit_
     auto iterWatch = wPool.cbs.find(watchId);
     if (iterWatch != wPool.cbs.end()) {
         auto& watchInfo = iterWatch->second;
-        if (watchInfo.chId != 0) {
-            AckInfo info;
-            info.cmd = cmd;
-            info.cb = cb;
-            watchInfo.ack_cbs.push_back(info);
-            ret = true;
-        }
+        AckInfo info;
+        info.cmd = cmd;
+        info.cb = cb;
+        watchInfo.ack_cbs.push_back(info);
+        ret = true;
+    } else {
+        assert(false);
     }
     
     gData->watchLock.unlock();
@@ -953,6 +972,13 @@ bool loop(uint32_t curTime) {
 
 void setThreadFunc(std::function<void(std::function<void()>)> f) {
     gIoThr = f;
+}
+
+void setConsumeRate(uint32_t rate) {
+    if (rate == 0) {
+        return;
+    }
+    gConsumeRate = rate;
 }
 
 }

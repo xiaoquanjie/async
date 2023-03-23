@@ -16,9 +16,6 @@
 namespace async {
 namespace rabbitmq {
 
-// 设置最大通道数,暂时不起作用
-void setMaxChannel(uint32_t c);
-
 // reply: amqp_rpc_reply_t
 typedef std::function<void(void* reply, bool ok)> async_rabbit_cb;
 
@@ -50,6 +47,12 @@ bool watchAck(const std::string& uri, std::shared_ptr<AckCmd> cmd, async_rabbit_
 bool loop(uint32_t curTime);
 
 void setThreadFunc(std::function<void(std::function<void()>)> f);
+
+// 设置最大通道数,暂时不起作用
+void setMaxChannel(uint32_t c);
+
+// 控制watch的接收速率
+void setConsumeRate(uint32_t rate);
 
 } // rabbitmq
 } // async

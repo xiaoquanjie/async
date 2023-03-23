@@ -53,6 +53,18 @@ RabbitCore::~RabbitCore() {
     }
 }
 
+void RabbitWatcher::copy(RabbitWatcher& o) {
+    this->lastCreate = o.lastCreate;
+    this->genChId = o.genChId;
+    this->core = o.core;
+
+    for (auto& item : o.cbs) {
+        auto& info = this->cbs[item.first];
+        info.chId = item.second.chId;
+        info.lastCreate = item.second.lastCreate;
+        info.ack_cbs.insert(info.ack_cbs.begin(), item.second.ack_cbs.begin(), item.second.ack_cbs.end());
+    }
+}
 
 }
 }

@@ -11,6 +11,7 @@
 #include "common/co_async/rabbitmq/co_rabbitmq.h"
 #include "common/coroutine/coroutine.hpp"
 #include "common/co_async/promise.h"
+#include <list>
 
 namespace co_async {
 namespace rabbitmq {
@@ -72,6 +73,15 @@ std::pair<int, bool> watchAck(const std::string& uri, std::shared_ptr<async::rab
     if (co_async::checkOk(res)) {
         ret.second = *(co_async::getOk<bool>(res));
     } 
+    return ret;
+}
+
+bool watch(const std::string& uri, std::shared_ptr<async::rabbitmq::WatchCmd> cmd, co_async_rabbit_watch_cb cb) {
+    bool ret = async::rabbitmq::watch(uri, cmd, [cb](void* reply, void* envelope, uint64_t delivery_tag, char* body, size_t len) {
+        CoroutineTask::doTask([cb, reply, envelope, delivery_tag, body, len](void*) {
+            cb(reply, envelope, delivery_tag, body, len);
+        }, 0);
+    });
     return ret;
 }
 

@@ -92,11 +92,13 @@ struct AckInfo {
 struct WatcherInfo {
     void* tData;
     async_rabbit_watch_cb cb;
-    std::list<AckInfo> ack_cbs;
-    uint32_t chId = 0;
     std::shared_ptr<WatchCmd> cmd;
     bool cancel = false;
+
+    // need to copy
     time_t lastCreate = 0; 
+    uint32_t chId = 0;
+    std::list<AckInfo> ack_cbs;
 };
 
 struct RabbitWatcher {
@@ -104,6 +106,8 @@ struct RabbitWatcher {
     uint32_t genChId = 1;
     RabbitCorePtr core;
     std::unordered_map<std::string, WatcherInfo> cbs;   // queue_name_consumer_tag --> cb info
+
+    void copy(RabbitWatcher& o);
 };
 
 struct CorePool {

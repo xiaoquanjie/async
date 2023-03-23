@@ -280,17 +280,17 @@ void threadAckCmd(RabbitChannelPtr ch, std::shared_ptr<AckCmd> cmd, RabbitRspDat
         0
     );
 
-    std::string context = "amqp_basic_ack in queue:" 
-        + cmd->queue 
-        + ", consumer_tag: " 
-        + cmd->consumer_tag 
-        + " in " 
-        + ch->id 
-        + ", " 
-        + std::to_string(ch->chId);
-
     if (x < 0) {
         rsp->ok = false;
+        std::string context = "amqp_basic_ack in queue:" 
+            + cmd->queue 
+            + ", consumer_tag: " 
+            + cmd->consumer_tag 
+            + " in " 
+            + ch->id 
+            + ", " 
+            + std::to_string(ch->chId);
+
         logTrace("[async_rabbitmq] failed to call %s: %s", context.c_str(), amqp_error_string2(x));
     } else {
         rsp->ok = true;

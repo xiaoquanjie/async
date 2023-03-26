@@ -31,6 +31,7 @@ c++异步io库
     rabbitmq模块依赖：librabbitmq库
    
 9、 如需使用zookeeper模块，则cmake时需要定义宏USE_ASYNC_ZOOKEEPER。如：cmake .. -DUSE_ASYNC_ZOOKEEPER=1
+    zookeeper模块依赖：zookeeper-c client的单线程版本
 
 20、serve模块，分三子模块
     1）libserve模块，提供基础服务操作。提供了默认的后端进程间通信架构及消息处理样式
@@ -270,7 +271,9 @@ async_redis  async_mongo async_curl async_cpu async_mysql      async_rabbitmq  a
  同步core:
   1、work_thread 投递一个请求，将请求带上work_thread的信息进行包装，然后请求被放入本地请求队列
   2、work_thread运行loop
-      （1）localStatistics打印统计信息		（2）localRespond回调回复		（3）从本地队列中弹出一个请求，将请求包装成一个任务抛入io任务队列
+      （1）localStatistics打印统计信息		
+      （2）localRespond回调回复		
+      （3）从本地队列中弹出一个请求，将请求包装成一个任务抛入io任务队列
   3、io线程池
       （1）从io任务队列中取出一个任务
       （2）处理任务：根据请求信息在全局core队列中取出一个合适的core
@@ -299,6 +302,7 @@ async_redis  async_mongo async_curl async_cpu async_mysql      async_rabbitmq  a
       （2）处理任务：
           1）处理core的连接状态
           2）处理core的待处理任务列表
+          
  并行异步core:
   1、维护一个全局的globaldata，globaldata有一张连接池hash表，连接池中的每个连接有一个待处理请求列表
   2、work_thread 投递一个请求，将请求带上work_thread的信息进行包装，然后请求被放入本地请求队列

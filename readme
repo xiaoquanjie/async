@@ -1,8 +1,8 @@
 c++异步io库
 目标：
     1）提供异步访问的通用底层支持（类似node语言里的promise机制）及内置一些常用的io接口
-       目前已支持的io接口：redis、mysql、http、mongo、rabbitmq
-       未来将支持的io接口: websocket、zookeeper
+       目前已支持的io接口：redis、mysql、http、mongo、rabbitmq、zookeeper
+       未来将支持的io接口: websocket
     2）提供类似服务器进程脚手架的功能，供快速搭建服务器架构
 
 编译：
@@ -29,6 +29,8 @@ c++异步io库
 
 8、 如需使用rabbitmq模块，则cmake时需要定义宏USE_ASYNC_RABBITMQ。如：cmake .. -DUSE_ASYNC_RABBITMQ=1
     rabbitmq模块依赖：librabbitmq库
+   
+9、 如需使用zookeeper模块，则cmake时需要定义宏USE_ASYNC_ZOOKEEPER。如：cmake .. -DUSE_ASYNC_ZOOKEEPER=1
 
 20、serve模块，分三子模块
     1）libserve模块，提供基础服务操作。提供了默认的后端进程间通信架构及消息处理样式
@@ -39,7 +41,7 @@ c++异步io库
     1）根目录下执行：mkdir -p build
     2）cd build
     3）cmake .. -DUSE_ASYNC_CURL=1 -DUSE_ASYNC_REDIS=1 -DUSE_ASYNC_CLUSTER_REDIS=1 -DUSE_ASYNC_MONGO=1 \
-        -DUSE_ASYNC_MYSQL=1 -DUSE_ASYNC_RABBITMQ=1 -DUSE_IPC=1 -DUSE_TRANS=1 -DUSE_NET=1 -DCMAKE_BUILD_TYPE=Debug
+        -DUSE_ASYNC_MYSQL=1 -DUSE_ASYNC_RABBITMQ=1 -DUSE_ASYNC_ZOOKEEPER=1 -DUSE_IPC=1 -DUSE_TRANS=1 -DUSE_NET=1 -DCMAKE_BUILD_TYPE=Debug
 
 依赖库安装：
     如果库安装路径、链接版本、头文件等出现报错，可以根据编译环境调整 common/CMakeLists.txt文件

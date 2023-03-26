@@ -207,6 +207,8 @@ common                  ----> 库目录
         mongo           ----> 异步mongo实现
         mysql           ----> 异步mysql实现
         redis           ----> 异步redis实现
+        rabbitmq        ----> 异步rabbitmq实现
+        zookeeper       ----> 异步zookeeper实现
 
     co_async            ----> 协程与异步io的结合
         promise         ----> 支持将异步操作变成同步操作，有点类似于js中的promise
@@ -215,7 +217,9 @@ common                  ----> 库目录
         mongo           ----> async::mongo与promise的结合
         mysql           ----> async::mysql与promise的结合
         redis           ----> async::redis与promise的结合
-        ipc              ----> 用以提供进程间通信时协程式的send接口
+        rabbitmq        ----> async::rabbitmq与promise的结合
+        zookeeper       ----> async::zookeeper与promise的结合
+        ipc             ----> 用以提供进程间通信时协程式的send接口
 
     ipc                 ----> 提供进程间的通信，适合用于后端服务之间的通信。使用zeromq库作为实现者
 
@@ -234,28 +238,89 @@ serve                   ----> 目标是提供一个服务器进程脚手架，�
 层次结构：co表示coroutine协程
 
                               co_async
-            ____________________________________________________________
-            |      |        |        |         |          |            |
-        ____|      |        |        |         |          |_           |
-       |           |        |        |         |           |           |
-     co_redis   co_mongo   co_curl  co_cpu   co_mysql   parallel接口  co_rabbitmq
-       |           |        |        |         |           |           |
-       |           |        |        |         |           |           |
-       |           |        |        |         |           |           |
-       -----------------------------------------------------------------
-       |                      promise                                  |    
-       ----------------------------------------------------------------- 
-       |           |        |        |         |                  |
-async_redis  async_mongo async_curl async_cpu async_mysql      async_rabbitmq
-       |           |        |        |         |                  |
-       |           |        |        |         |                  |
-       ------------------------------------------------------------
+            _______________________________________________________________________
+            |      |        |        |         |          |            |           |
+        ____|      |        |        |         |          |_           |           |
+       |           |        |        |         |           |           |           |
+     co_redis   co_mongo   co_curl  co_cpu   co_mysql   parallel接口  co_rabbitmq  co_zookeeper
+       |           |        |        |         |           |           |           |
+       |           |        |        |         |           |           |           |
+       |           |        |        |         |           |           |           |
+       -----------------------------------------------------------------------------
+       |                                   promise                                 |          
+       ----------------------------------------------------------------------------- 
+       |           |        |        |         |                  |              |
+async_redis  async_mongo async_curl async_cpu async_mysql      async_rabbitmq  async_zookeeper
+       |           |        |        |         |                  |              |
+       |           |        |        |         |                  |              |
+       ---------------------------------------------------------------------------
                                     |
                                     |
                              thread_pool(*可选用)      
 
 线程池是选用模块，建议使用，能使异步io运行速度变快。
 如果不使用，则由调用线程来驱动异步io的运行
+
+异步io模型的实现原理描述：
+
+ 第一种：同步core，如：async_cpu、async_mongo、async_rabbitmq
+ 第二种：异步串行core，如：aysnc_mysql
+ 第三中：异步并行core，如: aysnc_curl、aysnc_redis、aysnc_zookeeper
+
+ 同步core:
+  1、work_thread 投递一个请求，将请求带上work_thread的信息进行包装，然后请求被放入本地请求队列
+  2、work_thread运行loop
+      （1）localStatistics打印统计信息		（2）localRespond回调回复		（3）从本地队列中弹出一个请求，将请求包装成一个任务抛入io任务队列
+  3、io线程池
+      （1）从io任务队列中取出一个任务
+      （2）处理任务：根据请求信息在全局core队列中取出一个合适的core
+       (3) 如果core队列中没有合适的core，则创建一个新的core
+       (4) core处理完请求拿到请求结果，将结果放入work_thread的回复队列
+       (5) core失效则关闭掉，core有效，则放回全局core队列
+  
+ 异步串行core:
+  1、维护一个全局的globaldata，globaldata有一张连接池hash表，连接池中的每个连接有一个待处理请求列表
+  2、work_thread 投递一个请求，将请求带上work_thread的信息进行包装，然后请求被放入本地请求队列
+  3、work_thread运行loop
+      （1）localStatistics打印统计信息
+      （2）localRespond回调回复
+      （3）遍历本地队列
+          1）处理请求超时的情况
+          2）从valid core列表取出一个有效的core，且core并发处理任务没有超过1个，则将请求放入core的待处理队列
+          3）没有有效的core，且core的数量没有超过supposeIothread限制，则创建一个新core放入conning core列表
+      （4）利用原子操作抢占dispatchTask标识
+          1）抢占成功
+          2）遍历globaldata连接池
+          3）将无效连接从valid中移除到conning中
+          4）将有效连接从conning中移除到valid中
+          5）将所有的core分成supposeIothread组，每组打包成一个任务放入io任务队列
+  4、io线程池
+      （1）从io任务队列取出一个任务
+      （2）处理任务：
+          1）处理core的连接状态
+          2）处理core的待处理任务列表
+ 并行异步core:
+  1、维护一个全局的globaldata，globaldata有一张连接池hash表，连接池中的每个连接有一个待处理请求列表
+  2、work_thread 投递一个请求，将请求带上work_thread的信息进行包装，然后请求被放入本地请求队列
+  3、work_thread运行loop
+      （1）localStatistics打印统计信息
+      （2）localRespond回调回复
+      （3）遍历本地队列
+          1）处理请求超时的情况
+          2）从valid core列表取出一个有效的core，且core并发处理任务没有超过上限，则将请求放入core的待处理队列
+          3）没有有效的core，且core的数量没有超过supposeIothread限制，则创建一个新core放入conning core列表
+      （4）利用原子操作抢占dispatchTask标识
+          1）抢占成功
+          2）遍历globaldata连接池
+          3）将无效连接从valid中移除到conning中
+          4）将有效连接从conning中移除到valid中
+          5）将所有的core分成supposeIothread组，每组打包成一个任务放入io任务队列
+  4、io线程池
+      （1）从io任务队列取出一个任务
+      （2）处理任务：
+          1）处理core的连接状态
+          2）处理core的待处理任务列表
+
 
 example:
 // 下面代码的输出结果是:

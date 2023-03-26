@@ -22,6 +22,10 @@ public:
     auto enqueue(F&& f, Args&&... args) 
         -> std::future<typename std::result_of<F(Args...)>::type>;
     ~ThreadPool();
+
+    uint32_t taskCount() {
+        return tasks.size();
+    }
 private:
     // init thread count
     void init(size_t threads);

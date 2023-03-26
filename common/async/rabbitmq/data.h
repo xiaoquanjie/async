@@ -67,7 +67,7 @@ struct RabbitRspData {
 typedef std::shared_ptr<RabbitRspData> RabbitRspDataPtr;
 
 struct RabbitCore {
-    amqp_connection_state_t conn;
+    amqp_connection_state_t conn = 0;
     RabbitAddrPtr addr;
     uint32_t chId = 0;
     ~RabbitCore();

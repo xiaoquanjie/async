@@ -15,8 +15,8 @@
 
 namespace co_async {
 
-uint32_t g_unique_id = 1;
-std::unordered_map<uint64_t, std::shared_ptr<UniqueInfo>> g_unique_id_map;
+thread_local uint32_t g_unique_id = 1;
+thread_local std::unordered_map<uint64_t, std::shared_ptr<UniqueInfo>> g_unique_id_map;
 
 uint64_t genUniqueId(uint32_t coId) {
     // 混合coid编码，是因为uniqId会发生轮回，避免“串包”

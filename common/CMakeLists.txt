@@ -74,6 +74,11 @@ if(USE_ASYNC_RABBITMQ)
     set(LINK_LIBRARYS ${LINK_LIBRARYS} rabbitmq)
 endif(USE_ASYNC_RABBITMQ)
 
+if(USE_ASYNC_ZOOKEEPER)
+    add_definitions(-DUSE_ASYNC_ZOOKEEPER)
+    set(LINK_LIBRARYS ${LINK_LIBRARYS} zookeeper_st)
+endif(USE_ASYNC_ZOOKEEPER)
+
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
     add_definitions(-DDEBUG)
 endif()

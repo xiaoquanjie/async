@@ -5,6 +5,7 @@
 #include "common/co_async/promise.h"
 #include "common/coroutine/coroutine.hpp"
 #include "common/threads/thread_pool.h"
+#include "common/log.h"
 #include <unistd.h>
 
 ////////////////////
@@ -19,6 +20,7 @@ void redis_test(bool use_co);
 void co_mysql_test();
 void ipc_test();
 void rabbit_test(bool use_co);
+void zookeeper_test(bool use_co);
 
 void promise_test() {
     CoroutineTask::doTask([](void*){
@@ -35,26 +37,45 @@ void promise_test() {
 }
 
 int main() {
+    // io线程
     ThreadPool tp(std::thread::hardware_concurrency() * 2);
     async::setThreadFunc([&tp](std::function<void()> f) {
         tp.enqueue(f);
     });
 
-    //promise_test();
-    //cpu_test(true);
-    //co_parallel_test();
-    //curl_test(true);
-    //mongo_test(true);
-    //redis_test(true);
-    //co_mysql_test();
-    //ipc_test();
-    //rabbit_test(true);
+    // 模拟有多个工作线程
+    for (int i = 0; i < 2; i++) {
+        new std::thread([&tp]() {
+            //promise_test();
+            //cpu_test(true);
+            //co_parallel_test();
+            //curl_test(true);
+            //mongo_test(true);
+            //redis_test(true);
+            //co_mysql_test();
+            //ipc_test();
+            //rabbit_test(true);
+            //zookeeper_test(true);
 
-    while (true) {
-        co_async::loop(time(0));
-        usleep(1000);
-        //printf("loop\n");
+            uint32_t lastPrintTime = 0;
+            while (true) {
+                time_t curTime = time(0);
+                co_async::loop(curTime);
+                usleep(1000);
+
+                if (curTime - lastPrintTime >= 2) {
+                    lastPrintTime = curTime;
+                    //log("task: %d", tp.taskCount());
+                }
+            }
+        });
     }
+
+    // 主线程废弃
+    while (true) {
+        sleep(10);
+    }
+    
     return 0;
 }
 

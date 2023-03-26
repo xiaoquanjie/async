@@ -42,7 +42,8 @@ typedef std::multimap<uint64_t, TimeNode> TimeNodeMulMap;
 const uint32_t gBigBucket = 24 * 3600;
 // 小桶的精度是1/10秒
 const uint32_t gSmallBucket = 10;
-PoolInfo gPoolInfo;
+// 
+thread_local PoolInfo gPoolInfo;
 
 clock_t getMilClock() {
 #ifndef WIN32

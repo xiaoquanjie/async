@@ -9,6 +9,8 @@
 #include "common/async/async.h"
 #include "common/async/comm.hpp"
 #include <vector>
+#include <thread>
+#include <time.h>
 
 namespace async {
 
@@ -51,6 +53,32 @@ void setThreadFunc(std::function<void(std::function<void()>)> cb) {
         }
     }
 }   
+
+static uint32_t gIoThread = 0;
+
+// 假设最大的io线程数量
+uint32_t supposeIothread() {
+    if (gIoThread == 0) {
+        // 假设为两倍的cpu核数量
+        gIoThread = std::thread::hardware_concurrency() * 2;
+    }
+    return gIoThread;
+}
+
+// 设置io线程数量
+void setIoThread(uint32_t c) {
+    gIoThread = c >= 1 ? c : 1;
+}
+
+clock_t getMilClock() {
+#ifndef WIN32
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+#else
+	return GetTickCount();
+#endif
+}
 
 /////////////////////////////////////////////////
 

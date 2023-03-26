@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------
-// Copyright 2021
+// Copyright 2022
 // All rights reserved.
 //
 // author: 404558965@qq.com (xiaoquanjie)
@@ -8,345 +8,370 @@
 
 #ifdef USE_ASYNC_CURL
 
-#include "common/async/curl/async_curl.h"
-
-#if CUR_CURL_VERSION == 1
-
+#include <vector>
+#include "common/async/curl/data.h"
+#include "common/async/curl/callback.h"
+#include "common/async/curl/op.h"
 #include "common/log.h"
-#include <queue>
-#include <string.h>
 #include <curl/curl.h>
-#include <mutex>
-#include <memory>
 
 namespace async {
+    
+uint32_t supposeIothread();
+clock_t getMilClock();
+
 namespace curl {
 
-enum HTTP_METHOD { 
-    METHOD_GET = 0,
-    METHOD_POST,
-    METHOD_PUT,
-};
+#define IO_THREADS async::supposeIothread()
 
-struct curl_custom_data {
-    struct curl_slist* curl_headers = 0;
-    std::string respond_body;
-    async_curl_cb cb;
-    CURL* curl = 0;
-    std::string post_content;
+// io线程的函数
+std::function<void(std::function<void()>)> gIoThr = nullptr;
+// 挂载任务数
+uint32_t gMountTask = 10;
 
-    ~curl_custom_data() {
-        if (curl_headers) {
-            curl_slist_free_all(curl_headers);
-        }
-    }
-};
+//////////////////////////////////////////////////////////////////////////////////////////
 
-typedef std::shared_ptr<curl_custom_data> curl_custom_data_ptr;
+CurlThreadData* runningData() {
+    thread_local static CurlThreadData gThrData;
+    return &gThrData;
+}
 
-struct curl_respond_data {
-    CURL* curl;
-    int curl_code;
-    int rsp_code;
-};
+GlobalData* globalData() {
+    static GlobalData gData;
+    return &gData;
+}
 
-// 全局变量
-struct curl_global_data {
-    bool init = false;
-    CURLM* curlm = 0;
-    std::map<CURL*, curl_custom_data_ptr> curl_custom_map;
-    std::queue<curl_custom_data_ptr> request_queue;
-    std::queue<curl_respond_data> respond_queue;
-    bool flag;
-    std::function<void(std::function<void()>)> thr_func;
-    uint64_t req_task_cnt = 0;
-    uint64_t rsp_task_cnt = 0;
-    curl_global_data() : flag(false) {}
-};
+//////////////////////////////////////////////////////////////////////////////////////////
 
-curl_global_data g_curl_global_data;
-
-time_t g_last_statistics_time = 0;
-
-////////////////////////////////////////////////////////////////////////////////////
-
-bool local_curl_global_init() {
-    if (g_curl_global_data.init) {
-        return true;
+void curlGlobalInit() {
+    auto gData = globalData();
+    if (gData->init) {
+        return;
     }
 
     auto code = curl_global_init(CURL_GLOBAL_ALL);
     if (code != CURLE_OK) {
-        log("[async_curl] [error] failed to call curl_global_init: %d", code);
-        return false;
+        curlLog("[error] failed to call curl_global_init: %d", code);
+        return;
     }
 
-    g_curl_global_data.curlm = curl_multi_init();
-    if (!g_curl_global_data.curlm) {
-        log("[async_curl] [error] failed to call curl_multi_init: %d", errno);
-        return false;
-    }
-
-    g_curl_global_data.init = true;
-    return true;
+    gData->init = true;
 }
 
-void local_curl_global_cleanup() {
-    if (g_curl_global_data.init) {
+void curlGlobalCleanup() {
+    auto gData = globalData();
+    if (gData->init) {
         curl_global_cleanup();
     }
 }
 
-size_t on_thread_curl_writer(void *buffer, size_t size, size_t count, void* param) {
-    std::string* s = static_cast<std::string*>(param);
-    if (nullptr == s) {
-        return 0;
+CurlCorePtr localCreateCore() {
+    auto core = std::make_shared<CurlCore>();
+    core->curlm = curl_multi_init();
+    if (!core->curlm) {
+        curlLog("[error] failed to call curl_multi_init%s", "");
+        return nullptr;
     }
 
-    s->append(reinterpret_cast<char*>(buffer), size * count);
-    return size * count;
+    auto gData = globalData();
+    if (gData->maxConnection != 0) {
+        // 设置连接数量
+        curl_multi_setopt(core->curlm, CURLMOPT_MAX_HOST_CONNECTIONS, gData->maxConnection);
+    }
+    
+    return core;
 }
 
-// 创建一个curl
-curl_custom_data_ptr local_create_curl_custom_data(int method,
-                                                   const std::string &url,
-                                                   const std::map<std::string, std::string> &headers,
-                                                   const std::string &content)
-{
-    CURL* curl = curl_easy_init();
-    if (!curl) {
-        log("[async_curl] [error] failed to call curl_easy_init: %d, method:%d, url:%s", errno, method, url.c_str());
-        return 0;
-    }
+void threadPoll(CurlCorePtr c) {
+    int stillRunning = 0;
+    do {
+        curl_multi_wait(c->curlm, NULL, 0, 0, NULL);
+        auto code = curl_multi_perform(c->curlm, &stillRunning);
+        if (code != CURLM_OK) {
+            curlLog("[error] failed to call curl_multi_perform: %d", code);
+            break;
+        }
+    } while (stillRunning);
 
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 0);
-    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, false);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
-    curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
-    curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 120L);
-    curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 120L);
-    
-    // create a new curl_custom_data
-    curl_custom_data_ptr data = std::make_shared<curl_custom_data>();
-    data->post_content = content;
-    data->curl = curl;
-    
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &data->respond_body);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, on_thread_curl_writer);
+    // 读取数据
+    CURLMsg* curlMsg = 0;
+    int msgLeft = 0;
 
-    if (method == METHOD_POST) {
-        curl_easy_setopt(curl, CURLOPT_POST, 1);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE, data->post_content.size());
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data->post_content.c_str());
-    }
-    else if (method == METHOD_PUT) {
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data->post_content.c_str());
-    }
-
-    // set header
-    struct curl_slist* curl_headers = 0;
-    curl_headers = curl_slist_append(curl_headers, "connection: keep-alive");
-    for (const auto& header : headers) {
-        curl_headers = curl_slist_append(curl_headers, (header.first + ": " + header.second).c_str());
-    }
-    if (curl_headers) {
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, curl_headers);
-    }
-
-    data->curl_headers = curl_headers;
-    return data;
-}
-
-void thread_curl_finish(CURLM* curlm, std::queue<curl_respond_data>& queue) {
-    CURLMsg* curl_msg = nullptr;
-    int msgs_left = 0;
-    while ((curl_msg = curl_multi_info_read(curlm, &msgs_left))) {
-        if (CURLMSG_DONE != curl_msg->msg) {
+    while ((curlMsg = curl_multi_info_read(c->curlm, &msgLeft))) {
+        if (CURLMSG_DONE != curlMsg->msg) {
             continue;
         }
 
-        int32_t response_code = 0;
-        CURL* curl = (CURL*)curl_msg->easy_handle;
-        auto curl_code = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
-        if (CURLE_OK != curl_code) {
-            log("[async_curl] failed to call curl_easy_getinfo: %d", curl_code);
+        auto curl = (CURL*)curlMsg->easy_handle;
+        auto iter = c->curlMap.find(curl);
+        if (iter != c->curlMap.end()) {
+            auto req = iter->second;
+            c->curlMap.erase(iter);
+
+            int32_t curlCode = 0;
+            int32_t rspCode = 0;
+            curlCode = curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &rspCode);
+            if (CURLE_OK != curlCode) {
+                curlLog("[error] failed to call curl_easy_getinfo: %d", curlCode);
+            }
+
+            c->task--;
+            CurlRspDataPtr rsp = std::make_shared<CurlRspData>();
+            rsp->req = req;
+            rsp->parser = std::make_shared<CurlParser>("", curlCode, rspCode);
+            rsp->parser->swapValue(req->rspBody);
+            onPushRsp(rsp, req->tData);
         }
 
-        // push to queue
-        queue.push({curl, curl_msg->data.result, response_code});
-
-        // curl_multi_remove_handle -> curl_easy_cleanup
-        curl_multi_remove_handle(curlm, curl);
-        break;
+        curl_multi_remove_handle(c->curlm, curl);
+        curl_easy_cleanup(curl);
     }
 }
 
-void thread_curl_process(CURLM* curlm, std::queue<curl_respond_data>& queue, bool* flag) {
-    int still_running = 0;
-    do {
-        curl_multi_wait(curlm, NULL, 0, 0, NULL);
-        auto code = curl_multi_perform(curlm, &still_running);
-        if (code != CURLM_OK) {
-            log("[async_curl] failed to call curl_multi_perform: %d", code);
-            break;
+void threadProcess(std::list<CurlCorePtr> coreList) {
+    for (auto c : coreList) {
+        c->waitLock.lock();
+        std::list<CurlReqDataPtr> waitQueue;
+        c->waitQueue.swap(waitQueue);
+        c->waitLock.unlock();
+
+        for (auto iter = waitQueue.begin(); iter != waitQueue.end(); iter++) {
+            auto req = *iter;
+            opRequest(c, req);
         }
-    } while (still_running);
 
-    thread_curl_finish(curlm, queue);
-    *flag = false;
-}
-
-void local_curl_request(int method,
-                        const std::string &url,
-                        const std::map<std::string, std::string> &headers,
-                        const std::string &content,
-                        async_curl_cb cb)
-{
-    local_curl_global_init();
-    curl_custom_data_ptr data = local_create_curl_custom_data(method, url, headers, content);
-    if (data) {
-        data->cb = cb;
-        g_curl_global_data.request_queue.push(data);
+        threadPoll(c);
     }
+
+    // 去掉运行标识
+    for (auto c : coreList) {
+        c->running = false;
+    }    
 }
 
-void thread_curl_process_cb(void* c, void* q, bool* flag) {
-    CURLM* curlm = (CURLM*)c;
-    std::queue<curl_respond_data>* queue = (std::queue<curl_respond_data>*)q;
-    thread_curl_process(curlm, *queue, flag);
+void localRequest(int method, 
+                  const std::string& url,
+                  const std::unordered_map<std::string, std::string> &headers,
+                  const std::string &content,
+                  async_curl_cb cb,
+                  async_curl_cb2 cb2) {
+    curlGlobalInit();
+    auto* tData = runningData();
+    tData->init = true;
+    
+    CurlReqDataPtr req = std::make_shared<CurlReqData>();
+    req->url = url;
+    req->method = method;
+    req->cb = cb;
+    req->cb2 = cb2;
+    req->postBody = content;
+    req->headers = headers;
+    req->tData = tData;
+
+    tData->reqTaskCnt++;
+    tData->reqQueue.push_back(req);
 }
 
-void setThreadFunc(std::function<void(std::function<void()>)> f) {
-    g_curl_global_data.thr_func = f;
-}
-
-inline std::function<void()> get_thread_func() {
-    g_curl_global_data.flag = true;
-    auto f = std::bind(thread_curl_process_cb, 
-        (void*)g_curl_global_data.curlm, 
-        (void*)(&g_curl_global_data.respond_queue),
-        &g_curl_global_data.flag);
-    return f;
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////
-
-void get(const std::string &url, async_curl_cb cb) {
-    std::map<std::string, std::string> headers;
-    get(url, headers, cb);
-}
-
-void get(const std::string &url, const std::map<std::string, std::string>& headers, async_curl_cb cb) {
-    local_curl_request(METHOD_GET, url, headers, "", cb);
-}
-
-void post(const std::string& url, const std::string& content, async_curl_cb cb) {
-    std::map<std::string, std::string> headers;
-    post(url, content, headers, cb);
-}
-
-void post(const std::string& url, const std::string& content, const std::map<std::string, std::string>& headers, async_curl_cb cb) {
-    local_curl_request(METHOD_POST, url, headers, content, cb);
-}
-
-void statistics(uint32_t cur_time) {
-    if (cur_time - g_last_statistics_time <= 120) {
+// 取结果 
+void localRespond(CurlThreadData* tData) {
+    if (tData->rspQueue.empty()) {
         return;
     }
 
-    g_last_statistics_time = cur_time;
+    // 交换队列
+    std::list<CurlRspDataPtr> rspQueue;
+    tData->rspLock.lock();
+    rspQueue.swap(tData->rspQueue);
+    tData->rspLock.unlock();
 
-    log("[async_curl] [statistics] cur_task:%d, req_task:%d, rsp_task:%d",
-        (g_curl_global_data.req_task_cnt - g_curl_global_data.rsp_task_cnt),
-        g_curl_global_data.req_task_cnt,
-        g_curl_global_data.rsp_task_cnt);
-}
-
-void local_process_respond() {
-    // 交换出结果队列
-    std::queue<curl_respond_data> respond_queue;
-    g_curl_global_data.respond_queue.swap(respond_queue);
-
-    // 运行结果
-    while (!respond_queue.empty()) {
-        curl_respond_data rsp = std::move(respond_queue.front());
-        respond_queue.pop();
-        g_curl_global_data.rsp_task_cnt++;
-
-        auto iter = g_curl_global_data.curl_custom_map.find(rsp.curl);
-        if (iter != g_curl_global_data.curl_custom_map.end()) {
-            // 回调通知
-            iter->second->cb(rsp.curl_code, rsp.rsp_code, iter->second->respond_body);
-            g_curl_global_data.curl_custom_map.erase(iter);
+    for (auto iter = rspQueue.begin(); iter != rspQueue.end(); iter++) {
+        auto rsp = *iter;
+        tData->rspTaskCnt++;
+        if (rsp->req->cb2) {
+            rsp->req->cb2(rsp->parser);
+        } 
+        else if (rsp->req->cb) {
+            rsp->req->cb(rsp->parser->getCurlCode(), rsp->parser->getRspCode(), rsp->parser->getValue());
         }
-
-        // release
-        curl_easy_cleanup(rsp.curl);
     }
 }
 
-void local_process_request() {
-    // 处理请求
-    while (!g_curl_global_data.request_queue.empty()) {
-        curl_custom_data_ptr req = std::move(g_curl_global_data.request_queue.front());
-        g_curl_global_data.request_queue.pop();
-        
-        // 添加到CURLM中
-        auto code = curl_multi_add_handle(g_curl_global_data.curlm, req->curl);
-        if (code != CURLM_OK) {
-            curl_easy_cleanup(req->curl);
-            log("[async_curl] [error] failed to call curl_multi_add_handle: %d", code);
+void localProcess(uint32_t curTime, CurlThreadData* tData) {
+    if (tData->reqQueue.empty()) {
+        return;
+    }
+
+    uint32_t ioThreads = IO_THREADS;
+    auto gData = globalData();
+    gData->pLock.lock();
+
+    do {
+        auto& pool = gData->corePool;
+        auto iterCore = pool.valid.begin();
+        for (auto iterQueue = tData->reqQueue.begin(); iterQueue != tData->reqQueue.end(); ) {
+            auto req = *iterQueue;
+            // 遍历一个有效的core
+            CurlCorePtr core;
+            if (ioThreads == pool.valid.size()) {
+                //curlLog("lun xun.....%s", "");
+                // 均匀分布
+                core = *iterCore;
+                iterCore++;
+                if (iterCore == pool.valid.end()) {
+                    iterCore = pool.valid.begin();
+                }
+            }
+            else {
+                for (auto c : pool.valid) {
+                    if (c->task < gMountTask) {
+                        core = c;
+                        break;
+                    }
+                }
+            }
+
+            if (core) {
+                core->waitLock.lock();
+                core->waitQueue.push_back(req);
+                core->waitLock.unlock();
+                core->task++;
+                iterQueue = tData->reqQueue.erase(iterQueue);
+                continue;
+            }
+
+            // 创建新core
+            if (pool.valid.size() < ioThreads) {
+                auto c = localCreateCore();
+                if (c) {
+                    pool.valid.push_back(c);
+                    iterCore = pool.valid.begin();
+                }
+            } 
+            else {
+                curlLog("full.......%s", "");
+            }
+            break;
+        }
+
+    } while (false);
+
+    gData->pLock.unlock();
+}
+
+void localDispatchTask(CurlThreadData* tData) {
+    auto gData = globalData();
+    // 抢占到分配标识
+    if (gData->dispatchTask.test_and_set()) {
+        return;
+    }
+
+    // 把所有的core分为IO_THREADS组
+    uint32_t count = IO_THREADS;
+    std::vector<std::list<CurlCorePtr>> coreGroup(count);
+    uint32_t groupIdx = 0;
+
+    // 加锁
+    gData->pLock.lock();
+
+    for (auto c : gData->corePool.valid) {
+        if (c->running) {
+            continue;
+        }
+        if (c->task == 0) {
             continue;
         }
 
-        g_curl_global_data.req_task_cnt++;
-        g_curl_global_data.curl_custom_map[req->curl] = req;
+        //curlLog("running.......%s", "");
+        c->running = true;
+        c->lastRunTime = 0;
+        coreGroup[(groupIdx++) % count].push_back(c);
+    }
+
+    // 解锁
+    gData->pLock.unlock();
+
+    // 清标记
+    gData->dispatchTask.clear();    
+
+    for (size_t idx = 0; idx < coreGroup.size(); idx++) {
+        auto& g = coreGroup[idx];
+        if (g.empty()) {
+            continue;
+        }
+        
+        // for (auto c : g) {
+        //     curlLog("distpatch task to group: %d and core_nums: %d, task: %d, curlm: %p", idx, g.size(), c->task.load(), c->curlm);
+        // }
+
+        if (gIoThr) {
+            std::function<void()> f = std::bind(threadProcess, g);
+            gIoThr(f);
+        } else {
+            threadProcess(g);
+        }
     }
 }
 
-void local_process_task() {
-    // 执行任务
-    if (!g_curl_global_data.curl_custom_map.empty()) {
-        if (g_curl_global_data.thr_func) {
-            g_curl_global_data.thr_func(get_thread_func());
-        }
-        else {
-            get_thread_func()();
-        }
+void localStatistics(int32_t curTime, CurlThreadData* tData) {
+    if (curTime - tData->lastPrintTime < 120) {
+        return;
     }
+
+    tData->lastPrintTime = curTime;
+    curlLog("[statistics] curTask: %d, reqTask: %d, rspTask: %d",
+        tData->reqTaskCnt - tData->rspTaskCnt,
+        tData->reqTaskCnt,
+        tData->rspTaskCnt);
+
+    auto gData = globalData();
+    gData->pLock.lock();
+    curlLog("[statistics] valid: %d", gData->corePool.valid.size());
+    gData->pLock.unlock();
 }
 
-bool loop(uint32_t cur_time) {
-    if (!g_curl_global_data.init) {
+//////////////////////////////////////////////////////////////////////////////////
+
+void get(const std::string &url, async_curl_cb cb, const std::unordered_map<std::string, std::string>& headers) {
+    localRequest(METHOD_GET, url, headers, "", cb, nullptr);
+}
+
+void get(const std::string &url, async_curl_cb2 cb, const std::unordered_map<std::string, std::string>& headers) {
+    localRequest(METHOD_GET, url, headers, "", nullptr, cb);
+}
+
+void post(const std::string& url, const std::string& content, async_curl_cb cb, const std::unordered_map<std::string, std::string>& headers) {
+    localRequest(METHOD_POST, url, headers, content, cb, nullptr);
+}
+
+void post(const std::string& url, const std::string& content, async_curl_cb2 cb, const std::unordered_map<std::string, std::string>& headers) {
+    localRequest(METHOD_POST, url, headers, content, nullptr, cb);
+}
+
+bool loop(uint32_t curTime) {
+    auto tData = runningData();
+    if (!tData->init) {
         return false;
     }
 
-    statistics(cur_time);
+    localStatistics(curTime, tData);
+    localRespond(tData);
+    localProcess(curTime, tData);
+    localDispatchTask(tData);
 
-    if (g_curl_global_data.flag) {
-        return true;
-    }
-
-    local_process_respond();
-    local_process_request();
-    local_process_task();
-
-    // 是否有任务
-    bool has_task = false;
-    if (g_curl_global_data.req_task_cnt != g_curl_global_data.rsp_task_cnt) {
-        has_task = true;
-    }
-    return has_task;
+    bool hasTask = tData->reqTaskCnt != tData->rspTaskCnt;
+    return hasTask;
 }
 
-}
+void setThreadFunc(std::function<void(std::function<void()>)> f) {
+    gIoThr = f;
 }
 
-#endif
+void setMaxConnection(uint32_t c) {
+    auto gData = globalData();
+    gData->maxConnection = c;
+}
+
+} // curl
+} // async
+
 #endif

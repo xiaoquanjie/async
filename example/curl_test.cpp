@@ -10,14 +10,32 @@ void curl_test(bool use_co) {
     if (use_co) {
         // 启动一个协程任务
         CoroutineTask::doTask([](void*) {
+            int* count = new int(0);
+            int* fail = new int(0);
+            for (int i = 0; i < 1000; i++) {
+                async::curl::get("http://baidu.com", [i, count, fail](async::curl::CurlParserPtr parser) {
+                    //log("%d curlCode:%d, resCode:%d, bodySize:%ld\n", i, parser->getCurlCode(), parser->getRspCode(), parser->getValue().size());
+                    if (parser->getRspCode() != 200) {
+                        (*fail)++;
+                    }
+                    (*count)++;
+
+                    if (*count == 1000) {
+                        log("finish: count: %d, fail: %d", *count, *fail);
+                    }
+                });
+            }
+            return;
+
             // 执行http访问并等待协程返回
             {
                 auto res = co_async::curl::get("http://baidu.com");
                 if (co_async::checkOk(res)) {
-                    printf("1、curlCode:%d, resCode:%d, bodySize:%ld\n", res.second->curlCode, res.second->resCode, res.second->body.size());
+                    auto parser = res.second;
+                    log("1、curlCode:%d, resCode:%d, bodySize:%ld\n", parser->getCurlCode(), parser->getRspCode(), parser->getValue().size());
                 }
                 if (co_async::checkTimeout(res)) {
-                    printf("1、timeout\n");
+                    log("1、timeout\n");
                 }
             }
 
@@ -25,20 +43,21 @@ void curl_test(bool use_co) {
                 std::string body;
                 auto ret = co_async::curl::post("http://192.168.0.160/user/showEmail", "", body);
                 if (ret == co_async::E_OK) {
-                    printf("2、bodySize:%ld\n", body.size());
+                    log("2、bodySize:%ld\n", body.size());
                 }
                 if (ret == co_async::E_TIMEOUT) {
-                    printf("2、timeout\n");
+                    log("2、timeout\n");
                 }
             }
 
             {
                 auto res = co_async::curl::post("http://192.168.0.160/user/showEmail", "");
                 if (co_async::checkOk(res)) {
-                    printf("3、curlCode:%d, resCode:%d, bodySize:%ld\n", res.second->curlCode, res.second->resCode, res.second->body.size());
+                    auto parser = res.second;
+                    log("3、curlCode:%d, resCode:%d, bodySize:%ld\n", parser->getCurlCode(), parser->getRspCode(), parser->getValue().size());
                 }
                 if (co_async::checkTimeout(res)) {
-                    printf("3、timeout\n");
+                    log("3、timeout\n");
                 }
             }
 

@@ -40,10 +40,25 @@ void MysqlAddr::Parse(const std::string& id) {
     }
 }
 
-MysqlCore::~MysqlCore() {
+MysqlConn::~MysqlConn() {
     if (c) {
         mysql_close(c);
     }
+}
+
+MysqlCore::~MysqlCore() {
+}
+
+CorePoolPtr GlobalData::getPool(const std::string& id) {
+    CorePoolPtr pool;
+    auto iter = this->corePool.find(id);
+    if (iter == this->corePool.end()) {
+        pool = std::make_shared<CorePool>();
+        this->corePool[id] = pool;
+    } else {
+        pool = iter->second;
+    }
+    return pool;
 }
 
 }

@@ -17,17 +17,12 @@ namespace mysql {
 // @int errno, MYSQL_ROW row, int row_idx, int fields, int affected_rows
 typedef std::function<void(int, const void*, int, int, int)> async_mysql_query_cb;
 
-// @int errno, int affected_rows
-typedef std::function<void(int, int)> async_mysql_exec_cb;
-
-// @int errno, MYSQL_RES*
-typedef std::function<void(int, const void*)> async_mysql_query_cb2;
-
 typedef  std::function<void(MysqlReplyParserPtr)> async_mysql_cb;
 
 // 不支持查询多结果集，如果执行了返回多结果集的sql语句，行为是未可知的
 void query(const std::string& id, const std::string& sql, async_mysql_cb cb);
 
+// id: host|port|db|user|pwd
 void execute(const std::string& id, const std::string& sql, async_mysql_cb cb);
 
 ///////////////

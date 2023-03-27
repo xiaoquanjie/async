@@ -14,7 +14,7 @@ namespace async {
 namespace mysql {
 
 struct MysqlReplyParser {
-    MysqlReplyParser(const void* res, int err);
+    MysqlReplyParser(const void* res, int err, bool timeout, int affect);
 
     ~MysqlReplyParser();
 
@@ -35,6 +35,7 @@ struct MysqlReplyParser {
 
     const char* GetRowValue(const void* row, int idx);
 
+private:
     const void* _res;
     int _errno;
     bool _timeout;

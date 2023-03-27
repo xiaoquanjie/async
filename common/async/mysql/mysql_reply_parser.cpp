@@ -14,11 +14,11 @@
 namespace async {
 namespace mysql {
 
-MysqlReplyParser::MysqlReplyParser(const void* res, int err) {
+MysqlReplyParser::MysqlReplyParser(const void* res, int err, bool timeout, int affect) {
     this->_res = res;
     this->_errno = err;
-    this->_timeout = false;
-    this->_affect = 0;
+    this->_timeout = timeout;
+    this->_affect = affect;
 }
 
 MysqlReplyParser::~MysqlReplyParser() {

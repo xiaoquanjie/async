@@ -67,7 +67,6 @@ ZookConnPtr threadCreateConn(ZookCorePtr core) {
         zookLog("create connection: %s", core->addr->id.c_str());
     }
 
-    core->conn = std::make_shared<ZookConn>();
     return conn;
 }
 

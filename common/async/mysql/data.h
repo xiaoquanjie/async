@@ -14,6 +14,9 @@
 #include <mysql/mysql.h>
 #include <functional>
 #include <list>
+#include <atomic>
+#include <mutex>
+#include <vector>
 #include <unordered_map>
 
 namespace async {
@@ -26,8 +29,8 @@ enum {
     enum_querying_state,
     enum_storing_state,
     // enum_stored_state,
-    enum_error_state,
-    enum_disconnected_state,
+    // enum_error_state,
+    // enum_disconnected_state,
 };
 
 // mysql地址结构
@@ -53,6 +56,7 @@ struct MysqlReqData {
     std::string cmd;
     time_t reqTime = 0;
     bool isQuery = false;
+    void* tData = 0;
 };
 
 typedef std::shared_ptr<MysqlReqData> MysqlReqDataPtr;
@@ -65,13 +69,24 @@ struct  MysqlRspData {
 
 typedef std::shared_ptr<MysqlRspData> MysqlRspDataPtr;
 
+struct MysqlConn {
+    MYSQL *c = 0;
+    uint32_t state = enum_connecting_state;
+    ~MysqlConn();
+};
+
+typedef std::shared_ptr<MysqlConn> MysqlConnPtr;
+
 // 核心
 struct MysqlCore {
-    MYSQL *c = 0;
+    MysqlConnPtr conn;
     MysqlAddrPtr addr;
-    uint32_t state = enum_connecting_state;
+    std::atomic<uint32_t> task;
+    bool running = false;
+    clock_t lastRunTime = 0;
     MysqlReqDataPtr curReq;
-
+    std::list<MysqlReqDataPtr> waitQueue;
+    std::mutex waitLock;
     ~MysqlCore();
 };
 
@@ -79,11 +94,23 @@ typedef std::shared_ptr<MysqlCore> MysqlCorePtr;
 
 // 连接池
 struct CorePool {
-    time_t lastCreate = 0;              // 上一次创建core的时间
-    time_t lastDisconnect = 0;          // 上一次断联时间
-    std::list<MysqlCorePtr> valid;      // 可用的
-    std::list<MysqlCorePtr> conning;    // 正在连接的队列
-    std::list<MysqlCorePtr> useing;     // 正在使用中的, using是关键字
+    uint32_t polling = 0;
+    std::vector<MysqlCorePtr> valid;
+};
+
+typedef std::shared_ptr<CorePool> CorePoolPtr;
+
+struct GlobalData {
+    // 连接池
+    std::unordered_map<std::string, CorePoolPtr> corePool;
+    std::mutex pLock;
+
+    // 分发标识 
+    std::atomic_flag dispatchTask;
+
+    GlobalData() :dispatchTask(ATOMIC_FLAG_INIT) {}
+
+    CorePoolPtr getPool(const std::string& id);
 };
 
 struct MysqlThreadData {
@@ -92,19 +119,15 @@ struct MysqlThreadData {
     // 回复任务的数量 
     uint64_t rspTaskCnt = 0;
     // 请求队列
-    std::list<MysqlReqDataPtr> reqQueue;
-    std::list<MysqlReqDataPtr> prepareQueue;
+    std::unordered_map<std::string, std::list<MysqlReqDataPtr>> reqQueue;
     // 回复队列
+    std::mutex rspLock;
     std::list<MysqlRspDataPtr> rspQueue;
-    // 连接池
-    std::unordered_map<std::string, CorePool> corePool;
-    // 标记
-    bool running = false;
     uint32_t lastRunTime = 0;
     // 上一次统计输出时间
     time_t lastPrintTime = 0;
     // 初始化
-    bool isInit = false;
+    bool init = false;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -215,6 +215,7 @@ void localProcess(uint32_t curTime, ZookThreadData* tData) {
         return;
     }
 
+    uint32_t ioThreads = IO_THREADS;
     auto gData = globalData();
     gData->pLock.lock();
 
@@ -234,34 +235,35 @@ void localProcess(uint32_t curTime, ZookThreadData* tData) {
 
                 // 遍历一个有效的core
                 ZookCorePtr core;
-                for (auto c : pool->valid) {
-                    if (c->task < gMountTask) {
-                        c->waitLock.lock();
-                        c->waitQueue.push_back(req);
-                        c->waitLock.unlock();
-                        c->task++;
-                        core = c;
-                        break;
+                if (ioThreads == pool->valid.size()) {
+                    // 均匀分布
+                    core = pool->valid[pool->polling++ % ioThreads];
+                }
+                else {
+                    for (auto c : pool->valid) {
+                        if (c->task < gMountTask) {
+                            core = c;
+                            break;
+                        }
                     }
                 }
-
+                
                 if (core) {
+                    core->waitLock.lock();
+                    core->waitQueue.push_back(req);
+                    core->waitLock.unlock();
+                    core->task++;
                     iterReq = que.erase(iterReq);
                     continue;
                 }
 
-                // 试图创建新core
-                if (!pool->conning.empty()) {
-                    break;
-                }
-
-                if (pool->conning.empty() && pool->valid.size() < IO_THREADS) {
+                // 建新core
+                if (pool->valid.size() < ioThreads) {
                     auto c = localCreateCore(req->addr);
                     if (c) {
-                        pool->conning.push_back(c);
+                        pool->valid.push_back(c);
                     }
-                }   
-                break;
+                }
             }
         }
     } while (false);
@@ -301,11 +303,7 @@ void localStatistics(int32_t curTime, ZookThreadData* tData) {
     auto gData = globalData();
     gData->pLock.lock();
     for (auto& pool : gData->corePool) {
-        zookLog("[statistics] id: %s, valid: %d, conning: %d", 
-            pool.first.c_str(), 
-            pool.second->valid.size(), 
-            pool.second->conning.size()
-        );
+        zookLog("[statistics] id: %s, valid: %d", pool.first.c_str(), pool.second->valid.size());
     }
     gData->pLock.unlock();
 }
@@ -329,52 +327,6 @@ void localDispatchTask(ZookThreadData* tData) {
 
     for (auto& poolItem : gData->corePool) {
         auto pool = poolItem.second;
-        for (auto iter = pool->conning.begin(); iter != pool->conning.end();) {
-            auto c = *iter;
-            if (c->running) {
-                iter++;
-                continue;
-            }
-
-            if (c->conn && c->conn-> auth == 1) {
-                // 移入到valid队列
-                pool->valid.push_back(c);
-                iter = pool->conning.erase(iter++);
-            } else {
-                iter++;
-            } 
-        } 
-
-        for (auto iter = pool->valid.begin(); iter != pool->valid.end(); ) {
-            auto c = *iter;
-            if (c->running) {
-                iter++;
-                continue;
-            }
-
-            if (!c->conn || c->conn->auth != 1) {
-                // 挪入conning队列
-                pool->conning.push_back(c);
-                iter = pool->valid.erase(iter);
-            } else {
-                iter++;
-            }
-        }
-
-        for (auto c : pool->conning) {
-            if (c->running) {
-                continue;
-            }
-
-            if (nowClock -  c->lastRunTime <= 50) {
-                continue;
-            }
-
-            c->running = true;
-            c->lastRunTime = nowClock;
-            coreGroup[(groupIdx++) % count].push_back(c);
-        }
-
         for (auto c : pool->valid) {
             if (c->running) {
                 continue;
@@ -401,8 +353,11 @@ void localDispatchTask(ZookThreadData* tData) {
             continue;
         }
         
-        //zookLog("distpatch task to group: %d and core_nums: %d", idx, g.size());
-
+        // for test
+        // for (auto c : g) {
+        //      zookLog("distpatch task to group: %d and core_nums: %d, task: %d, core: %p", idx, g.size(), c->task.load(), c.get());
+        // }
+        
         if (gIoThr) {
             std::function<void()> f = std::bind(threadProcess, g);
             gIoThr(f);
@@ -433,7 +388,7 @@ void execute(const std::string& uri, std::shared_ptr<BaseZookCmd> cmd, async_zoo
 
 bool loop(uint32_t curTime) {
     auto tData = runningData();
-    if (!tData) {
+    if (!tData->init) {
         return false;
     }
 

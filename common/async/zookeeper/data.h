@@ -78,9 +78,8 @@ struct ZookCore {
 typedef std::shared_ptr<ZookCore> ZookCorePtr;
 
 struct CorePool {
-    //std::mutex lock;
-    std::list<ZookCorePtr> conning; // 正在连接的队列
-    std::list<ZookCorePtr> valid;   // 有用的连接
+    uint32_t polling = 0;
+    std::vector<ZookCorePtr> valid;   // 有用的连接
 };
 
 typedef std::shared_ptr<CorePool> CorePoolPtr;

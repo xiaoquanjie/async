@@ -207,7 +207,6 @@ void localProcess(uint32_t curTime, CurlThreadData* tData) {
 
     do {
         auto& pool = gData->corePool;
-        auto iterCore = pool.valid.begin();
         for (auto iterQueue = tData->reqQueue.begin(); iterQueue != tData->reqQueue.end(); ) {
             auto req = *iterQueue;
             // 遍历一个有效的core
@@ -215,11 +214,7 @@ void localProcess(uint32_t curTime, CurlThreadData* tData) {
             if (ioThreads == pool.valid.size()) {
                 //curlLog("lun xun.....%s", "");
                 // 均匀分布
-                core = *iterCore;
-                iterCore++;
-                if (iterCore == pool.valid.end()) {
-                    iterCore = pool.valid.begin();
-                }
+                core = pool.valid[pool.polling++ % ioThreads];
             }
             else {
                 for (auto c : pool.valid) {
@@ -244,13 +239,13 @@ void localProcess(uint32_t curTime, CurlThreadData* tData) {
                 auto c = localCreateCore();
                 if (c) {
                     pool.valid.push_back(c);
-                    iterCore = pool.valid.begin();
                 }
             } 
             else {
-                curlLog("full.......%s", "");
+                //curlLog("full.......%s", "");
             }
-            break;
+
+            iterQueue++;
         }
 
     } while (false);

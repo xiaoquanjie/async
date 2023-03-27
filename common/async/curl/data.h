@@ -13,6 +13,7 @@
 #include <atomic>
 #include <list>
 #include <mutex>
+#include <vector>
 #include <memory>
 #include <unordered_map>
 #include "common/async/curl/async_curl.h"
@@ -65,7 +66,8 @@ struct CurlCore {
 typedef std::shared_ptr<CurlCore> CurlCorePtr;
 
 struct CorePool {
-    std::list<CurlCorePtr> valid;
+    uint32_t polling = 0;           // 轮询索引
+    std::vector<CurlCorePtr> valid;
 };
 
 struct GlobalData {

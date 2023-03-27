@@ -266,13 +266,24 @@ void localProcess(uint32_t curTime, MysqlThreadData* tData) {
                 continue;
             }
 
-            if (pool->valid.size() < gMaxConnection) {
-                auto c = localCreateCore(req->addr);
-                pool->valid.push_back(c);
+            MysqlCorePtr core;
+            for (auto c : pool->valid) {
+                if (c->task == 0) {
+                    core = c;
+                    break;
+                }
             }
 
-            auto count = pool->valid.size();
-            auto core = pool->valid[pool->polling++ % count];
+            if (!core) {
+                if (pool->valid.size() < gMaxConnection) {
+                    auto c = localCreateCore(req->addr);
+                    pool->valid.push_back(c);
+                }
+
+                auto count = pool->valid.size();
+                core = pool->valid[pool->polling++ % count];
+            }
+
             core->waitLock.lock();
             core->waitQueue.push_back(req);
             core->waitLock.unlock();

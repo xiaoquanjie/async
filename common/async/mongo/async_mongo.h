@@ -21,7 +21,7 @@ namespace mongo {
 
 typedef std::function<void(MongoReplyParserPtr)> async_mongo_cb;
 
-// @uri: addr|db|collection|expire[可选]|expire_time[可选]
+// @uri: addr|db|collection
 void execute(std::string uri, const BaseMongoCmd& cmd, async_mongo_cb cb);
 
 bool loop(uint32_t curTime);

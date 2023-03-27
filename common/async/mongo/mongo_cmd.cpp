@@ -87,18 +87,24 @@ std::string BaseMongoCmd::DebugString() const {
 
 ///////////////////////////////////////////////////////////////
 
-InsertMongoCmd::InsertMongoCmd(const std::string& json) {
+InsertMongoCmd::InsertMongoCmd(const std::string& json, const std::string& expire_field) {
     this->d = std::make_shared<Data>();
     this->d->cmd = "insert";
     this->d->doc_bson_ptr = new_from_json(json);
+    if (!expire_field.empty()) {
+        bson_append_now_utc((bson_t *)this->d->doc_bson_ptr, expire_field.c_str(), expire_field.size());
+    }
 }
 
-InsertMongoCmd::InsertMongoCmd(const std::initializer_list<MongoKeyValue> &fields)
+InsertMongoCmd::InsertMongoCmd(const std::initializer_list<MongoKeyValue> &fields, const std::string& expire_field)
 {
     this->d = std::make_shared<Data>();
     this->d->cmd = "insert";
     this->d->doc_bson_ptr = new_from_json("");
     bson_append(this->d->doc_bson_ptr, fields);
+    if (!expire_field.empty()) {
+        bson_append_now_utc((bson_t *)this->d->doc_bson_ptr, expire_field.c_str(), expire_field.size());
+    }
 }
 
 ///////////////////////////////////////////////////////////////
@@ -216,30 +222,34 @@ UpdateManyMongoCmd::UpdateManyMongoCmd(const std::initializer_list<MongoKeyValue
 
 ///////////////////////////////////////////////////////////////
 
-CreateIndexMongoCmd::CreateIndexMongoCmd(const std::vector<std::string> &fields) {
+CreateIndexMongoCmd::CreateIndexMongoCmd(const std::vector<std::string> &fields, bool unique) {
     this->d = std::make_shared<Data>();
     this->d->cmd = "createidx";
     this->d->doc_bson_ptr = new_from_json("");
+    this->d->unique = unique;
     //bson_init((bson_t*)this->d->doc_bson_ptr);
     for (auto& item: fields) {
         bson_append(this->d->doc_bson_ptr, item.c_str(), 1);
     }
 }
 
-CreateIndexMongoCmd::CreateIndexMongoCmd(const std::initializer_list<std::string> &fields) {
+CreateIndexMongoCmd::CreateIndexMongoCmd(const std::initializer_list<std::string> &fields, bool unique) {
     this->d = std::make_shared<Data>();
     this->d->cmd = "createidx";
     this->d->doc_bson_ptr = new_from_json("");
+    this->d->unique = unique;
     //bson_init((bson_t*)this->d->doc_bson_ptr);
     for (auto& item: fields) {
         bson_append(this->d->doc_bson_ptr, item.c_str(), 1);
     }
 }
 
-CreateExpireIndexMongoCmd::CreateExpireIndexMongoCmd() {
+CreateExpireIndexMongoCmd::CreateExpireIndexMongoCmd(const std::string &field, uint32_t ttl) {
     this->d = std::make_shared<Data>();
     this->d->cmd = "createexpireidx";
+    this->d->ttl = ttl;
     this->d->doc_bson_ptr = new_from_json("");
+    bson_append(this->d->doc_bson_ptr, field.c_str(), 1);
 }
 
 } // mongo

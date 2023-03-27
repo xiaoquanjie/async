@@ -11,6 +11,10 @@
 #include "common/async/mongo/data.h"
 
 namespace async {
+
+// 声明
+void split(const std::string source, const std::string &separator, std::vector<std::string> &array);
+
 namespace mongo {
 
 MongoAddr::MongoAddr(const std::string& uri) {
@@ -19,17 +23,13 @@ MongoAddr::MongoAddr(const std::string& uri) {
 
 void MongoAddr::Parse(const std::string &uri) {
     // 解析uri
-    this->uri = uri;
     std::vector<std::string> values;
     async::split(uri, "|", values);
-    if (values.size() == 5) {
-        this->addr = values[0];
+    if (values.size() == 3) {
+        this->host = values[0];
         this->db = values[1];
         this->collection = values[2];
-        this->expire_filed = values[3];
-        if (values[4].size()) {
-            this->expire_time = std::atoi(values[4].c_str());
-        }
+        this->id = this->host + "|" + this->db;
     }
     else {
         mongoLog("[async_mongo] [error] uri error:%s", uri.c_str());
@@ -37,7 +37,7 @@ void MongoAddr::Parse(const std::string &uri) {
     }
 }
 
-MongoCore::~MongoCore() {
+MongoConn::~MongoConn() {
     if (mongoc_uri) {
         mongoc_uri_destroy(mongoc_uri);
     }
@@ -46,10 +46,20 @@ MongoCore::~MongoCore() {
     }
 }
 
-MongoRspData::MongoRspData() {
-    parser = std::make_shared<MongoReplyParser>();
+MongoCore::~MongoCore() {
 }
 
+CorePoolPtr GlobalData::getPool(const std::string& id) {
+    CorePoolPtr pool;
+    auto iter = this->corePool.find(id);
+    if (iter == this->corePool.end()) {
+        pool = std::make_shared<CorePool>();
+        this->corePool[id] = pool;
+    } else {
+        pool = iter->second;
+    }
+    return pool;
+}
 
 }
 }

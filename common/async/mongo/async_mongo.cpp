@@ -9,18 +9,17 @@
 #ifdef USE_ASYNC_MONGO
 
 #include "common/async/mongo/data.h"
+#include "common/async/mongo/op.h"
 
 namespace async {
 namespace mongo {
 
+#define IO_THREADS async::supposeIothread()
+
 // io线程的函数
 std::function<void(std::function<void()>)> gIoThr = nullptr;
-// 最大连接数，连接数越大表现越好
-uint32_t gMaxConnection = 100;
-// 全局初始化
-bool gGlobalIsInit = false;
 // 超时时间
-uint32_t gTimeout = 5;
+uint32_t gTimeout = 10;
 
 ///////////////////////////////////////////////////////////////////////
 
@@ -29,13 +28,19 @@ MongoThreadData* runningData() {
     return &gThrData;
 }
 
+GlobalData* globalData() {
+    static GlobalData gData;
+    return &gData;
+}
+
 bool mongoGlobalInit() {
-    if (gGlobalIsInit) {
+    auto gData = globalData();
+    if (gData->init) {
         return true;
     }
 
     mongoc_init();
-    gGlobalIsInit = true;
+    gData->init = true;
     return true;
 }
 
@@ -46,301 +51,57 @@ bool mongoGlobalCleanup() {
 
 ///////////////////////////////////////////////////////////////////////
 
-MongoCorePtr threadCreateCore(MongoThreadData* tData, MongoAddrPtr addr) {
-    MongoCorePtr core;
-
-    tData->lock.lock();
-
-    auto& pool = tData->corePool[addr->addr];
-    if (!pool.valid.empty()) {
-        core = pool.valid.front();
-        pool.valid.pop_front();
-    }
-
-    tData->lock.unlock();
-
-    if (core) {
-        return core;
-    }
-
-     // 创建新连接
-    core = std::make_shared<MongoCore>();
+MongoCorePtr localCreateCore(MongoAddrPtr addr) {
+    MongoCorePtr core = std::make_shared<MongoCore>();
     core->addr = addr;
-
-    // create mongoc uri
-    bson_error_t error;
-    core->mongoc_uri = mongoc_uri_new_with_error(addr->addr.c_str(), &error);
-    if (!core->mongoc_uri) {
-        mongoLog("[error] failed to call mongoc_uri_new_with_error:%s", addr->addr.c_str());
-        return nullptr;
-    }
-
-    core->mongoc_client = mongoc_client_new_from_uri(core->mongoc_uri);
-    if (!core->mongoc_client) {
-        mongoLog("[error] failed to call mongoc_client_new_from_uri:%s", addr->addr.c_str());
-        return nullptr;
-    }
-
-    mongoc_client_set_appname(core->mongoc_client, addr->addr.c_str());
     return core;
 }
 
-// insert操作
-void threadMongoInsert(mongoc_collection_t* mongoc_collection, MongoReqDataPtr req, MongoRspDataPtr rsp) {
-    // 判断是否有超时
-    if (req->addr->expire_time > 0
-        && !req->addr->expire_filed.empty()) {
-        bson_append_now_utc((bson_t *)req->cmd.d->doc_bson_ptr,
-                            req->addr->expire_filed.c_str(),
-                            req->addr->expire_filed.size());
+MongoConnPtr threadCreateConn(MongoCorePtr core) {
+    auto conn = std::make_shared<MongoConn>();
+
+    // create mongoc uri
+    bson_error_t error;
+    conn->mongoc_uri = mongoc_uri_new_with_error(core->addr->host.c_str(), &error);
+    if (!conn->mongoc_uri) {
+        mongoLog("[error] failed to call mongoc_uri_new_with_error:%s", core->addr->host.c_str());
+        return nullptr;
     }
 
-    if (!mongoc_collection_insert(mongoc_collection,
-                                  MONGOC_INSERT_NONE,
-                                  (bson_t *)req->cmd.d->doc_bson_ptr,
-                                  nullptr,
-                                  (bson_error_t *)rsp->parser->error))
-    {
-        // 失败
-        rsp->parser->op_result = -1;
+    conn->mongoc_client = mongoc_client_new_from_uri(conn->mongoc_uri);
+    if (!conn->mongoc_client) {
+        mongoLog("[error] failed to call mongoc_client_new_from_uri:%s", core->addr->host.c_str());
+        return nullptr;
     }
-}
 
-// find操作
-void threadMongoFind(mongoc_collection_t* mongoc_collection, MongoReqDataPtr req, MongoRspDataPtr rsp) {
-    auto cursor = mongoc_collection_find(mongoc_collection,
-                                         MONGOC_QUERY_NONE,
-                                         0,
-                                         0,
-                                         0,
-                                         (bson_t *)req->cmd.d->doc_bson_ptr,
-                                         (bson_t *)req->cmd.d->opt_bson_ptr,
-                                         nullptr);
-    auto& bson_vec = rsp->parser->bsons;
-    // mongoc_cursor_next是组塞函数
-    const bson_t *doc = 0;
-    while (mongoc_cursor_next((mongoc_cursor_t *)cursor, &doc)) {
-        // 拷贝一份bson
-        bson_vec.push_back(bson_copy(doc));
-    }
-    if (mongoc_cursor_error((mongoc_cursor_t *)cursor, (bson_error_t *)rsp->parser->error)) {
-        rsp->parser->op_result = -1;
-    }
-    mongoc_cursor_destroy(cursor);
-}
-
-// find opt操作
-void threadMongoFindOpt(mongoc_collection_t* mongoc_collection, MongoReqDataPtr req, MongoRspDataPtr rsp) {
-    auto cursor = mongoc_collection_find_with_opts(mongoc_collection,
-                                                   (bson_t *)req->cmd.d->doc_bson_ptr,
-                                                   (bson_t *)req->cmd.d->opt_bson_ptr,
-                                                   nullptr);
-    auto& bson_vec = rsp->parser->bsons;
-    // mongoc_cursor_next是组塞函数
-    const bson_t* doc = 0;
-    while (mongoc_cursor_next((mongoc_cursor_t*)cursor, &doc)) {
-        // 拷贝一份bson
-        bson_vec.push_back(bson_copy(doc));
-    }
-    if (mongoc_cursor_error((mongoc_cursor_t*)cursor, (bson_error_t *)rsp->parser->error)) {
-            rsp->parser->op_result = -1;
-    }
-    mongoc_cursor_destroy(cursor);
-}
-
-// delete one操作
-void threadMongoDeleteOne(mongoc_collection_t* mongoc_collection, MongoReqDataPtr req, MongoRspDataPtr rsp) {
-    bson_t bson_reply;
-    if (!mongoc_collection_delete_one(mongoc_collection,
-                                      (bson_t *)req->cmd.d->doc_bson_ptr,
-                                      nullptr,
-                                      &bson_reply,
-                                      (bson_error_t *)rsp->parser->error))
-    {
-        // 失败
-        rsp->parser->op_result = -1;
-    }
-    else {
-        auto& bson_vec = rsp->parser->bsons;
-        bson_vec.push_back(bson_copy(&bson_reply));
-    }
-}
-
-// delete many操作
-void threadMongoDeleteMany(mongoc_collection_t* mongoc_collection, MongoReqDataPtr req, MongoRspDataPtr rsp) {
-    bson_t bson_reply;
-    if (!mongoc_collection_delete_many(mongoc_collection,
-                                       (bson_t *)req->cmd.d->doc_bson_ptr,
-                                       nullptr,
-                                       &bson_reply,
-                                       (bson_error_t *)rsp->parser->error))
-    {
-        // 失败
-        rsp->parser->op_result = -1;
-    }
-    else {
-        auto& bson_vec = rsp->parser->bsons;
-        bson_vec.push_back(bson_copy(&bson_reply));
-    }
-}
-
-// update one
-void threadMongoUpdateOne(mongoc_collection_t* mongoc_collection, MongoReqDataPtr req, MongoRspDataPtr rsp) {
-    bson_t bson_reply;
-    if (!mongoc_collection_update_one(mongoc_collection,
-                                      (bson_t *)req->cmd.d->doc_bson_ptr,
-                                      (bson_t *)req->cmd.d->update_bson_ptr,
-                                      (bson_t *)req->cmd.d->opt_bson_ptr,
-                                      &bson_reply,
-                                      (bson_error_t *)rsp->parser->error))
-    {
-        // 失败
-        rsp->parser->op_result = -1;
-    }
-    else {
-        auto& bson_vec = rsp->parser->bsons;
-        bson_vec.push_back(bson_copy(&bson_reply));
-    }
-}
-
-// update many
-void threadMongoUpdateMany(mongoc_collection_t* mongoc_collection, MongoReqDataPtr req, MongoRspDataPtr rsp) {
-    bson_t bson_reply;
-    if (!mongoc_collection_update_many(mongoc_collection,
-                                       (bson_t *)req->cmd.d->doc_bson_ptr,
-                                       (bson_t *)req->cmd.d->update_bson_ptr,
-                                       (bson_t *)req->cmd.d->opt_bson_ptr,
-                                       &bson_reply,
-                                       (bson_error_t *)rsp->parser->error))
-    {
-        // 失败
-        rsp->parser->op_result = -1;
-    }
-    else {
-        auto& bson_vec = rsp->parser->bsons;
-        bson_vec.push_back(bson_copy(&bson_reply));
-    }
-}
-
-// create idx操作
-void threadMongoCreateIdx(mongoc_collection_t* mongoc_collection, MongoReqDataPtr req, MongoRspDataPtr rsp) {
-    mongoc_index_opt_t opt;
-    mongoc_index_opt_init(&opt);
-    opt.unique = true;
-    auto ret = mongoc_collection_create_index(mongoc_collection,
-                                              (bson_t *)req->cmd.d->doc_bson_ptr,
-                                              &opt,
-                                              (bson_error_t *)rsp->parser->error);
-    if (!ret) {
-        // 失败
-        rsp->parser->op_result = -1;
-    }
-}
-
-void threadMongoCreateExpireIdx(mongoc_collection_t* mongoc_collection, MongoReqDataPtr req, MongoRspDataPtr rsp) {
-    mongoc_index_opt_t opt;
-    mongoc_index_opt_init(&opt);
-    opt.unique = true;
-    // 判断是否有超时
-    if (req->addr->expire_time > 0 
-        && !req->addr->expire_filed.empty())
-    {
-        BSON_APPEND_INT32((bson_t *)req->cmd.d->doc_bson_ptr,
-                          req->addr->expire_filed.c_str(),
-                          1);
-        opt.expire_after_seconds = req->addr->expire_time;
-    }
-    auto ret = mongoc_collection_create_index(mongoc_collection,
-                                              (bson_t *)req->cmd.d->doc_bson_ptr,
-                                              &opt,
-                                              (bson_error_t *)rsp->parser->error);
-    if (!ret) {
-        // 失败
-        rsp->parser->op_result = -1;
-    }
+    mongoc_client_set_appname(conn->mongoc_client, core->addr->host.c_str());
+    mongoLog("create connection: %s", core->addr->host.c_str());
+    return conn;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-void threadProcess(MongoReqDataPtr req, MongoThreadData* tData) {
-    MongoRspDataPtr rsp = std::make_shared<MongoRspData>();
-    rsp->req = req;
-    rsp->parser->op_result = 0;
-
-    MongoCorePtr core;
-
-    do {
-        core = threadCreateCore(tData, req->addr);
-        if (!core) {
-            bson_set_error((bson_error_t*)rsp->parser->error, 0, 2, "failed to get mongo core");
-            break;
+void threadProcess(std::list<MongoCorePtr> coreList) {
+    for (auto c : coreList) {
+        if (!c->conn) {
+            c->conn = threadCreateConn(c);
         }
 
-        mongoc_collection_t *collection = mongoc_client_get_collection(core->mongoc_client,
-                                                                       req->addr->db.c_str(),
-                                                                       req->addr->collection.c_str());
-        if (!collection) {
-            bson_set_error((bson_error_t*)rsp->parser->error, 0, 2, "failed to get mongo collection");
-            mongoLog("[error] failed to call mongoc_client_get_collection:%s|%s", req->addr->db.c_str(), req->addr->collection.c_str());
-            break;
+        // 不可长时间占用cpu
+        int count = 5;
+        c->waitLock.lock();
+        for (auto iter = c->waitQueue.begin(); iter != c->waitQueue.end();) {
+            if (count == 0) {
+                break;
+            }
+            count--;
+            auto req = *iter;
+            opCmd(c, req);
+            iter = c->waitQueue.erase(iter);
         }
-
-        if (req->cmd.d->cmd == "insert") {
-            threadMongoInsert(collection, req, rsp);
-        }
-        else if (req->cmd.d->cmd == "find") {
-            threadMongoFind(collection, req, rsp);
-        }
-        else if (req->cmd.d->cmd == "find_opts") {
-            threadMongoFindOpt(collection, req, rsp);
-        }
-        else if (req->cmd.d->cmd == "deleteone") {
-            threadMongoDeleteOne(collection, req, rsp);
-        }
-        else if (req->cmd.d->cmd == "deletemany") {
-            threadMongoDeleteMany(collection, req, rsp);
-        }
-        else if (req->cmd.d->cmd == "updateone") {
-            threadMongoUpdateOne(collection, req, rsp);
-        }
-        else if (req->cmd.d->cmd == "updatemany") {
-            threadMongoUpdateMany(collection, req, rsp);
-        }
-        else if (req->cmd.d->cmd == "createidx") {
-            threadMongoCreateIdx(collection, req, rsp);
-        }
-        else if (req->cmd.d->cmd == "createexpireidx") {
-            threadMongoCreateExpireIdx(collection, req, rsp);
-        }
-
-        mongoc_collection_destroy(collection);
-    } while (false);
-
-    tData->lock.lock();
-
-    if (core) {
-        // 归还core
-        auto& pool = tData->corePool[req->addr->addr];
-        pool.valid.push_back(core);
+        c->waitLock.unlock();
+        c->running = false;
     }
-
-    // 存入队列
-    tData->rspQueue.push_back(rsp);
-   
-    tData->lock.unlock();
-}
-
-std::function<void()> localPop(MongoThreadData* tData) {
-    if (tData->reqQueue.empty()) {
-        assert(false);
-        return std::function<void()>();
-    }
-
-    auto req = tData->reqQueue.front();
-    tData->reqQueue.pop_front();
-
-    auto f = std::bind(threadProcess, req, tData);
-    return f;
 }
 
 void localRespond(MongoThreadData* tData) {
@@ -350,31 +111,106 @@ void localRespond(MongoThreadData* tData) {
 
     // 交换队列
     std::list<MongoRspDataPtr> rspQueue;
-    tData->lock.lock();
+    tData->rspLock.lock();
     rspQueue.swap(tData->rspQueue);
-    tData->lock.unlock();
+    tData->rspLock.unlock();
 
     for (auto iter = rspQueue.begin(); iter != rspQueue.end(); iter++) {
-        tData->rspTaskCnt++;
         auto rsp = *iter;
+        tData->rspTaskCnt++;
         rsp->req->cb(rsp->parser);
     }
 }
 
-void localProcess(MongoThreadData* tData) {
+void localProcess(uint32_t curTime, MongoThreadData* tData) {
     if (tData->reqQueue.empty()) {
         return;
     }
 
-    if (gIoThr) {
-        gIoThr(localPop(tData));
-    } else {
-        // 调用线程担任io线程的角色
-        localPop(tData)();
+    uint32_t ioThreads = IO_THREADS;
+    auto gData = globalData();
+    gData->pLock.lock();
+    for (auto iterQueue = tData->reqQueue.begin(); iterQueue != tData->reqQueue.end(); iterQueue++) {
+        auto& id = iterQueue->first;
+        auto& que = iterQueue->second;
+        auto pool = gData->getPool(id);
+
+        for (auto iterReq = que.begin(); iterReq != que.end(); iterReq++) {
+            auto req = *iterReq;
+            if (pool->valid.size() < ioThreads) {
+                auto c = localCreateCore(req->addr);
+                pool->valid.push_back(c);
+            }
+
+            auto count = pool->valid.size();
+            auto core = pool->valid[pool->polling++ % count];
+            core->waitLock.lock();
+            core->waitQueue.push_back(req);
+            core->waitLock.unlock();
+            core->task++;
+        }
+        que.clear();
     }
+    gData->pLock.unlock();
 }
 
-void localStatistics(MongoThreadData* tData, uint32_t curTime) {
+void localDispatchTask(MongoThreadData* tData) {
+    auto gData = globalData();
+    // 抢占到分配标识
+    if (gData->dispatchTask.test_and_set()) {
+        return;
+    }
+
+    // 把所有的core分为IO_THREADS组
+    uint32_t count = IO_THREADS;
+    std::vector<std::list<MongoCorePtr>> coreGroup(count);
+    uint32_t groupIdx = 0;
+
+    // 加锁
+    gData->pLock.lock();
+    for (auto& poolItem : gData->corePool) {
+        auto pool = poolItem.second;
+        for (auto c : pool->valid) {
+            if (c->running) {
+                continue;
+            }
+            if (c->task == 0) {
+                continue;
+            }
+           
+            //mongoLog("running......%s", c->addr->id.c_str());
+            c->running = true;
+            c->lastRunTime = 0;
+            coreGroup[(groupIdx++) % count].push_back(c);
+        }
+    }
+    // 解锁
+    gData->pLock.unlock();
+
+    // 清标记
+    gData->dispatchTask.clear();   
+
+    for (size_t idx = 0; idx < coreGroup.size(); idx++) {
+        auto& g = coreGroup[idx];
+        if (g.empty()) {
+            continue;
+        }
+        
+        // for test
+        // for (auto c : g) {
+        //      mongoLog("distpatch task to group: %d and core_nums: %d, task: %d, core: %p", idx, g.size(), c->task.load(), c.get());
+        // }
+        
+        if (gIoThr) {
+            std::function<void()> f = std::bind(threadProcess, g);
+            gIoThr(f);
+        } else {
+            threadProcess(g);
+        }
+    } 
+}
+
+void localStatistics(uint32_t curTime, MongoThreadData* tData) {
     if (curTime - tData->lastPrintTime < 120) {
         return;
     }
@@ -386,37 +222,44 @@ void localStatistics(MongoThreadData* tData, uint32_t curTime) {
         tData->reqTaskCnt,
         tData->rspTaskCnt);
 
-    for (auto& item : tData->corePool) {
-        mongoLog("[statistics] id: %s, valid: %d", item.first.c_str(), item.second.valid.size());
+    auto gData = globalData();
+    gData->pLock.lock();
+    for (auto& pool : gData->corePool) {
+        mongoLog("[statistics] id: %s, valid: %d", pool.first.c_str(), pool.second->valid.size());
     }
+    gData->pLock.unlock();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 void execute(std::string uri, const BaseMongoCmd& cmd, async_mongo_cb cb) {
     mongoGlobalInit();
+    auto tData = runningData();
+    tData->init = true;
 
     // 构造一个请求
     MongoReqDataPtr req = std::make_shared<MongoReqData>();
     req->cmd = cmd;
     req->addr = std::make_shared<MongoAddr>(uri);
     req->cb = cb;
+    req->tData = tData;
     time(&req->reqTime);
 
-    MongoThreadData* tData = runningData();
-    tData->reqQueue.push_back(req);
+    auto& que = tData->reqQueue[req->addr->id];
+    que.push_back(req);
     tData->reqTaskCnt++;
 }
 
 bool loop(uint32_t curTime) {
-    if (!gGlobalIsInit) {
+    MongoThreadData* tData = runningData();
+    if (!tData->init) {
         return false;
     }
 
-    MongoThreadData* tData = runningData();
-    localStatistics(tData, curTime);
+    localStatistics(curTime, tData);
     localRespond(tData);
-    localProcess(tData);
+    localProcess(curTime, tData);
+    localDispatchTask(tData);
 
     bool hasTask = tData->reqTaskCnt != tData->rspTaskCnt;
     return hasTask;

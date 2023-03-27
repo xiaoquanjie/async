@@ -20,7 +20,8 @@ struct BaseMongoCmd {
         void* doc_bson_ptr = 0;
         void* update_bson_ptr = 0;
         void* opt_bson_ptr = 0;
-
+        bool unique = false;        // 唯一索引
+        uint32_t ttl = 0;
         ~Data();
     };
 
@@ -41,10 +42,11 @@ struct BaseMongoCmd {
 
 /////////////////////////////////////////////////////////////////////////
 
+// @expire_field： 填充需要超时的字段名
 struct InsertMongoCmd : public BaseMongoCmd {
-    InsertMongoCmd(const std::string& json);
+    InsertMongoCmd(const std::string& json, const std::string& expire_field = "");
 
-    InsertMongoCmd(const std::initializer_list<MongoKeyValue> &fields);
+    InsertMongoCmd(const std::initializer_list<MongoKeyValue> &fields, const std::string& expire_field = "");
 };
 
 /////////////////////////////////////////////////////////////////////////
@@ -108,16 +110,17 @@ struct UpdateManyMongoCmd : public BaseMongoCmd {
 
 // 创建索引
 struct CreateIndexMongoCmd : public BaseMongoCmd {
-    CreateIndexMongoCmd(const std::vector<std::string> &fields);
+    CreateIndexMongoCmd(const std::vector<std::string> &fields, bool unique = false);
 
-    CreateIndexMongoCmd(const std::initializer_list<std::string> &fields);
+    CreateIndexMongoCmd(const std::initializer_list<std::string> &fields, bool unique = false);
 };
 
 // 创建超时索引
 struct CreateExpireIndexMongoCmd : public BaseMongoCmd {
-    // 不需要参数，因为参数都url中已自带了
-    CreateExpireIndexMongoCmd();
+    CreateExpireIndexMongoCmd(const std::string &field, uint32_t ttl);
 };
+
+//typedef std::shared_ptr<BaseMongoCmd> BaseMongoCmdPtr;
 
 }
 }

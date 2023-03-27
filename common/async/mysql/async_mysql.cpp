@@ -211,7 +211,7 @@ void threadProcess(std::list<MysqlCorePtr> coreList) {
 //////////////////////////////////////////////////////////////////////////////////////////
 
 void localStatistics(int32_t curTime, MysqlThreadData* tData) {
-    if (curTime - tData->lastPrintTime < 10) {
+    if (curTime - tData->lastPrintTime < 120) {
         return;
     }
 

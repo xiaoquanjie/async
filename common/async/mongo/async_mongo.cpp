@@ -89,17 +89,20 @@ void threadProcess(std::list<MongoCorePtr> coreList) {
 
         // 不可长时间占用cpu
         int count = 5;
+        std::list<MongoReqDataPtr> waitQueue;
         c->waitLock.lock();
         for (auto iter = c->waitQueue.begin(); iter != c->waitQueue.end();) {
             if (count == 0) {
                 break;
             }
             count--;
-            auto req = *iter;
-            opCmd(c, req);
+            waitQueue.push_back(*iter);
             iter = c->waitQueue.erase(iter);
         }
         c->waitLock.unlock();
+        for (auto req : waitQueue) {
+            opCmd(c, req);
+        }
         c->running = false;
     }
 }

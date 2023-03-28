@@ -299,7 +299,7 @@ void localStatistics(int32_t curTime, RedisThreadData* tData) {
     gData->pLock.lock();
     for (auto& pool : gData->corePool) {
         for (auto& cm : pool->coreMap) {
-            redisLog("[statistics] id: %s, evtBase: %p", cm.first.c_str(), pool->evtBase);
+            redisLog("[statistics] id: %s, core_nums: %d, evtBase: %p", cm.first.c_str(), pool->coreMap.size(), pool->evtBase);
         }
     }
     gData->pLock.unlock();

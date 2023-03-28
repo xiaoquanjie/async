@@ -354,7 +354,7 @@ void localDispatchTask(ZookThreadData* tData) {
         
         // for test
         // for (auto c : g) {
-        //      zookLog("distpatch task to group: %d and core_nums: %d, task: %d, core: %p", idx, g.size(), c->task.load(), c.get());
+        //      zookLog("dispatch task to group: %d and core_nums: %d, task: %d, core: %p", idx, g.size(), c->task.load(), c.get());
         // }
         
         if (gIoThr) {

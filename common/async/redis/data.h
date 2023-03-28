@@ -13,6 +13,8 @@
 #include <unordered_map>
 #include <assert.h>
 #include <functional>
+#include <atomic>
+#include <mutex>
 #include "common/async/redis/async_redis.h"
 #include "common/log.h"
 
@@ -61,60 +63,89 @@ typedef std::shared_ptr<RedisAddr> RedisAddrPtr;
 // 请求
 struct RedisReqData {
     async_redis_cb cb;
-    BaseRedisCmd cmd;
+    std::shared_ptr<BaseRedisCmd> cmd;
     RedisAddrPtr addr;
     time_t reqTime = 0;
+    void* tData = 0;
 };
 
 typedef std::shared_ptr<RedisReqData> RedisReqDataPtr;
 
 // 回复
 struct RedisRspData {
-    redisReply* reply = 0;
+    RedisReplyParserPtr parser;
     RedisReqDataPtr req;
 };
 
 typedef std::shared_ptr<RedisRspData> RedisRspDataPtr;
 
+struct RedisConn {
+    void *ctxt = 0;
+    uint32_t state = enum_connecting_state;
+    bool cluster = false;
+    std::string id;
+    bool activeClosed = true;
+    ~RedisConn();
+};
+
+typedef std::shared_ptr<RedisConn> RedisConnPtr;
+
 // redis连接核心
 struct RedisCore {
-    void *ctxt = 0;
+    RedisConnPtr conn;
     RedisAddrPtr addr;
-    uint32_t state = enum_connecting_state;
-    RedisReqDataPtr curReq;
-    bool passiveClose = false;
+    time_t lastConnTime = 0;
+    std::atomic<uint32_t> task;
+    std::list<RedisReqDataPtr> waitQueue;
+    std::mutex waitLock;
     ~RedisCore();
 };
 
 typedef std::shared_ptr<RedisCore> RedisCorePtr;
 
 struct CorePool {
-    time_t lastCreate = 0;            // 上一次创建core的时间
-    time_t lastDisconnect = 0;        // 上一次断联时间
-    std::list<RedisCorePtr> valid;      // 可用的
-    std::list<RedisCorePtr> conning;    // 正在连接的队列
-    std::unordered_map<void*, RedisCorePtr>  useing;   // 正在使用中的, using是关键字
+    // 事件核心
+    event_base* evtBase = 0;
+    bool running = false;
+    clock_t lastRunTime = 0;
+    std::unordered_map<std::string, RedisCorePtr> coreMap;
+    uint32_t getTask();
+};
+
+typedef std::shared_ptr<CorePool> CorePoolPtr;
+
+struct GlobalData {
+    // 连接池
+    uint32_t polling = 0;
+    std::vector<CorePoolPtr> corePool;
+    std::mutex pLock;
+
+    // 分发标识 
+    std::atomic_flag dispatchTask;
+
+    GlobalData() :dispatchTask(ATOMIC_FLAG_INIT) {}
 };
 
 struct RedisThreadData {
-    // 事件核心
-    event_base* evtBase = 0;
     // 请求任务的数量
     uint64_t reqTaskCnt = 0;
     // 回复任务的数量 
     uint64_t rspTaskCnt = 0;
     // 请求队列
     std::list<RedisReqDataPtr> reqQueue;
-    std::list<RedisReqDataPtr> prepareQueue;
     // 回复队列
+    std::mutex rspLock;
     std::list<RedisRspDataPtr> rspQueue;
-    // 连接池
-    std::unordered_map<std::string, CorePool> corePool;
-    // 标记
-    bool running = false;
     uint32_t lastRunTime = 0;
     // 上一次统计输出时间
     time_t lastPrintTime = 0;
+    // 初始化
+    bool init = false;
+};
+
+struct InvokeData {
+    RedisReqDataPtr req;
+    RedisCorePtr core;
 };
 
 ///////////////////////////////////////////////////////////////////////////////

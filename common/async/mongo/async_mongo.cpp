@@ -209,7 +209,7 @@ void localDispatchTask(MongoThreadData* tData) {
         
         // for test
         // for (auto c : g) {
-        //      mongoLog("distpatch task to group: %d and core_nums: %d, task: %d, core: %p", idx, g.size(), c->task.load(), c.get());
+        //      mongoLog("dispatch task to group: %d and core_nums: %d, task: %d, core: %p", idx, g.size(), c->task.load(), c.get());
         // }
         
         if (gIoThr) {

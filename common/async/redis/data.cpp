@@ -19,6 +19,9 @@ void split(const std::string source, const std::string &separator, std::vector<s
 
 namespace redis {
 
+void freeClusterCore(void*);
+void freeNonClusterCore(void*);
+
 RedisAddr::RedisAddr() {}
 
 RedisAddr::RedisAddr(const std::string& id) {
@@ -60,15 +63,25 @@ void RedisAddr::parse(const std::string& id) {
     }
 }
 
-void freeClusterCore(RedisCore*);
-void freeNonClusterCore(RedisCore*);
-
-RedisCore::~RedisCore() {
-    if (addr->cluster) {
-        freeClusterCore(this);
+RedisConn::~RedisConn() {
+    if (this->cluster) {
+        freeClusterCore(this->ctxt);
     } else {
-        freeNonClusterCore(this);
+        if (this->activeClosed) {
+            freeNonClusterCore(this->ctxt);
+        }
     }
+}
+
+RedisCore::~RedisCore() { 
+}
+
+uint32_t CorePool::getTask() {
+    uint32_t task = 0;
+    for (auto& c : this->coreMap) {
+        task += c.second->task;
+    }
+    return task;
 }
 
 void convertCmd(const BaseRedisCmd& cmd, std::vector<const char *>& argv, std::vector<size_t>& argc) {

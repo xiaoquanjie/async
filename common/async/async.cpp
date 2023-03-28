@@ -60,7 +60,7 @@ static uint32_t gIoThread = 0;
 uint32_t supposeIothread() {
     if (gIoThread == 0) {
         // 假设为两倍的cpu核数量
-        gIoThread = std::thread::hardware_concurrency() * 2;
+        gIoThread = 1; // std::thread::hardware_concurrency() * 2;
     }
     return gIoThread;
 }

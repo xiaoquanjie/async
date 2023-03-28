@@ -295,7 +295,7 @@ void localDispatchTask(CurlThreadData* tData) {
         }
         
         // for (auto c : g) {
-        //     curlLog("distpatch task to group: %d and core_nums: %d, task: %d, curlm: %p", idx, g.size(), c->task.load(), c->curlm);
+        //     curlLog("dispatch task to group: %d and core_nums: %d, task: %d, curlm: %p", idx, g.size(), c->task.load(), c->curlm);
         // }
 
         if (gIoThr) {

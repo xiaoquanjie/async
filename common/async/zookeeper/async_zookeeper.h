@@ -27,6 +27,12 @@ typedef std::function<void(ZookParserPtr)> async_zookeeper_cb;
 // uri: host[ip1:port1,ip2:port2]|scheme[user:pwd]
 void execute(const std::string& uri, std::shared_ptr<BaseZookCmd> cmd, async_zookeeper_cb cb);
 
+// 监听, 返回false意味着重复监听了
+bool watch(const std::string& uri, const std::string& path, async_zookeeper_cb cb);
+
+// 监听子节点
+bool watchChild(const std::string& uri, const std::string& path, async_zookeeper_cb cb);
+
 bool loop(uint32_t curTime);
 
 void setThreadFunc(std::function<void(std::function<void()>)>);

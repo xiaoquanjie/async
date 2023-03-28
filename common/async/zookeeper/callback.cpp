@@ -141,6 +141,51 @@ void onStringsCb(int rc, const struct String_vector *strings, const void *data) 
     onPushRsp(rsp, rsp->req->tData);
 }
 
+void onWatchDataCb(int rc, const char *value, int value_len, const struct Stat *stat, const void *data) {
+    Watcher* w = (Watcher*)data;
+    
+    auto rsp = std::make_shared<ZookRspData>();
+    rsp->req = std::make_shared<ZookReqData>();
+    rsp->req->tData = w->tData;
+    rsp->req->cb = w->cb;
+    rsp->parser = std::make_shared<ZookParser>(rc, stat, value, value_len);
+    onPushRsp(rsp, rsp->req->tData);
+}
+
+// 数据监听
+void onWatchCb(zhandle_t *zh, int type, int state, const char *path,void *watcherCtx) {
+    Watcher* w = (Watcher*)watcherCtx;
+    w->reg = false;
+
+    // type 查看：*_EVENT, 如ZOO_SESSION_EVENT
+    zookLog("zh:%p, path:%s, state: %s, type:%s", zh, w->path.c_str(), state2String(state), type2String(type));
+}
+
+void onWatchStringsCb(int rc, const struct String_vector *strings, const void *data) {
+    Watcher* w = (Watcher*)data;
+    
+    auto rsp = std::make_shared<ZookRspData>();
+    rsp->req = std::make_shared<ZookReqData>();
+    rsp->req->tData = w->tData;
+    rsp->req->cb = w->cb;
+
+    rsp->parser = std::make_shared<ZookParser>(rc, nullptr, nullptr, 0);
+    if (rc == ZOK) {
+        rsp->parser->setChilds(strings);
+    }
+
+    onPushRsp(rsp, rsp->req->tData);
+}
+
+// 子节点监听
+void onWatchChildCb(zhandle_t *zh, int type, int state, const char *path,void *watcherCtx) {
+    Watcher* w = (Watcher*)watcherCtx;
+    w->reg = false;
+
+    // type 查看：*_EVENT, 如ZOO_SESSION_EVENT
+    zookLog("zh:%p, path:%s, state: %s, type:%s", zh, w->path.c_str(), state2String(state), type2String(type));
+}
+
 }
 }
 

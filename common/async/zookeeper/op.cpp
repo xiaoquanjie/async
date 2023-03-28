@@ -357,6 +357,42 @@ void opCmd(ZookCorePtr c, ZookReqDataPtr req) {
     }
 }
 
+void opWatch(ZookCorePtr c, WatcherPtr w) {
+    if (w->child) {
+        int rc = zoo_awget_children(
+            c->conn->zh,
+            w->path.c_str(),
+            onWatchChildCb,
+            w.get(),
+            onWatchStringsCb,
+            w.get()
+        );
+
+        if (!checkOk(rc, "zoo_awget_children")) {
+            w->reg = false;
+        }
+        else {
+            //zookLog("watch children: %s", w->path.c_str());
+        }
+    }
+    else {
+        int rc = zoo_awget(
+            c->conn->zh,
+            w->path.c_str(),
+            onWatchCb,
+            w.get(),
+            onWatchDataCb,
+            w.get()
+        );
+
+        if (!checkOk(rc, "zoo_awget_children")) {
+            w->reg = false;
+        }
+        else {
+            //zookLog("watch: %s", w->path.c_str());
+        }
+    }
+}
 
 }
 }

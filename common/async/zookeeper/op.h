@@ -13,5 +13,7 @@ namespace zookeeper {
 
 void opCmd(ZookCorePtr core, ZookReqDataPtr req);
 
+void opWatch(ZookCorePtr core, WatcherPtr w);
+
 }
 }

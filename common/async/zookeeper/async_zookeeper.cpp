@@ -180,6 +180,16 @@ void threadProcess(std::list<ZookCorePtr> coreList) {
        
         // 检查任务是否超时
         c->waitLock.lock();
+        if (c->conn && c->conn->auth == 1) {
+            for (auto w : c->watchers) {
+                if (w->reg) {
+                    continue;
+                }
+                opWatch(c, w);
+                w->reg = true;
+            }
+        }
+        
         for (auto iter = c->waitQueue.begin(); iter != c->waitQueue.end();) {
             auto req = *iter;
             if (curTime - req->reqTime >= gTimeout) {
@@ -209,12 +219,38 @@ void threadProcess(std::list<ZookCorePtr> coreList) {
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
+ZookCorePtr localBalanceCore(CorePoolPtr pool, ZookAddrPtr addr) {
+    uint32_t ioThreads = IO_THREADS;
+    ZookCorePtr core;
+    if (ioThreads == pool->valid.size()) {
+        // 均匀分布
+        core = pool->valid[pool->polling++ % ioThreads];
+    }
+    else {
+        for (auto c : pool->valid) {
+            if (c->task < gMountTask) {
+                core = c;
+                break;
+            }
+        }
+    }
+
+    if (!core) {
+        // 建新core
+        if (pool->valid.size() < ioThreads) {
+            core = localCreateCore(addr);
+            pool->valid.push_back(core);
+        }
+    } 
+
+    return core;
+}
+
 void localProcess(uint32_t curTime, ZookThreadData* tData) {
      if (tData->reqQueue.empty()) {
         return;
     }
 
-    uint32_t ioThreads = IO_THREADS;
     auto gData = globalData();
     gData->pLock.lock();
 
@@ -233,20 +269,7 @@ void localProcess(uint32_t curTime, ZookThreadData* tData) {
                 }
 
                 // 遍历一个有效的core
-                ZookCorePtr core;
-                if (ioThreads == pool->valid.size()) {
-                    // 均匀分布
-                    core = pool->valid[pool->polling++ % ioThreads];
-                }
-                else {
-                    for (auto c : pool->valid) {
-                        if (c->task < gMountTask) {
-                            core = c;
-                            break;
-                        }
-                    }
-                }
-                
+                ZookCorePtr core = localBalanceCore(pool, req->addr);
                 if (core) {
                     core->waitLock.lock();
                     core->waitQueue.push_back(req);
@@ -255,14 +278,7 @@ void localProcess(uint32_t curTime, ZookThreadData* tData) {
                     iterReq = que.erase(iterReq);
                     continue;
                 }
-
-                // 建新core
-                if (pool->valid.size() < ioThreads) {
-                    auto c = localCreateCore(req->addr);
-                    if (c) {
-                        pool->valid.push_back(c);
-                    }
-                }
+                break;
             }
         }
     } while (false);
@@ -283,7 +299,9 @@ void localRespond(ZookThreadData* tData) {
 
     for (auto iter = rspQueue.begin(); iter != rspQueue.end(); iter++) {
         auto rsp = *iter;
-        tData->rspTaskCnt++;
+        if (rsp->req->addr) {
+            tData->rspTaskCnt++;
+        }
         rsp->req->cb(rsp->parser);
     }
 }
@@ -326,6 +344,22 @@ void localDispatchTask(ZookThreadData* tData) {
 
     for (auto& poolItem : gData->corePool) {
         auto pool = poolItem.second;
+        // 分配监听点
+        for (auto& wm : pool->watchers) {
+            auto w = wm.second;
+            if (w->dispatch) {
+                continue;
+            }
+            auto addr = std::make_shared<ZookAddr>(poolItem.first);
+            auto c = localBalanceCore(pool, addr);
+            if (c) {
+                c->waitLock.lock();
+                c->watchers.push_back(w);
+                c->waitLock.unlock();
+                w->dispatch = true;
+            }
+        }
+
         for (auto c : pool->valid) {
             if (c->running) {
                 continue;
@@ -366,6 +400,29 @@ void localDispatchTask(ZookThreadData* tData) {
     }
 }
 
+bool localWatch(const std::string& uri, const std::string& path, bool child, async_zookeeper_cb cb) {
+    auto gData = globalData();
+    bool ret = false;
+    std::string pathId = path;
+    if (child) {
+        pathId = path + "#child";
+    }
+    gData->pLock.lock();
+    auto pool = gData->getPool(uri);
+    auto iter = pool->watchers.find(pathId);
+    if (iter == pool->watchers.end()) {
+        ret = true;
+        auto w = std::make_shared<Watcher>();
+        w->cb = cb;
+        w->path = path;
+        w->child = child;
+        w->tData = runningData();
+        pool->watchers[pathId] = w;
+    }
+    gData->pLock.unlock();
+    return ret;
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////
 
 void execute(const std::string& uri, std::shared_ptr<BaseZookCmd> cmd, async_zookeeper_cb cb) {
@@ -383,6 +440,15 @@ void execute(const std::string& uri, std::shared_ptr<BaseZookCmd> cmd, async_zoo
     que.push_back(req);
     tData->reqTaskCnt++;
     //zookLog("post...%s", "");
+}
+
+// 监听
+bool watch(const std::string& uri, const std::string& path, async_zookeeper_cb cb) {
+    return localWatch(uri, path, false, cb);
+}
+
+bool watchChild(const std::string& uri, const std::string& path, async_zookeeper_cb cb) {
+    return localWatch(uri, path, true, cb);
 }
 
 bool loop(uint32_t curTime) {

@@ -50,7 +50,6 @@ ZookConn::~ZookConn() {
 ZookCore::~ZookCore() {
 }
 
-
 CorePoolPtr GlobalData::getPool(const std::string& id) {
     CorePoolPtr pool;
     auto iter = this->corePool.find(id);

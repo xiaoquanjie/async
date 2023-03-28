@@ -55,6 +55,17 @@ struct ZookRspData {
 
 typedef std::shared_ptr<ZookRspData> ZookRspDataPtr;
 
+struct Watcher {
+    bool dispatch = false;
+    bool reg = false;
+    bool child = false;
+    std::string path;
+    async_zookeeper_cb cb;
+    void* tData = 0;
+};
+
+typedef std::shared_ptr<Watcher> WatcherPtr;
+
 struct ZookConn {
     zhandle_t* zh = 0;
     bool connected = false;         // 是否连接上
@@ -71,6 +82,7 @@ struct ZookCore {
     bool running = false;
     clock_t lastRunTime = 0;
     std::list<ZookReqDataPtr> waitQueue;
+    std::list<WatcherPtr> watchers;
     std::mutex waitLock;
     ~ZookCore();
 };
@@ -79,7 +91,10 @@ typedef std::shared_ptr<ZookCore> ZookCorePtr;
 
 struct CorePool {
     uint32_t polling = 0;
-    std::vector<ZookCorePtr> valid;   // 有用的连接
+    // 有用的连接
+    std::vector<ZookCorePtr> valid;   
+    // 监听者
+    std::unordered_map<std::string, WatcherPtr> watchers;
 };
 
 typedef std::shared_ptr<CorePool> CorePoolPtr;

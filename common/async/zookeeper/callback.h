@@ -34,5 +34,15 @@ void onAclCb(int rc, struct ACL_vector *acl, struct Stat *stat, const void *data
 
 void onStringsCb(int rc, const struct String_vector *strings, const void *data);
 
+void onWatchDataCb(int rc, const char *value, int value_len, const struct Stat *stat, const void *data);
+
+// 数据监听
+void onWatchCb(zhandle_t *zh, int type, int state, const char *path,void *watcherCtx);
+
+void onWatchStringsCb(int rc, const struct String_vector *strings, const void *data);
+
+// 子节点监听
+void onWatchChildCb(zhandle_t *zh, int type, int state, const char *path,void *watcherCtx);
+
 }
 }

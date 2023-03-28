@@ -291,12 +291,11 @@ async_redis  async_mongo async_curl async_cpu async_mysql      async_rabbitmq  a
           1）处理请求超时的情况
           2）从valid core列表取出一个有效的core，且core并发处理任务没有超过1个，则将请求放入core的待处理队列
           3）没有有效的core，且core的数量没有超过supposeIothread限制，则创建一个新core放入conning core列表
+          4）如果core的数量已达到上线，则将任务均衡挂载到每个core上
       （4）利用原子操作抢占dispatchTask标识
           1）抢占成功
           2）遍历globaldata连接池
-          3）将无效连接从valid中移除到conning中
-          4）将有效连接从conning中移除到valid中
-          5）将所有的core分成supposeIothread组，每组打包成一个任务放入io任务队列
+          3）将core平均分发到每个线程中去执行任务
   4、io线程池
       （1）从io任务队列取出一个任务
       （2）处理任务：
@@ -313,12 +312,11 @@ async_redis  async_mongo async_curl async_cpu async_mysql      async_rabbitmq  a
           1）处理请求超时的情况
           2）从valid core列表取出一个有效的core，且core并发处理任务没有超过上限，则将请求放入core的待处理队列
           3）没有有效的core，且core的数量没有超过supposeIothread限制，则创建一个新core放入conning core列表
+          4）如果core的数量已达到上线，则将任务均衡挂载到每个core上
       （4）利用原子操作抢占dispatchTask标识
           1）抢占成功
           2）遍历globaldata连接池
-          3）将无效连接从valid中移除到conning中
-          4）将有效连接从conning中移除到valid中
-          5）将所有的core分成supposeIothread组，每组打包成一个任务放入io任务队列
+          3）将core平均分发到每个线程中去执行任务
   4、io线程池
       （1）从io任务队列取出一个任务
       （2）处理任务：

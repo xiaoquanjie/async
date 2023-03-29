@@ -35,9 +35,22 @@ std::pair<int, int64_t> parallel(const std::initializer_list<fn_cb>& fns, int ti
 /////////////////////////////////////////////////////////////////////////
 
 bool loop(uint32_t curTime) {
+    if (curTime == 0) {
+       time((time_t*)&curTime);
+    }
     bool ret1 = loopPromise(curTime);
     bool ret2 = async::loop(curTime);
     return ret1 || ret2;
+}
+
+// 带有sleep功能，在没有任务时降低cpu使用率
+void loopSleep(uint32_t curTime, uint32_t sleepMil) {
+    if (curTime == 0) {
+       time((time_t*)&curTime);
+    }
+
+    loopPromise(curTime);
+    async::loopSleep(curTime, sleepMil);
 }
 
 }

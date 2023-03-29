@@ -11,6 +11,7 @@
 #include <vector>
 #include <thread>
 #include <time.h>
+#include <unistd.h>
 
 namespace async {
 
@@ -27,22 +28,44 @@ bool regModule(const AsyncModule& mod) {
 
 ////////////////////////////////////////////////////////////////////////////////////
 
-bool loop(uint32_t cur_time) {
-    if (cur_time == 0) {
-       // time(&cur_time);
+bool loop(uint32_t curTime) {
+    if (curTime == 0) {
+       time((time_t*)&curTime);
     }
 
     auto& modVec = getModuleVec();
     bool is_busy = false;
     for (auto& item : modVec) {
         if (item.loopFunc) {
-            if (item.loopFunc(cur_time)) {
+            if (item.loopFunc(curTime)) {
                 is_busy = true;
             }
         }
     }
     
     return is_busy;
+}
+
+void loopSleep(uint32_t curTime, uint32_t sleepMil) {
+    thread_local static int idle = 0;
+    thread_local static int run = 0;
+    if (loop(curTime)) {
+        idle = 0;
+        run++;
+    } else {
+        idle++;
+        run = 0;
+    }
+
+    if (idle >= 10) {
+        idle = 0;
+        usleep(sleepMil == 0 ? 300 * 1000 : sleepMil * 1000);
+    }
+    // else if (run > 1000) {
+    //     // 防止异常没响应的请求把cpu跑满
+    //     run = 0;
+    //     usleep(5000);
+    // }
 }
 
 void setThreadFunc(std::function<void(std::function<void()>)> cb) {

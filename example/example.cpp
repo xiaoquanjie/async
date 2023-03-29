@@ -20,7 +20,7 @@ void redis_test(bool use_co);
 void co_mysql_test();
 void ipc_test();
 void rabbit_test(bool use_co);
-void zookeeper_test(bool use_co);
+void zookeeper_test(bool use_co, int seq);
 
 void promise_test() {
     CoroutineTask::doTask([](void*){
@@ -38,14 +38,16 @@ void promise_test() {
 
 int main() {
     // io线程
-    ThreadPool tp(std::thread::hardware_concurrency() * 2);
+    ThreadPool tp(std::thread::hardware_concurrency());
     async::setThreadFunc([&tp](std::function<void()> f) {
         tp.enqueue(f);
     });
 
+    async::setIoThread(std::thread::hardware_concurrency());
+
     // 模拟有多个工作线程
-    for (int i = 0; i < 2; i++) {
-        new std::thread([&tp]() {
+    for (int i = 0; i < 1; i++) {
+        new std::thread([&tp, i]() {
             //promise_test();
             //cpu_test(true);
             //co_parallel_test();
@@ -55,14 +57,13 @@ int main() {
             //co_mysql_test();
             //ipc_test();
             //rabbit_test(true);
-            //zookeeper_test(true);
+            //zookeeper_test(true, i);
 
             uint32_t lastPrintTime = 0;
             while (true) {
                 time_t curTime = time(0);
-                co_async::loop(curTime);
-                usleep(1000);
-
+                co_async::loopSleep(curTime);
+            
                 if (curTime - lastPrintTime >= 2) {
                     lastPrintTime = curTime;
                     //log("task: %d", tp.taskCount());

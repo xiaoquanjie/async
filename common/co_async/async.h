@@ -22,5 +22,8 @@ std::pair<int, int64_t> parallel(const std::initializer_list<fn_cb>& fns, int ti
 
 bool loop(uint32_t curTime = 0);
 
+// 带有sleep功能，在没有任务时降低cpu使用率
+void loopSleep(uint32_t curTime, uint32_t sleepMil = 0);
+
 }
 

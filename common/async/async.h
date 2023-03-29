@@ -83,7 +83,10 @@
 
 namespace async {
 
-bool loop(uint32_t cur_time = 0);
+bool loop(uint32_t curTime = 0);
+
+// 带有sleep功能，在没有任务时降低cpu使用率
+void loopSleep(uint32_t curTime, uint32_t sleepMil = 0);
 
 // 设置io线程
 void setThreadFunc(std::function<void(std::function<void()>)> cb);

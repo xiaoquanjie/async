@@ -32,6 +32,8 @@ struct ZookParser {
 
     int getRc();
 
+    const char* error();
+
     void setChilds(const void* c);
 
     const std::vector<std::string*>& getChilds();

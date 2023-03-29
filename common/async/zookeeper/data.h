@@ -59,6 +59,7 @@ struct Watcher {
     bool dispatch = false;
     bool reg = false;
     bool child = false;
+    int32_t once = -1;
     std::string path;
     async_zookeeper_cb cb;
     void* tData = 0;

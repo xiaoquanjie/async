@@ -20,6 +20,7 @@
 #include "common/co_async//ipc/co_ipc.h"
 #include "common/co_async/rabbitmq/co_rabbitmq.h"
 #include "common/async/zookeeper/async_zookeeper.h"
+#include "common/co_async/zookeeper/co_zookeeper.h"
 
 // 计时器
 struct TimeElapsed {

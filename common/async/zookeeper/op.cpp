@@ -385,7 +385,7 @@ void opWatch(ZookCorePtr c, WatcherPtr w) {
             w.get()
         );
 
-        if (!checkOk(rc, "zoo_awget_children")) {
+        if (!checkOk(rc, "zoo_awget")) {
             w->reg = false;
         }
         else {

@@ -60,6 +60,10 @@ int ZookParser::getRc() {
     return this->rc;
 }
 
+const char* ZookParser::error() {
+    return zerror(this->rc);
+}
+
 void ZookParser::setChilds(const void* c) {
     const struct String_vector* childs = (const struct String_vector*)c;
     for (int32_t i = 0; i < childs->count; i++) {

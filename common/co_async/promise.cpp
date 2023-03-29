@@ -159,6 +159,20 @@ void setTimeout(std::function<void()> fn, int timeOut) {
     addTimer(timeOut, fn);
 }
 
+void wait(int timeOut) {
+    unsigned int coId = Coroutine::curid();
+    if (coId == M_MAIN_COROUTINE_ID) {
+        assert(false);
+        return;
+    }
+
+    addTimer(timeOut, [coId]() {
+        Coroutine::resume(coId);
+    });
+
+    Coroutine::yield();
+}
+
 // void setInterval(std::function<void()> fn, int timeOut) {
 
 // }

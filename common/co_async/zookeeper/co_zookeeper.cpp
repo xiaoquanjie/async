@@ -28,6 +28,22 @@ std::pair<int, async::zookeeper::ZookParserPtr> execute(const std::string& uri, 
     return ret;
 }
 
+int execute(const std::string& uri, std::shared_ptr<async::zookeeper::BaseZookCmd> cmd, bool& ok, const TimeOut& t) {
+    ok = false;
+    auto res = co_async::promise([&uri, cmd](co_async::Resolve resolve, co_async::Reject reject) {
+        async::zookeeper::execute(uri, cmd, [resolve](async::zookeeper::ZookParserPtr parser) {
+            resolve(parser);
+        });
+    }, t());
+
+    if (co_async::checkOk(res)) {
+        auto parser = co_async::getOk<async::zookeeper::ZookParser>(res);
+        ok = parser->zOk();
+    }
+
+    return res.first;
+}
+
 std::pair<int, bool> execute2(const std::string& uri, std::shared_ptr<async::zookeeper::BaseZookCmd> cmd, const TimeOut& t) {
     auto res = execute(uri, cmd, t);
     std::pair<int, bool> ret = std::make_pair(res.first, false);

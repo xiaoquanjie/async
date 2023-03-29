@@ -39,7 +39,7 @@ std::function<void(const char*)> gLogCb = [](const char* data) {
     struct tm lt;
     localtime_r(&now, &lt);
 
-    static char buf[50];
+    char buf[50];
     int len = strftime(buf, 50, "%Y-%m-%d %H:%M:%S", &lt);
     len += snprintf(buf + len, 50 - len, ":%03d", (int)(tv.tv_usec/1000));
 #endif

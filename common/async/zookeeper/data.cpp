@@ -93,7 +93,7 @@ bool checkOk(int rc, const char* ctxt) {
         return true;
     }
 
-    zookLog("[error] failed to call %s: %d", ctxt, rc);
+    zookLog("[error] failed to call %s: %d: %s", ctxt, rc, zerror(rc));
     return false;
 }
 

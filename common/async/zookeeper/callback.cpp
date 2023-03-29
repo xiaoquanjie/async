@@ -143,7 +143,10 @@ void onStringsCb(int rc, const struct String_vector *strings, const void *data) 
 
 void onWatchDataCb(int rc, const char *value, int value_len, const struct Stat *stat, const void *data) {
     Watcher* w = (Watcher*)data;
-    
+    if (w->once > 0) {
+        w->once--;
+    }
+
     auto rsp = std::make_shared<ZookRspData>();
     rsp->req = std::make_shared<ZookReqData>();
     rsp->req->tData = w->tData;
@@ -156,6 +159,9 @@ void onWatchDataCb(int rc, const char *value, int value_len, const struct Stat *
 void onWatchCb(zhandle_t *zh, int type, int state, const char *path,void *watcherCtx) {
     Watcher* w = (Watcher*)watcherCtx;
     w->reg = false;
+    if (w->once > 0) {
+        w->once--;
+    }
 
     // type 查看：*_EVENT, 如ZOO_SESSION_EVENT
     zookLog("zh:%p, path:%s, state: %s, type:%s", zh, w->path.c_str(), state2String(state), type2String(type));
@@ -163,7 +169,10 @@ void onWatchCb(zhandle_t *zh, int type, int state, const char *path,void *watche
 
 void onWatchStringsCb(int rc, const struct String_vector *strings, const void *data) {
     Watcher* w = (Watcher*)data;
-    
+    if (w->once > 0) {
+        w->once--;
+    }
+
     auto rsp = std::make_shared<ZookRspData>();
     rsp->req = std::make_shared<ZookReqData>();
     rsp->req->tData = w->tData;
@@ -181,6 +190,9 @@ void onWatchStringsCb(int rc, const struct String_vector *strings, const void *d
 void onWatchChildCb(zhandle_t *zh, int type, int state, const char *path,void *watcherCtx) {
     Watcher* w = (Watcher*)watcherCtx;
     w->reg = false;
+    if (w->once > 0) {
+        w->once--;
+    }
 
     // type 查看：*_EVENT, 如ZOO_SESSION_EVENT
     zookLog("zh:%p, path:%s, state: %s, type:%s", zh, w->path.c_str(), state2String(state), type2String(type));

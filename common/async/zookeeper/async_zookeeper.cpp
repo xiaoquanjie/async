@@ -185,8 +185,11 @@ void threadProcess(std::list<ZookCorePtr> coreList) {
                 if (w->reg) {
                     continue;
                 }
-                opWatch(c, w);
+                if (w->once == 0) {
+                    continue;
+                }
                 w->reg = true;
+                opWatch(c, w);
             }
         }
         
@@ -320,7 +323,7 @@ void localStatistics(int32_t curTime, ZookThreadData* tData) {
     auto gData = globalData();
     gData->pLock.lock();
     for (auto& pool : gData->corePool) {
-        zookLog("[statistics] id: %s, valid: %d", pool.first.c_str(), pool.second->valid.size());
+        zookLog("[statistics] id: %s, valid: %d, watcher: %d", pool.first.c_str(), pool.second->valid.size(), pool.second->watchers.size());
     }
     gData->pLock.unlock();
 }
@@ -400,8 +403,11 @@ void localDispatchTask(ZookThreadData* tData) {
     }
 }
 
-bool localWatch(const std::string& uri, const std::string& path, bool child, async_zookeeper_cb cb) {
+bool localWatch(const std::string& uri, const std::string& path, bool child, bool once, async_zookeeper_cb cb) {
     auto gData = globalData();
+    auto tData = runningData();
+    tData->init = true;
+
     bool ret = false;
     std::string pathId = path;
     if (child) {
@@ -416,8 +422,13 @@ bool localWatch(const std::string& uri, const std::string& path, bool child, asy
         w->cb = cb;
         w->path = path;
         w->child = child;
-        w->tData = runningData();
+        w->once = once ? 3 : -1;
+        w->tData = tData;
         pool->watchers[pathId] = w;
+    }
+    else {
+        iter->second->reg = false;
+        iter->second->once = once ? 3 : -1;
     }
     gData->pLock.unlock();
     return ret;
@@ -444,11 +455,19 @@ void execute(const std::string& uri, std::shared_ptr<BaseZookCmd> cmd, async_zoo
 
 // 监听
 bool watch(const std::string& uri, const std::string& path, async_zookeeper_cb cb) {
-    return localWatch(uri, path, false, cb);
+    return localWatch(uri, path, false, false, cb);
+}
+
+bool watchOnce(const std::string& uri, const std::string& path, async_zookeeper_cb cb) {
+    return localWatch(uri, path, false, true, cb);
 }
 
 bool watchChild(const std::string& uri, const std::string& path, async_zookeeper_cb cb) {
-    return localWatch(uri, path, true, cb);
+    return localWatch(uri, path, true, false, cb);
+}
+
+bool watchChildOnce(const std::string& uri, const std::string& path, async_zookeeper_cb cb) {
+    return localWatch(uri, path, true, true, cb);
 }
 
 bool loop(uint32_t curTime) {

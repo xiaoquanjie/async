@@ -28,6 +28,9 @@ std::pair<int, std::shared_ptr<void>> promise(std::function<void(Resolve, Reject
 
 void setTimeout(std::function<void()> fn, int timeOut);
 
+// 协程等待n毫秒
+void wait(int timeOut);
+
 }
 
 

@@ -39,7 +39,7 @@ struct PoolInfo {
 typedef std::multimap<uint64_t, TimeNode> TimeNodeMulMap;
 
 // 大桶的精度是1秒
-const uint32_t gBigBucket = 24 * 3600;
+const uint32_t gBigBucket = 3600; //24 * 3600;
 // 小桶的精度是1/10秒
 const uint32_t gSmallBucket = 10;
 // 
@@ -102,8 +102,8 @@ void setMaxInterval(uint32_t days) {
     if (days == 0) {
         return;
     }
-    if (days > 7) {
-        days = 7;
+    if (days > 24) {
+        days = 24;
     }
 
     gPoolInfo.maxIntervalDays = days;

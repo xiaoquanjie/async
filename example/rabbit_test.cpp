@@ -74,15 +74,28 @@ void publish(std::string uri) {
 
 void consumer(std::string uri, int seq) {
     rabbit::watch(uri, std::make_shared<rabbit::WatchCmd>(
-        "queue1",
+        "tqueue-mirror-1",
         "consumer_" + std::to_string(seq)
-    ), [seq](rabbit::RabbitParserPtr parser) {
+    ), [seq, uri](rabbit::RabbitParserPtr parser) {
         if (parser->isOk()) {
             std::string msg;
             if (parser->getBodyLen() != 0) {
                 msg.append(parser->getBody(), parser->getBodyLen());
             }
             log("consumer: %d msg: %s", seq, msg.c_str());
+
+            rabbit::watchAck(uri, std::make_shared<rabbit::AckCmd>(
+                "tqueue-mirror-1",
+                "consumer_" + std::to_string(seq),
+                parser->getDeliveryTag()
+            ), [](rabbit::RabbitParserPtr parser) {
+                if (parser->isOk()) {
+                    log("ack ok");
+                }
+                else {
+                    log("ack fail");
+                }
+            });
         }
         else {
             log("consumer: %d error", seq);
@@ -90,13 +103,34 @@ void consumer(std::string uri, int seq) {
     });
 }
 
+void co_publish(std::string uri) {
+    CoroutineTask::doTask([uri](void*) {
+        int i = 1;
+        for (;;) {
+            std::string msg = "this is msg ";
+            msg += std::to_string(i);
+            auto res = co_rabbit::execute(uri, std::make_shared<rabbit::PublishCmd>(
+                msg,
+                "direct.exechange.1",
+                "route2"
+            ));
+            if (!(res.second && res.second->isOk())) {
+                log("failed to publish");
+            }
+            co_async::wait(1000);
+            i++;
+        }
+    }, 0);
+}
+
 void rabbit_test(bool use_co, int seq) {
-    std::string uri = "localhost|5673|/|admin|admin";
+    std::string uri = "localhost|5676|/|admin|admin";
     // create_exchange(uri);
     // create_queue(uri);
     // bind_queue(uri);
     //publish(uri);
-    consumer(uri, seq);
+    //consumer(uri, seq);
+    co_publish(uri);
 }
 
 #endif

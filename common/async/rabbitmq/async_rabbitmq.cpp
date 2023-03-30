@@ -403,7 +403,7 @@ void localRespond(RabbitThreadData* tData) {
 }
 
 void localStatistics(int32_t curTime, RabbitThreadData* tData) {
-    if (curTime - tData->lastPrintTime < 40) {
+    if (curTime - tData->lastPrintTime < 120) {
         return;
     }
 

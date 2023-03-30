@@ -37,6 +37,13 @@ struct BaseRabbitCmd {
 struct DeclareExchangeCmd : public BaseRabbitCmd {
     DeclareExchangeCmd();
 
+    DeclareExchangeCmd(const std::string& name, 
+        const std::string& type,
+        bool passive = false,
+        bool durable = false,
+        bool autoDelete = false
+    );
+
     std::string name;               // 名字
     std::string type;               // 类型
     bool        passive = false;    // true的话，则不会创建交换机，相当于open
@@ -47,6 +54,13 @@ struct DeclareExchangeCmd : public BaseRabbitCmd {
 // 声明消息队列
 struct DeclareQueueCmd : public BaseRabbitCmd {
     DeclareQueueCmd();
+
+    DeclareQueueCmd(const std::string& name,
+        bool passive = false,
+        bool durable = false,  
+        bool exclusive = false,
+        bool autoDelete = false
+    );
 
     std::string name;               // 名字
     bool        passive = false;    // true的话，则不会创建队列，相当于open
@@ -59,6 +73,8 @@ struct DeclareQueueCmd : public BaseRabbitCmd {
 struct BindCmd : public BaseRabbitCmd {
     BindCmd();
 
+    BindCmd(const std::string& exchange, const std::string& queue, const std::string& routingKey);
+
     std::string exchange;   // 交换机 
     std::string queue;      // 队列
     std::string routingKey; // 路由
@@ -68,6 +84,8 @@ struct BindCmd : public BaseRabbitCmd {
 struct UnbindCmd : public BaseRabbitCmd {
     UnbindCmd();
 
+    UnbindCmd(const std::string& exchange, const std::string& queue, const std::string& routingKey);
+
     std::string exchange;   // 交换机 
     std::string queue;      // 队列
     std::string routingKey; // 路由
@@ -76,6 +94,13 @@ struct UnbindCmd : public BaseRabbitCmd {
 // 发布
 struct PublishCmd : public BaseRabbitCmd {
     PublishCmd();
+
+    PublishCmd(const std::string& msg, 
+        const std::string& exchange, 
+        const std::string& routingKey,
+        bool mandatory = false,
+        bool immediate = false
+    );
 
     std::string msg;        // 消息
     std::string exchange;   // 交换机 
@@ -91,7 +116,7 @@ struct PublishCmd : public BaseRabbitCmd {
             message-id
             timestamp属性
             expiration属性
-            delivery-mode属性：1表示非持久化消息，2表示持久化消息
+            delivery-mode属性：1表示非持久化消息，2表示持久化消息，默认是持久化消息
             priority属性优先级，值为0~9
     */ 
     std::unordered_map<std::string, std::string> properties;   
@@ -101,10 +126,17 @@ struct PublishCmd : public BaseRabbitCmd {
 struct WatchCmd : public BaseRabbitCmd {
     WatchCmd();
 
+    WatchCmd(const std::string& queue,        
+        const std::string& consumer_tag,
+        bool no_local = false,    
+        bool no_ack = false,    
+        bool exclusive = false
+    );
+
     std::string queue;          // 队列
     std::string consumer_tag;   // 用于区分不同的消费者
     bool no_local = false;      // 1不接收 0接收
-    bool no_ack = true;         // true: 不需要ack就会删除
+    bool no_ack = false;        // true: 不需要ack就会删除
     bool exclusive = false;     // 1当前连接不在时，队列自动删除 0当前连接不在时，队列不自动删除
 };
 
@@ -140,6 +172,8 @@ struct GetCmd : public BaseRabbitCmd {
 
 struct AckCmd : public BaseRabbitCmd {
     AckCmd();
+
+    AckCmd(const std::string& queue, const std::string& consumer_tag, uint64_t delivery_tag);
 
     std::string queue;          // 队列
     std::string consumer_tag;   // 用于区分不同的消费者

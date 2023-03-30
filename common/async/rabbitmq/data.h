@@ -14,6 +14,7 @@
 #include <mutex>
 #include <vector>
 #include <atomic>
+#include <set>
 #include <rabbitmq-c/amqp.h>
 #include "common/async/rabbitmq/async_rabbitmq.h"
 #include "common/log.h"
@@ -44,91 +45,82 @@ typedef std::shared_ptr<RabbitAddr> RabbitAddrPtr;
 // 请求
 struct RabbitReqData {
     async_rabbit_cb cb;
-    async_rabbit_get_cb get_cb;
     std::shared_ptr<BaseRabbitCmd> cmd;
     RabbitAddrPtr addr;
     time_t reqTime = 0;
+    void* tData = 0;
 };
 
 typedef std::shared_ptr<RabbitReqData> RabbitReqDataPtr;
 
 // 回复
 struct RabbitRspData {
-    bool ok = false;
-    amqp_rpc_reply_t reply;
-    amqp_envelope_t envelope;
-    amqp_message_t message;
-    async_rabbit_cb cb;
-    async_rabbit_ack_cb ack_cb;
-    async_rabbit_get_cb get_cb;
-    async_rabbit_watch_cb watch_cb;
+    RabbitReqDataPtr req;
+    RabbitParserPtr  parser;
 };
 
 typedef std::shared_ptr<RabbitRspData> RabbitRspDataPtr;
 
-struct RabbitCore {
-    amqp_connection_state_t conn = 0;
-    RabbitAddrPtr addr;
+struct RabbitConn {
+    std::string id;
+    amqp_connection_state_t c = 0;
+    uint32_t genChId = 1;
+    std::set<uint32_t> chIds;
+    ~RabbitConn();
+};
+
+typedef std::shared_ptr<RabbitConn> RabbitConnPtr;
+
+struct Watcher {
+    bool dispatch = false;
+    std::shared_ptr<WatchCmd> cmd;
+    async_rabbit_cb cb;
+    bool cancel = false;
+    std::list<RabbitReqDataPtr> acks;
+    std::mutex aLock;
+    void* tData = 0;
     uint32_t chId = 0;
+};
+
+typedef std::shared_ptr<Watcher> WatcherPtr;
+
+struct RabbitCore {
+    RabbitConnPtr conn;
+    RabbitAddrPtr addr;
+    std::atomic<uint32_t> task;
+    bool running = false;
+    clock_t lastRunTime = 0;
+    std::list<RabbitReqDataPtr> waitQueue;
+    std::list<WatcherPtr> watchers;
+    std::mutex waitLock;
     ~RabbitCore();
 };
 
 typedef std::shared_ptr<RabbitCore> RabbitCorePtr;
 
-struct RabbitChannel {
-    std::string id;
-    uint32_t chId = 0;
-    amqp_connection_state_t conn;
-    RabbitCorePtr core;
-};
-
-typedef std::shared_ptr<RabbitChannel> RabbitChannelPtr;
-
-struct AckInfo {
-    std::shared_ptr<AckCmd> cmd;
-    async_rabbit_ack_cb cb;
-};
-
-struct WatcherInfo {
-    void* tData;
-    async_rabbit_watch_cb cb;
-    std::shared_ptr<WatchCmd> cmd;
-    bool cancel = false;
-
-    // need to copy
-    time_t lastCreate = 0; 
-    uint32_t chId = 0;
-    std::list<AckInfo> ack_cbs;
-};
-
-struct RabbitWatcher {
-    time_t lastCreate = 0; 
-    uint32_t genChId = 1;
-    RabbitCorePtr core;
-    std::unordered_map<std::string, WatcherInfo> cbs;   // queue_name_consumer_tag --> cb info
-
-    void copy(RabbitWatcher& o);
-};
-
 struct CorePool {
-    //time_t lastCreate = 0;            // 上一次创建core的时间
-    //time_t lastDisconnect = 0;        // 上一次断联时间
-    std::list<RabbitCorePtr> valid;     // 
+    uint32_t polling = 0;
+    // 有用的连接
+    std::vector<RabbitCorePtr> valid;   
+    
+    // 监听者
+    std::unordered_map<std::string, WatcherPtr> watchers;
+    RabbitCorePtr wCore;
 };
+
+typedef std::shared_ptr<CorePool> CorePoolPtr;
 
 struct GlobalData {
     // 连接池
-    std::unordered_map<std::string, CorePool> corePool;
-    std::mutex lock;
-    
-    // 监听者
-    std::unordered_map<std::string, RabbitWatcher> watchPool;
-    std::mutex watchLock;
-    uint32_t watchIdle = 0;
-    clock_t watchIdleTick = 0;
-    std::atomic_flag watcherRun;
+    std::unordered_map<std::string, CorePoolPtr> corePool;
+    std::mutex pLock;
 
-    GlobalData() : watcherRun(ATOMIC_FLAG_INIT) {}
+    // 分发标识 
+    std::atomic_flag dispatchTask;
+
+    GlobalData() :dispatchTask(ATOMIC_FLAG_INIT) {}
+
+    CorePoolPtr getPool(const std::string& id);
 };
 
 struct RabbitThreadData {
@@ -139,12 +131,22 @@ struct RabbitThreadData {
     // 请求队列
     std::list<RabbitReqDataPtr> reqQueue;
     // 回复队列
-    std::mutex lock;
+    std::mutex rspLock;
     std::list<RabbitRspDataPtr> rspQueue;
     uint32_t lastRunTime = 0;
     // 上一次统计输出时间
     time_t lastPrintTime = 0;
+    // 初始化
+    bool init = false;
 };
+
+///////////////////////////////////////////////////////////////////
+
+bool checkError(amqp_rpc_reply_t x, char const *context);
+
+bool checkConn(amqp_rpc_reply_t x);
+
+bool checkChannel(amqp_rpc_reply_t x);
 
 #define rabbitLog(format, ...) log("[async_rabbitmq] " format, __VA_ARGS__)
 

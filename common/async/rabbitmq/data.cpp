@@ -36,34 +36,95 @@ void RabbitAddr::parse(const std::string& id) {
     this->pwd = values[4];
 }
 
-RabbitCore::~RabbitCore() {
+RabbitConn::~RabbitConn() {
+    rabbitLog("%s close connection: %s", this->id.c_str());
     // 关闭channel
-    if (this->chId != 0) {
-        rabbitLog("close channel: %s, %d", addr->id.c_str(), this->chId);
-        amqp_maybe_release_buffers_on_channel(this->conn, this->chId);
-        amqp_channel_close(this->conn, this->chId, AMQP_REPLY_SUCCESS);
+    for (auto id : this->chIds) {
+        amqp_maybe_release_buffers_on_channel(this->c, id);
+        amqp_channel_close(this->c, id, AMQP_REPLY_SUCCESS);
     }
-    if (this->conn) {
-        if (addr) {
-            rabbitLog("close connection: %s", addr->id.c_str());
-        }
-        amqp_maybe_release_buffers(this->conn);
-        amqp_connection_close(this->conn, AMQP_REPLY_SUCCESS);
-        amqp_destroy_connection(this->conn);
+    if (this->c) {
+        amqp_maybe_release_buffers(this->c);
+        amqp_connection_close(this->c, AMQP_REPLY_SUCCESS);
+        amqp_destroy_connection(this->c);
     }
 }
 
-void RabbitWatcher::copy(RabbitWatcher& o) {
-    this->lastCreate = o.lastCreate;
-    this->genChId = o.genChId;
-    this->core = o.core;
+RabbitCore::~RabbitCore() {
+}
 
-    for (auto& item : o.cbs) {
-        auto& info = this->cbs[item.first];
-        info.chId = item.second.chId;
-        info.lastCreate = item.second.lastCreate;
-        info.ack_cbs.insert(info.ack_cbs.begin(), item.second.ack_cbs.begin(), item.second.ack_cbs.end());
+CorePoolPtr GlobalData::getPool(const std::string& id) {
+    CorePoolPtr pool;
+    auto iter = this->corePool.find(id);
+    if (iter == this->corePool.end()) {
+        pool = std::make_shared<CorePool>();
+        this->corePool[id] = pool;
+    } else {
+        pool = iter->second;
     }
+    return pool;
+}
+
+bool checkError(amqp_rpc_reply_t x, char const *context) {
+    if (AMQP_RESPONSE_NORMAL == x.reply_type) {
+        return true;
+    }
+
+    if (AMQP_RESPONSE_NONE == x.reply_type) {
+        rabbitLog("[error] failed to call %s: missing RPC reply type", context);
+    }
+    else if (AMQP_RESPONSE_LIBRARY_EXCEPTION == x.reply_type) {
+        rabbitLog("[error] failed to call %s: %s", context, amqp_error_string2(x.library_error));
+    }
+    else if (AMQP_RESPONSE_SERVER_EXCEPTION == x.reply_type) {
+        if (AMQP_CONNECTION_CLOSE_METHOD == x.reply.id) {
+            amqp_connection_close_t *m = (amqp_connection_close_t *)x.reply.decoded;
+            rabbitLog("[error] failed to call %s: server connection error %uh, message: %.*s", 
+                context,
+                m->reply_code,
+                (int)m->reply_text.len,
+                (char *)m->reply_text.bytes
+            );
+        }
+        else if (AMQP_CHANNEL_CLOSE_METHOD == x.reply.id) {
+            amqp_channel_close_t *m = (amqp_channel_close_t *)x.reply.decoded;
+            rabbitLog("[error] failed to call %s: server channel error %uh, message: %.*s", 
+                  context, 
+                  m->reply_code, 
+                  (int)m->reply_text.len,
+                  (char *)m->reply_text.bytes
+            );
+        }
+        else {
+            rabbitLog("[error] failed to call %s: unknown server error, method id 0x%08X", context, x.reply.id);
+        }
+    }
+
+    return false;
+}
+
+
+bool checkConn(amqp_rpc_reply_t x) {
+    if (AMQP_RESPONSE_LIBRARY_EXCEPTION == x.reply_type) {
+        return false;
+    }
+    else if (AMQP_RESPONSE_SERVER_EXCEPTION == x.reply_type) {
+        if (AMQP_CONNECTION_CLOSE_METHOD == x.reply.id) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool checkChannel(amqp_rpc_reply_t x) {
+    if (AMQP_RESPONSE_SERVER_EXCEPTION == x.reply_type) {
+        if (AMQP_CHANNEL_CLOSE_METHOD == x.reply.id) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 }

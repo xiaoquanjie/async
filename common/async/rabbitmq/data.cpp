@@ -37,7 +37,10 @@ void RabbitAddr::parse(const std::string& id) {
 }
 
 RabbitConn::~RabbitConn() {
-    rabbitLog("%s close connection: %s", this->id.c_str());
+    if (!this->id.empty()) {
+        rabbitLog("%s close connection: %s", this->id.c_str());
+    }
+    
     // 关闭channel
     for (auto id : this->chIds) {
         amqp_maybe_release_buffers_on_channel(this->c, id);
@@ -103,6 +106,13 @@ bool checkError(amqp_rpc_reply_t x, char const *context) {
     return false;
 }
 
+bool checkError(int x, char const* context) {
+    if (x != AMQP_STATUS_OK) {
+        rabbitLog("[error] failed to call %s: %s", context, amqp_error_string2(x));
+        return false;
+    }
+    return true;
+}
 
 bool checkConn(amqp_rpc_reply_t x) {
     if (AMQP_RESPONSE_LIBRARY_EXCEPTION == x.reply_type) {

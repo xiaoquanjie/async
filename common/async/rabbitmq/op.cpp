@@ -113,7 +113,7 @@ amqp_rpc_reply_t onUnbind(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req) 
     return *((amqp_rpc_reply_t*)rsp->parser->reply);
 }
 
-amqp_rpc_reply_t onPublish(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req) {
+int onPublish(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req) {
     auto cmd = std::static_pointer_cast<PublishCmd>(req->cmd);
     auto rsp = std::make_shared<RabbitRspData>();
     rsp->req = req;
@@ -152,7 +152,8 @@ amqp_rpc_reply_t onPublish(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req)
         props.delivery_mode = 2; /* persistent delivery mode */
     }
     
-    amqp_basic_publish(c->conn->c, 
+    // 返回成功只代表投递到broker成功，不代表会进入队列
+    rsp->parser->x = amqp_basic_publish(c->conn->c, 
         chId,
         amqp_cstring_bytes(cmd->exchange.c_str()),
         amqp_cstring_bytes(cmd->routingKey.c_str()), 
@@ -162,10 +163,9 @@ amqp_rpc_reply_t onPublish(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req)
         amqp_cstring_bytes(cmd->msg.c_str())
     );
 
-    *((amqp_rpc_reply_t*)rsp->parser->reply) = amqp_get_rpc_reply(c->conn->c);
-    checkError(*((amqp_rpc_reply_t*)rsp->parser->reply), "amqp_basic_publish");
+    checkError(rsp->parser->x, "amqp_basic_publish");
     onPushRsp(rsp, req->tData);
-    return *((amqp_rpc_reply_t*)rsp->parser->reply);
+    return rsp->parser->x;
 }
 
 amqp_rpc_reply_t onDelQueueCmd(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req) {
@@ -230,7 +230,7 @@ amqp_rpc_reply_t onGetCmd(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req) 
     return *((amqp_rpc_reply_t*)rsp->parser->reply);
 }
 
-bool onAckCmd(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req) {
+int onAckCmd(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req) {
     auto cmd = std::static_pointer_cast<AckCmd>(req->cmd);
     auto rsp = std::make_shared<RabbitRspData>();
     rsp->req = req;
@@ -256,7 +256,7 @@ bool onAckCmd(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req) {
     }
 
     onPushRsp(rsp, req->tData);
-    return rsp->parser->isOk();
+    return rsp->parser->x;
 }
 
 void threadCloseChannel(RabbitConnPtr conn, uint32_t chId);
@@ -275,6 +275,7 @@ void opAckError(RabbitReqDataPtr req) {
 bool opCmd(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req) {
     amqp_rpc_reply_t reply;
     reply.reply_type = AMQP_RESPONSE_NORMAL;
+    int x = AMQP_STATUS_OK;
     do {
         if (!c->conn || chId == 0) {
             reply.reply_type = AMQP_RESPONSE_LIBRARY_EXCEPTION;
@@ -296,7 +297,7 @@ bool opCmd(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req) {
             reply = onUnbind(c, chId, req);
         }
         else if (req->cmd->cmdType == publish_cmd) {
-            reply = onPublish(c, chId, req);
+            x = onPublish(c, chId, req);
         }
         else if (req->cmd->cmdType == delete_queue_cmd) {
             reply = onDelQueueCmd(c, chId, req);
@@ -308,9 +309,7 @@ bool opCmd(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req) {
             reply = onGetCmd(c, chId, req);
         }
         else if (req->cmd->cmdType == ack_cmd) {
-            if (!onAckCmd(c, chId, req)) {
-                reply = amqp_get_rpc_reply(c->conn->c);
-            }
+            x = onAckCmd(c, chId, req);
         }
     } while (false);
 
@@ -318,6 +317,15 @@ bool opCmd(RabbitCorePtr c, uint32_t chId, RabbitReqDataPtr req) {
         c->task--;
     }
     
+    if (x != AMQP_STATUS_OK) {
+        // if (x == AMQP_STATUS_CONNECTION_CLOSED 
+        //     || x == AMQP_STATUS_SOCKET_ERROR) {
+        //     c->conn = nullptr;
+        // }
+        c->conn = nullptr;
+        return false;
+    }
+
     if (checkConn(reply)) {
         if (!checkChannel(reply)) {
             threadCloseChannel(c->conn, chId);

@@ -43,7 +43,7 @@ bool RabbitParser::isOk() {
         return false;
     }
 
-    return REPLY->reply_type == AMQP_RESPONSE_NORMAL && this->x == 0;
+    return REPLY->reply_type == AMQP_RESPONSE_NORMAL && this->x == AMQP_STATUS_OK;
 }
 
 bool RabbitParser::isTimeout() {

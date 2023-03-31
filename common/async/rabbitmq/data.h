@@ -144,6 +144,8 @@ struct RabbitThreadData {
 
 bool checkError(amqp_rpc_reply_t x, char const *context);
 
+bool checkError(int x, char const* context);
+
 bool checkConn(amqp_rpc_reply_t x);
 
 bool checkChannel(amqp_rpc_reply_t x);

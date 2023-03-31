@@ -43,6 +43,9 @@ c++异步io库
     2）cd build
     3）cmake .. -DUSE_ASYNC_CURL=1 -DUSE_ASYNC_REDIS=1 -DUSE_ASYNC_CLUSTER_REDIS=1 -DUSE_ASYNC_MONGO=1 \
         -DUSE_ASYNC_MYSQL=1 -DUSE_ASYNC_RABBITMQ=1 -DUSE_ASYNC_ZOOKEEPER=1 -DUSE_IPC=1 -DUSE_TRANS=1 -DUSE_NET=1 -DCMAKE_BUILD_TYPE=Debug
+    4）输出文件：
+        库文件：build/bin/libasync.so
+        头文件: build/include/
 
 依赖库安装：
     如果库安装路径、链接版本、头文件等出现报错，可以根据编译环境调整 common/CMakeLists.txt文件
@@ -194,7 +197,7 @@ example
     example.cpp         ----> 测试用例
     CMakeLists.txt      ----> 编译文件
 
-common                  ----> 库目录
+async                   ----> 库目录
     threads             ----> 线程池目录
         thread_pool.h   ----> 线程池类
     

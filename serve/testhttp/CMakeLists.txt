@@ -12,7 +12,7 @@ aux_source_directory(. ALL_CPP)
 
 include_directories(../../)
 
-set(LINK_LIBRARYS ${LINK_LIBRARYS} serve common)
+set(LINK_LIBRARYS ${LINK_LIBRARYS} serve async)
 
 add_executable(${TARGET_NAME} ${ALL_CPP})
 

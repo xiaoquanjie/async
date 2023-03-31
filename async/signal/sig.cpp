@@ -34,7 +34,7 @@ struct SignalInfo {
             event_base_free((event_base*)eventBase);
         }
 
-        log("[signal] free");
+        logTrace("[signal] free");
     }
 };
 

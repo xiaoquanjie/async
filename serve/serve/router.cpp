@@ -9,7 +9,7 @@
 #ifdef USE_IPC
 
 #include "serve/serve/router.h"
-#include "common/ipc/ipc.h"
+#include "async/ipc/ipc.h"
 #include <set>
 #include <map>
 

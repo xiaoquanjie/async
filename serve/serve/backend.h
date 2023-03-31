@@ -9,7 +9,7 @@
 #pragma once
 
 #include "serve/serve/base.h"
-#include "common/co_async/ipc/co_ipc.h"
+#include "async/co_async/ipc/co_ipc.h"
 
 namespace backend {
 

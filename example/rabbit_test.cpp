@@ -112,13 +112,19 @@ void co_publish(std::string uri) {
             auto res = co_rabbit::execute(uri, std::make_shared<rabbit::PublishCmd>(
                 msg,
                 "direct.exechange.1",
-                "route2"
+                "route2",
+                true,
+                false
             ));
             if (!(res.second && res.second->isOk())) {
                 log("failed to publish");
             }
-            co_async::wait(1000);
+            else {
+                log("publish ok");
+            }
+            co_async::wait(2000);
             i++;
+            // break;
         }
     }, 0);
 }

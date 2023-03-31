@@ -9,8 +9,8 @@
 #ifdef USE_NET
 
 #include "serve/serve/http.h"
-#include "common/net/http_listener.h"
-#include "common/transaction/transaction_mgr.h"
+#include "async/net/http_listener.h"
+#include "async/transaction/transaction_mgr.h"
 #include <memory>
 
 namespace http {

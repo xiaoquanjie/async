@@ -7,7 +7,7 @@
 
 #include "serve/serve/serve.h"
 #include "serve/serve/http_transaction.h"
-#include "common/log.h"
+#include "async/log.h"
 
 class GetNameTransaction : public HttpTransaction {
 public:

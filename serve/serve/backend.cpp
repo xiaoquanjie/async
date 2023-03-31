@@ -9,8 +9,8 @@
 #ifdef USE_IPC
 
 #include "serve/serve/backend.h"
-#include "common/ipc/ipc.h"
-#include "common/transaction/transaction_mgr.h"
+#include "async/ipc/ipc.h"
+#include "async/transaction/transaction_mgr.h"
 #include <assert.h>
 
 namespace backend {

@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <memory>
-#include "common/async/async.h"
-#include "common/co_async/async.h"
-#include "common/co_async/promise.h"
-#include "common/coroutine/coroutine.hpp"
-#include "common/threads/thread_pool.h"
-#include "common/log.h"
+#include "async/async/async.h"
+#include "async/co_async/async.h"
+#include "async/co_async/promise.h"
+#include "async/coroutine/coroutine.hpp"
+#include "async/threads/thread_pool.h"
+#include "async/log.h"
 #include <unistd.h>
 
 ////////////////////
@@ -19,7 +19,7 @@ void mongo_test(bool use_co);
 void redis_test(bool use_co);
 void co_mysql_test();
 void ipc_test();
-void rabbit_test(bool use_co);
+void rabbit_test(bool use_co, int seq);
 void zookeeper_test(bool use_co, int seq);
 
 void promise_test() {
@@ -56,7 +56,7 @@ int main() {
             //redis_test(true);
             //co_mysql_test();
             //ipc_test();
-            //rabbit_test(true);
+            //rabbit_test(true, i);
             //zookeeper_test(true, i);
 
             uint32_t lastPrintTime = 0;

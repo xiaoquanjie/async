@@ -9,8 +9,8 @@
 #ifdef USE_NET 
 
 #include "serve/serve/gate.h"
-#include "common/net/tcp_listener.h"
-#include "common/log.h"
+#include "async/net/tcp_listener.h"
+#include "async/log.h"
 #include <memory>
 #include <unordered_map>
 

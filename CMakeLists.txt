@@ -15,8 +15,8 @@ project(${TARGET_NAME})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set(PROJECT_LIB_TARGETS "common")
+set(PROJECT_LIB_TARGETS "async")
 
-add_subdirectory(common)
+add_subdirectory(async)
 add_subdirectory(example)
 add_subdirectory(serve)

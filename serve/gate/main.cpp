@@ -19,7 +19,7 @@
 #include "serve/serve/serve.h"
 #include "serve/serve/gate.h"
 #include "serve/serve/backend.h"
-#include "common/log.h"
+#include "async/log.h"
 
 int main(int argc, char** argv) {
     Serve srv;

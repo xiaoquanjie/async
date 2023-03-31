@@ -76,7 +76,9 @@ bool init(void* event_base, const LinkInfo& link) {
                     return;
                 }
             }
+#ifdef USE_TRANS
             trans_mgr::handle(id, msg.req.url, (char*)&msg, 0, 0);
+#endif
         });
 
         gHttpListener[listener] = id;

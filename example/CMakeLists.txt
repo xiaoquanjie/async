@@ -48,6 +48,6 @@ link_directories(/usr/local/lib64 /usr/local/lib)
 
 add_executable(${TARGET_NAME} ${ALL_CPP})
 
-add_dependencies(${TARGET_NAME} "common")
+add_dependencies(${TARGET_NAME} async)
 
-target_link_libraries(${TARGET_NAME} PRIVATE "common" "pthread")
+target_link_libraries(${TARGET_NAME} PRIVATE async pthread)

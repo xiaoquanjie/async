@@ -21,11 +21,11 @@ if(USE_NET)
     add_definitions(-DUSE_NET)
 endif(USE_NET)
 
-set(LINK_LIBRARYS ${LINK_LIBRARYS} common)
+set(LINK_LIBRARYS ${LINK_LIBRARYS} async)
 
 add_library(${TARGET_NAME} SHARED ${ALL_CPP})
 
-add_dependencies(${TARGET_NAME} "common")
+add_dependencies(${TARGET_NAME} async)
 
 # 指定链接库
 target_link_libraries(${TARGET_NAME} PRIVATE ${LINK_LIBRARYS})

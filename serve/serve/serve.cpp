@@ -107,7 +107,9 @@ void Serve::start() {
         }
         if ((now - tick) >= 1) {
             tick = now;
+#ifdef USE_TRANS
             trans_mgr::tick(now);
+#endif
         }
 
         if (isIdle) {

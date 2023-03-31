@@ -24,7 +24,9 @@ struct ZqDealer : public ipc::ZeromqDealerHandler {
             message.decode(data);
 
             if (message.header.rspSeqId == 0) {
+#ifdef USE_TRANS
                 trans_mgr::handle(message.header.cmd, (char*)&message, 0, (void*)0);
+#endif
             }
             else {
                 co_async::ipc::recv(message.header.rspSeqId, (char*)&message, 0);

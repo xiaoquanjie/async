@@ -172,7 +172,8 @@ void threadProcess(std::list<MysqlCorePtr> coreList) {
     time(&curTime);
 
     for (auto c : coreList) {
-        if (!c->conn) {
+        if (!c->conn && curTime - c->lastConnTime >= 2) {
+            c->lastConnTime = curTime;
             c->conn = threadCreateConn(c);
         }
         

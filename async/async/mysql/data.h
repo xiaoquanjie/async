@@ -84,6 +84,7 @@ struct MysqlCore {
     std::atomic<uint32_t> task;
     bool running = false;
     clock_t lastRunTime = 0;
+    time_t lastConnTime = 0;
     MysqlReqDataPtr curReq;
     std::list<MysqlReqDataPtr> waitQueue;
     std::mutex waitLock;

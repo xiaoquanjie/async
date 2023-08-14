@@ -98,6 +98,10 @@ void convertCmd(const BaseRedisCmd& cmd, std::vector<const char *>& argv, std::v
 
 // 拷贝一份redisreply
 redisReply* copyRedisReply(redisReply* reply) {
+    if (!reply) {
+        return nullptr;
+    }
+
 	redisReply* newReply = (redisReply*)hi_calloc(1, sizeof(*reply));
 	memcpy(newReply, reply, sizeof(*reply));
     

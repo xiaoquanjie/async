@@ -69,6 +69,12 @@ void onNonClusterAuth(redisAsyncContext *c, void* r, void* uData) {
         return;
     }
 
+    if (!r) {
+        conn->state = enum_disconnected_state;
+        redisLog("[error] failed to auth, redisAsyncContext:%p|%s", c, conn->id.c_str());
+        return;
+    }
+
     redisReply* reply = (redisReply*)r;
     if (reply->type == REDIS_REPLY_STATUS
         && strcmp(reply->str, "OK") == 0) {
@@ -85,6 +91,12 @@ void onNonClusterSelect(redisAsyncContext *c, void* r, void* uData) {
     RedisConn* conn = (RedisConn*)(c->data);
     if (!conn) {
         redisLog("[error] not recognized redisAsyncContext: %p connection", c);
+        return;
+    }
+
+    if (!r) {
+        conn->state = enum_disconnected_state;
+        redisLog("[error] failed to select db, redisAsyncContext:%p|%s", c, conn->id.c_str());
         return;
     }
 
